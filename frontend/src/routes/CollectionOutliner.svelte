@@ -40,6 +40,7 @@
   import YouTubeCard from '../lib/YouTubeCard.svelte';
   import VideoModal from '../lib/VideoModal.svelte';
   import AiModal from '../lib/AiModal.svelte';
+  import AttachmentCard from '../lib/AttachmentCard.svelte';
 
   import {
     collectionItems,
@@ -2501,18 +2502,9 @@
                 {/if}
 
                 {#if others.length > 0}
-                  <div class="mt-2 space-y-1">
+                  <div class="mt-3 space-y-2">
                     {#each others.slice(0, 3) as a}
-                      <a
-                        class="flex items-center gap-2 rounded-md border bg-white px-2 py-1 text-xs dark:border-white/10 dark:bg-slate-800 dark:text-slate-200"
-                        href={api.attachments.downloadUrl(a.id)}
-                        target="_blank"
-                        rel="noreferrer"
-                        onclick={(e) => e.stopPropagation()}
-                      >
-                        <span class="text-sm" aria-hidden="true">📄</span>
-                        <span class="min-w-0 flex-1 truncate">{a.filename}</span>
-                      </a>
+                      <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} />
                     {/each}
                     {#if others.length > 3}
                       <div class="text-[11px] text-slate-400">+{others.length - 3} more files</div>
@@ -2520,18 +2512,9 @@
                   </div>
                 {/if}
               {:else if item.snipsel.attachments.length > 0 && item.snipsel.type === 'attachment'}
-                <div class="mt-2 space-y-1">
+                <div class="mt-3 space-y-2">
                   {#each item.snipsel.attachments.slice(0, 3) as a}
-                    <a
-                      class="flex items-center gap-2 rounded-md border bg-white px-2 py-1 text-xs dark:border-white/10 dark:bg-slate-800 dark:text-slate-200"
-                      href={api.attachments.downloadUrl(a.id)}
-                      target="_blank"
-                      rel="noreferrer"
-                      onclick={(e) => e.stopPropagation()}
-                    >
-                      <span class="text-sm" aria-hidden="true">📎</span>
-                      <span class="min-w-0 flex-1 truncate">{a.filename}</span>
-                    </a>
+                    <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} />
                   {/each}
                   {#if item.snipsel.attachments.length > 3}
                     <div class="text-[11px] text-slate-400">+{item.snipsel.attachments.length - 3} more files</div>
