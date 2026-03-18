@@ -57,7 +57,9 @@ def _get_share_permission(user_id: str, collection_id: str) -> str | None:
 def list_collections():
     user = current_user()
     include_archived = request.args.get("include_archived") == "1" or True
-    owned_ids = db.select(Collection.id).where(Collection.owner_user_id == user.id, Collection.deleted_at.is_(None))
+    owned_ids = db.select(Collection.id).where(
+        Collection.owner_user_id == user.id, Collection.deleted_at.is_(None)
+    )
     if not include_archived:
         owned_ids = owned_ids.where(Collection.archived_at.is_(None))
 
@@ -75,10 +77,14 @@ def list_collections():
     ids_subq = owned_ids.union(shared_ids).subquery()
     ids_select = db.select(ids_subq.c.id)
 
-    q = db.select(Collection).where(Collection.id.in_(ids_select), Collection.deleted_at.is_(None))
+    q = db.select(Collection).where(
+        Collection.id.in_(ids_select), Collection.deleted_at.is_(None)
+    )
     if not include_archived:
         q = q.where(Collection.archived_at.is_(None))
-    q = q.order_by(Collection.list_for_day.desc().nullslast(), Collection.created_at.desc())
+    q = q.order_by(
+        Collection.list_for_day.desc().nullslast(), Collection.created_at.desc()
+    )
     items = db.session.execute(q).scalars().all()
 
     shared_collection_ids = [c.id for c in items if c.owner_user_id != user.id]
@@ -86,28 +92,51 @@ def list_collections():
         cid: perm
         for cid, perm in (
             db.session.execute(
-                db.select(CollectionShare.collection_id, CollectionShare.permission).where(
+                db.select(
+                    CollectionShare.collection_id, CollectionShare.permission
+                ).where(
                     CollectionShare.shared_with_user_id == user.id,
-                    CollectionShare.collection_id.in_(shared_collection_ids) if shared_collection_ids else db.false(),
+                    CollectionShare.collection_id.in_(shared_collection_ids)
+                    if shared_collection_ids
+                    else db.false(),
                 )
             ).all()
         )
     }
     owner_ids = list({c.owner_user_id for c in items if c.owner_user_id != user.id})
     owner_names = {
-        uid: uname for uid, uname in (db.session.execute(db.select(User.id, User.username).where(User.id.in_(owner_ids))).all() if owner_ids else [])
+        uid: uname
+        for uid, uname in (
+            db.session.execute(
+                db.select(User.id, User.username).where(User.id.in_(owner_ids))
+            ).all()
+            if owner_ids
+            else []
+        )
     }
 
     owned_item_ids = [c.id for c in items if c.owner_user_id == user.id]
     shared_out_ids = set(
         db.session.execute(
-            db.select(db.distinct(CollectionShare.collection_id)).where(CollectionShare.collection_id.in_(owned_item_ids) if owned_item_ids else db.false())
+            db.select(db.distinct(CollectionShare.collection_id)).where(
+                CollectionShare.collection_id.in_(owned_item_ids)
+                if owned_item_ids
+                else db.false()
+            )
         )
         .scalars()
         .all()
     )
 
-    fav_ids = set(db.session.execute(db.select(CollectionFavorite.collection_id).where(CollectionFavorite.user_id == user.id)).scalars().all())
+    fav_ids = set(
+        db.session.execute(
+            db.select(CollectionFavorite.collection_id).where(
+                CollectionFavorite.user_id == user.id
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     out = []
     for c in items:
@@ -189,7 +218,12 @@ def get_today_collection():
     tpl_id = getattr(user, "day_collection_template_id", None)
     if tpl_id:
         tpl = db.session.get(Collection, tpl_id)
-        if tpl and tpl.deleted_at is None and tpl.owner_user_id == user.id and getattr(tpl, "is_template", False):
+        if (
+            tpl
+            and tpl.deleted_at is None
+            and tpl.owner_user_id == user.id
+            and getattr(tpl, "is_template", False)
+        ):
             c.icon = tpl.icon
             c.header_image_url = tpl.header_image_url
             c.header_color = tpl.header_color
@@ -210,16 +244,25 @@ def get_today_collection():
     _maybe_carry_over_open_tasks(user=user, today_collection=c, day=day)
 
     if tpl_id:
-        _maybe_copy_template_contents(user=user, template_collection_id=tpl_id, target_collection=c)
+        _maybe_copy_template_contents(
+            user=user, template_collection_id=tpl_id, target_collection=c
+        )
     j = _collection_json(c)
     j["is_favorite"] = False
     j["access_level"] = "owner"
     return json_response({"collection": j}, status=201)
 
 
-def _maybe_copy_template_contents(*, user: User, template_collection_id: str, target_collection: Collection) -> None:
+def _maybe_copy_template_contents(
+    *, user: User, template_collection_id: str, target_collection: Collection
+) -> None:
     max_pos = (
-        db.session.execute(db.select(db.func.max(CollectionSnipsel.position)).where(CollectionSnipsel.collection_id == target_collection.id)).scalar() or 0
+        db.session.execute(
+            db.select(db.func.max(CollectionSnipsel.position)).where(
+                CollectionSnipsel.collection_id == target_collection.id
+            )
+        ).scalar()
+        or 0
     )
     _insert_template_into_collection(
         user=user,
@@ -237,14 +280,21 @@ def _insert_template_into_collection(
     position_offset: int,
 ) -> None:
     tpl = db.session.get(Collection, template_collection_id)
-    if not tpl or tpl.deleted_at is not None or tpl.owner_user_id != user.id or not getattr(tpl, "is_template", False):
+    if (
+        not tpl
+        or tpl.deleted_at is not None
+        or tpl.owner_user_id != user.id
+        or not getattr(tpl, "is_template", False)
+    ):
         return
 
     tpl_items = (
         db.session.execute(
             db.select(CollectionSnipsel)
             .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
-            .where(CollectionSnipsel.collection_id == tpl.id, Snipsel.deleted_at.is_(None))
+            .where(
+                CollectionSnipsel.collection_id == tpl.id, Snipsel.deleted_at.is_(None)
+            )
             .order_by(CollectionSnipsel.position.asc())
         )
         .scalars()
@@ -337,7 +387,13 @@ def _insert_template_into_collection(
             )
         )
 
-    shares = db.session.execute(db.select(CollectionShare).where(CollectionShare.collection_id == tpl.id)).scalars().all()
+    shares = (
+        db.session.execute(
+            db.select(CollectionShare).where(CollectionShare.collection_id == tpl.id)
+        )
+        .scalars()
+        .all()
+    )
     for s in shares:
         existing = (
             db.session.execute(
@@ -386,7 +442,14 @@ def insert_template(collection_id: str):
     if not template_collection_id:
         raise api_error(400, "invalid_input", "template_collection_id is required")
 
-    max_pos = db.session.execute(db.select(db.func.max(CollectionSnipsel.position)).where(CollectionSnipsel.collection_id == target.id)).scalar() or 0
+    max_pos = (
+        db.session.execute(
+            db.select(db.func.max(CollectionSnipsel.position)).where(
+                CollectionSnipsel.collection_id == target.id
+            )
+        ).scalar()
+        or 0
+    )
     _insert_template_into_collection(
         user=user,
         template_collection_id=template_collection_id,
@@ -409,14 +472,26 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
 
     # Guard: only carry over to today
     if day != date.today():
-        logger.debug("%s Skipping – requested day %s is not today (%s)", log_prefix, day, date.today())
+        logger.debug(
+            "%s Skipping – requested day %s is not today (%s)",
+            log_prefix,
+            day,
+            date.today(),
+        )
         return
     if not getattr(user, "carry_over_open_tasks", True):
-        logger.debug("%s Skipping – carry_over_open_tasks is disabled for user", log_prefix)
+        logger.debug(
+            "%s Skipping – carry_over_open_tasks is disabled for user", log_prefix
+        )
         return
 
     start_day = day - timedelta(days=30)
-    logger.debug("%s Looking for past day-collections between %s and %s", log_prefix, start_day, day)
+    logger.debug(
+        "%s Looking for past day-collections between %s and %s",
+        log_prefix,
+        start_day,
+        day,
+    )
 
     past_collections = (
         db.session.execute(
@@ -435,21 +510,29 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
     )
 
     if not past_collections:
-        logger.debug("%s No past day-collections found – nothing to carry over", log_prefix)
+        logger.debug(
+            "%s No past day-collections found – nothing to carry over", log_prefix
+        )
         return
 
-    logger.debug("%s Found %d past day-collection(s): %s",
-                 log_prefix,
-                 len(past_collections),
-                 [(c.id, str(c.list_for_day)) for c in past_collections])
+    logger.debug(
+        "%s Found %d past day-collection(s): %s",
+        log_prefix,
+        len(past_collections),
+        [(c.id, str(c.list_for_day)) for c in past_collections],
+    )
 
     max_pos = (
         db.session.execute(
-            db.select(db.func.max(CollectionSnipsel.position))
-            .where(CollectionSnipsel.collection_id == today_collection.id)
-        ).scalar() or 0
+            db.select(db.func.max(CollectionSnipsel.position)).where(
+                CollectionSnipsel.collection_id == today_collection.id
+            )
+        ).scalar()
+        or 0
     )
-    logger.debug("%s Current max position in today's collection: %d", log_prefix, max_pos)
+    logger.debug(
+        "%s Current max position in today's collection: %d", log_prefix, max_pos
+    )
 
     moved_count = 0
     deleted_duplicate_count = 0
@@ -471,19 +554,28 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
                         Snipsel.task_done == False,
                     )
                     .order_by(CollectionSnipsel.position.asc())
-                    .with_for_update(skip_locked=True)  # skip rows locked by a concurrent request
+                    .with_for_update(
+                        skip_locked=True
+                    )  # skip rows locked by a concurrent request
                 )
                 .scalars()
                 .all()
             )
 
-            logger.debug("%s Source collection %s (%s): %d open task(s) found (after lock)",
-                         log_prefix, src.id, src.list_for_day, len(items))
+            logger.debug(
+                "%s Source collection %s (%s): %d open task(s) found (after lock)",
+                log_prefix,
+                src.id,
+                src.list_for_day,
+                len(items),
+            )
 
             for cs in items:
                 snipsel_preview = ""
                 try:
-                    snipsel_preview = (cs.snipsel.content_markdown or "")[:60].replace("\n", " ")
+                    snipsel_preview = (cs.snipsel.content_markdown or "")[:60].replace(
+                        "\n", " "
+                    )
                 except Exception:
                     pass
 
@@ -499,8 +591,13 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
                     .first()
                 )
                 if already:
-                    logger.debug("%s  Snipsel %s already in today – removing duplicate src entry (cs.id=%s) | '%s'",
-                                 log_prefix, cs.snipsel_id, cs.id, snipsel_preview)
+                    logger.debug(
+                        "%s  Snipsel %s already in today – removing duplicate src entry (cs.id=%s) | '%s'",
+                        log_prefix,
+                        cs.snipsel_id,
+                        cs.id,
+                        snipsel_preview,
+                    )
                     db.session.delete(cs)
                     deleted_duplicate_count += 1
                     continue
@@ -510,9 +607,15 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
                 cs.collection_id = today_collection.id
                 cs.position = max_pos
                 moved_count += 1
-                logger.debug("%s  Moved snipsel %s from collection %s → %s (pos=%d) | '%s'",
-                             log_prefix, cs.snipsel_id, old_collection_id, today_collection.id,
-                             max_pos, snipsel_preview)
+                logger.debug(
+                    "%s  Moved snipsel %s from collection %s → %s (pos=%d) | '%s'",
+                    log_prefix,
+                    cs.snipsel_id,
+                    old_collection_id,
+                    today_collection.id,
+                    max_pos,
+                    snipsel_preview,
+                )
 
         # ── Orphan recovery ────────────────────────────────────────────────────
         # Find open tasks owned by this user that are not linked to ANY
@@ -521,15 +624,12 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
         # database states, and rescues them back onto today's list.
         orphaned_snipsels = (
             db.session.execute(
-                db.select(Snipsel)
-                .where(
+                db.select(Snipsel).where(
                     Snipsel.owner_user_id == user.id,
                     Snipsel.deleted_at.is_(None),
                     Snipsel.type == "task",
                     Snipsel.task_done == False,
-                    ~Snipsel.id.in_(
-                        db.select(CollectionSnipsel.snipsel_id)
-                    ),
+                    ~Snipsel.id.in_(db.select(CollectionSnipsel.snipsel_id)),
                 )
             )
             .scalars()
@@ -541,7 +641,9 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
             orphan_preview = (orphan.content_markdown or "")[:60].replace("\n", " ")
             logger.warning(
                 "%s  ORPHAN DETECTED – snipsel %s has no collection! Rescuing to today. | '%s'",
-                log_prefix, orphan.id, orphan_preview,
+                log_prefix,
+                orphan.id,
+                orphan_preview,
             )
             max_pos += 1
             db.session.add(
@@ -555,13 +657,22 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
             rescued_count += 1
 
         if rescued_count > 0:
-            logger.warning("%s  %d orphaned task(s) rescued to today's collection.", log_prefix, rescued_count)
+            logger.warning(
+                "%s  %d orphaned task(s) rescued to today's collection.",
+                log_prefix,
+                rescued_count,
+            )
             today_collection.modified_at = datetime.utcnow()
             today_collection.modified_by_id = user.id
         # ── End orphan recovery ────────────────────────────────────────────────
 
-        logger.info("%s Summary before commit: moved=%d, duplicates_removed=%d, orphans_rescued=%d",
-                    log_prefix, moved_count, deleted_duplicate_count, rescued_count)
+        logger.info(
+            "%s Summary before commit: moved=%d, duplicates_removed=%d, orphans_rescued=%d",
+            log_prefix,
+            moved_count,
+            deleted_duplicate_count,
+            rescued_count,
+        )
 
         if moved_count > 0:
             # Touch modified_at so frontend caches/lists refresh
@@ -569,12 +680,21 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
             today_collection.modified_by_id = user.id
 
         db.session.commit()
-        logger.info("%s Commit successful. %d task(s) carried over, %d duplicate(s) cleaned up, %d orphan(s) rescued.",
-                    log_prefix, moved_count, deleted_duplicate_count, rescued_count)
+        logger.info(
+            "%s Commit successful. %d task(s) carried over, %d duplicate(s) cleaned up, %d orphan(s) rescued.",
+            log_prefix,
+            moved_count,
+            deleted_duplicate_count,
+            rescued_count,
+        )
 
     except Exception as exc:
-        logger.error("%s ERROR during carry-over – rolling back! Exception: %s",
-                     log_prefix, exc, exc_info=True)
+        logger.error(
+            "%s ERROR during carry-over – rolling back! Exception: %s",
+            log_prefix,
+            exc,
+            exc_info=True,
+        )
         db.session.rollback()
         # Do not re-raise: a carry-over failure should not break the
         # GET /today response. The tasks remain in their source collections
@@ -591,9 +711,15 @@ def create_collection():
     title = (data.get("title") or "").strip()
     icon = (data.get("icon") or "🗒").strip() or "🗒"
     header_image_url = (data.get("header_image_url") or "").strip() or None
-    header_color = (data.get("header_color") or "").strip() or user.default_collection_header_color or None
+    header_color = (
+        (data.get("header_color") or "").strip()
+        or user.default_collection_header_color
+        or None
+    )
     default_snipsel_type = (data.get("default_snipsel_type") or "").strip() or None
-    show_completed_tasks = data.get("show_completed_tasks") if "show_completed_tasks" in data else True
+    show_completed_tasks = (
+        data.get("show_completed_tasks") if "show_completed_tasks" in data else True
+    )
 
     if not title:
         raise api_error(400, "invalid_input", "title is required")
@@ -606,7 +732,9 @@ def create_collection():
         header_color=header_color,
         default_snipsel_type=default_snipsel_type,
         show_completed_tasks=show_completed_tasks,
-        mute_notifications=data.get("mute_notifications") if "mute_notifications" in data else False,
+        mute_notifications=data.get("mute_notifications")
+        if "mute_notifications" in data
+        else False,
         created_by_id=user.id,
         modified_by_id=user.id,
     )
@@ -629,7 +757,9 @@ def get_collection(collection_id: str):
         raise api_error(404, "not_found", "Collection not found")
 
     if c.is_passcode_protected and not is_passcode_unlocked(collection_id):
-        raise api_error(403, "passcode_required", "This collection is passcode protected")
+        raise api_error(
+            403, "passcode_required", "This collection is passcode protected"
+        )
 
     j = _collection_json(c)
     j["is_favorite"] = (
@@ -648,7 +778,13 @@ def get_collection(collection_id: str):
     else:
         level = get_collection_access_level(user.id, c.id)
         j["access_level"] = "write" if level == "write" else "read"
-        j["shared_by_username"] = db.session.execute(db.select(User.username).where(User.id == c.owner_user_id)).scalars().first()
+        j["shared_by_username"] = (
+            db.session.execute(
+                db.select(User.username).where(User.id == c.owner_user_id)
+            )
+            .scalars()
+            .first()
+        )
     # Record visit
     visit = db.session.get(CollectionVisit, (user.id, c.id))
     if visit:
@@ -682,16 +818,25 @@ def update_collection(collection_id: str):
         new_url = (data.get("header_image_url") or "").strip() or None
         if new_url != c.header_image_url:
             # If old one was an internal attachment, clean it up
-            if c.header_image_url and c.header_image_url.startswith("/api/attachments/"):
-                from snipsel_api.routes_attachments import delete_collection_header_attachments
+            if c.header_image_url and c.header_image_url.startswith(
+                "/api/attachments/"
+            ):
+                from snipsel_api.routes_attachments import (
+                    delete_collection_header_attachments,
+                )
+
                 delete_collection_header_attachments(collection_id)
             c.header_image_url = new_url
     if "header_color" in data:
         c.header_color = (data.get("header_color") or "").strip() or None
     if "header_image_position" in data:
-        c.header_image_position = (data.get("header_image_position") or "").strip() or "50%"
+        c.header_image_position = (
+            data.get("header_image_position") or ""
+        ).strip() or "50%"
     if "header_image_x_position" in data:
-        c.header_image_x_position = (data.get("header_image_x_position") or "").strip() or "50%"
+        c.header_image_x_position = (
+            data.get("header_image_x_position") or ""
+        ).strip() or "50%"
     if "header_image_zoom" in data:
         try:
             c.header_image_zoom = float(data.get("header_image_zoom") or 1.0)
@@ -705,7 +850,9 @@ def update_collection(collection_id: str):
     if "is_passcode_protected" in data:
         c.is_passcode_protected = bool(data.get("is_passcode_protected"))
     if "default_snipsel_type" in data:
-        c.default_snipsel_type = (data.get("default_snipsel_type") or "").strip() or None
+        c.default_snipsel_type = (
+            data.get("default_snipsel_type") or ""
+        ).strip() or None
     if "show_completed_tasks" in data:
         c.show_completed_tasks = bool(data.get("show_completed_tasks"))
     if "mute_notifications" in data:
@@ -759,14 +906,52 @@ def delete_collection(collection_id: str):
             "Cannot delete collection because it is referenced in snipsels.",
         )
 
-    c.deleted_at = datetime.utcnow()
-    c.deleted_by_id = user.id
-    if c.list_for_day is not None:
-        c.list_for_day = None
-        
-    # Clean up header attachments
+    snipsel_count = (
+        db.session.execute(
+            db.select(db.func.count())
+            .select_from(CollectionSnipsel)
+            .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
+            .where(
+                CollectionSnipsel.collection_id == collection_id,
+                Snipsel.deleted_at.is_(None),
+            )
+        ).scalar()
+        or 0
+    )
+
     from snipsel_api.routes_attachments import delete_collection_header_attachments
+
     delete_collection_header_attachments(collection_id)
+
+    if snipsel_count == 0:
+        db.session.execute(
+            db.delete(CollectionSnipsel).where(CollectionSnipsel.collection_id == c.id)
+        )
+        db.session.execute(
+            db.delete(CollectionShare).where(CollectionShare.collection_id == c.id)
+        )
+        db.session.execute(
+            db.delete(CollectionFavorite).where(
+                CollectionFavorite.collection_id == c.id
+            )
+        )
+        db.session.execute(
+            db.delete(CollectionVisit).where(CollectionVisit.collection_id == c.id)
+        )
+        db.session.execute(
+            db.delete(SnipselCollectionRef).where(
+                SnipselCollectionRef.collection_id == c.id
+            )
+        )
+        db.session.execute(
+            db.delete(Notification).where(Notification.collection_id == c.id)
+        )
+        db.session.delete(c)
+    else:
+        c.deleted_at = datetime.utcnow()
+        c.deleted_by_id = user.id
+        if c.list_for_day is not None:
+            c.list_for_day = None
 
     db.session.commit()
     return json_response({"ok": True})
@@ -784,14 +969,18 @@ def list_recent_collections():
         .limit(20)
     )
     items = db.session.execute(stmt).scalars().all()
-    return json_response({"collections": [{"id": c.id, "title": c.title, "icon": c.icon} for c in items]})
+    return json_response(
+        {"collections": [{"id": c.id, "title": c.title, "icon": c.icon} for c in items]}
+    )
 
 
 @collections_bp.delete("/recent")
 @require_auth
 def clear_recent_collections():
     user = current_user()
-    db.session.execute(db.delete(CollectionVisit).where(CollectionVisit.user_id == user.id))
+    db.session.execute(
+        db.delete(CollectionVisit).where(CollectionVisit.user_id == user.id)
+    )
     db.session.commit()
     return json_response({"ok": True})
 
@@ -833,7 +1022,9 @@ def autocomplete_collections():
         .limit(10)
     )
     items = db.session.execute(stmt).scalars().all()
-    return json_response({"collections": [{"id": c.id, "title": c.title, "icon": c.icon} for c in items]})
+    return json_response(
+        {"collections": [{"id": c.id, "title": c.title, "icon": c.icon} for c in items]}
+    )
 
 
 @collections_bp.get("/<collection_id>/backlinks")
@@ -933,12 +1124,25 @@ def list_shares(collection_id: str):
     c = _get_owned_collection(user.id, collection_id)
     _ = c
     rows = (
-        db.session.execute(db.select(CollectionShare).where(CollectionShare.collection_id == collection_id).order_by(CollectionShare.created_at.asc()))
+        db.session.execute(
+            db.select(CollectionShare)
+            .where(CollectionShare.collection_id == collection_id)
+            .order_by(CollectionShare.created_at.asc())
+        )
         .scalars()
         .all()
     )
     user_ids = [r.shared_with_user_id for r in rows]
-    users_by_id = {u.id: u.username for u in (db.session.execute(db.select(User).where(User.id.in_(user_ids))).scalars().all() if user_ids else [])}
+    users_by_id = {
+        u.id: u.username
+        for u in (
+            db.session.execute(db.select(User).where(User.id.in_(user_ids)))
+            .scalars()
+            .all()
+            if user_ids
+            else []
+        )
+    }
     return json_response(
         {
             "shares": [
@@ -1075,7 +1279,7 @@ def delete_share(collection_id: str, share_id: str):
         if c:
             c.public_token = None
             db.session.add(c)
-            
+
     db.session.delete(s)
     db.session.commit()
     return json_response({"ok": True})
@@ -1087,20 +1291,17 @@ def list_trash_collections():
     user = current_user()
     stmt = (
         db.select(Collection)
-        .where(
-            Collection.owner_user_id == user.id,
-            Collection.deleted_at.is_not(None)
-        )
+        .where(Collection.owner_user_id == user.id, Collection.deleted_at.is_not(None))
         .order_by(Collection.deleted_at.desc())
     )
     items = db.session.execute(stmt).scalars().all()
-    
+
     out = []
     for c in items:
         j = _collection_json(c)
         j["deleted_at"] = c.deleted_at.isoformat() + "Z" if c.deleted_at else None
         out.append(j)
-        
+
     return json_response({"collections": out})
 
 
@@ -1108,33 +1309,52 @@ def list_trash_collections():
 @require_auth
 def empty_trash_collections():
     user = current_user()
-    stmt = (
-        db.select(Collection)
-        .where(
-            Collection.owner_user_id == user.id,
-            Collection.deleted_at.is_not(None)
-        )
+    stmt = db.select(Collection).where(
+        Collection.owner_user_id == user.id, Collection.deleted_at.is_not(None)
     )
     cols = db.session.execute(stmt).scalars().all()
-    
-    from snipsel_api.models import CollectionSnipsel, CollectionShare, CollectionFavorite, CollectionVisit, SnipselCollectionRef, Notification
+
+    from snipsel_api.models import (
+        CollectionSnipsel,
+        CollectionShare,
+        CollectionFavorite,
+        CollectionVisit,
+        SnipselCollectionRef,
+        Notification,
+    )
     from snipsel_api.routes_attachments import delete_collection_header_attachments
-    
+
     deleted_count = 0
     for c in cols:
         delete_collection_header_attachments(c.id)
-        
+
         # Manually clear relationships without cascade
-        db.session.execute(db.delete(CollectionSnipsel).where(CollectionSnipsel.collection_id == c.id))
-        db.session.execute(db.delete(CollectionShare).where(CollectionShare.collection_id == c.id))
-        db.session.execute(db.delete(CollectionFavorite).where(CollectionFavorite.collection_id == c.id))
-        db.session.execute(db.delete(CollectionVisit).where(CollectionVisit.collection_id == c.id))
-        db.session.execute(db.delete(SnipselCollectionRef).where(SnipselCollectionRef.collection_id == c.id))
-        db.session.execute(db.delete(Notification).where(Notification.collection_id == c.id))
-        
+        db.session.execute(
+            db.delete(CollectionSnipsel).where(CollectionSnipsel.collection_id == c.id)
+        )
+        db.session.execute(
+            db.delete(CollectionShare).where(CollectionShare.collection_id == c.id)
+        )
+        db.session.execute(
+            db.delete(CollectionFavorite).where(
+                CollectionFavorite.collection_id == c.id
+            )
+        )
+        db.session.execute(
+            db.delete(CollectionVisit).where(CollectionVisit.collection_id == c.id)
+        )
+        db.session.execute(
+            db.delete(SnipselCollectionRef).where(
+                SnipselCollectionRef.collection_id == c.id
+            )
+        )
+        db.session.execute(
+            db.delete(Notification).where(Notification.collection_id == c.id)
+        )
+
         db.session.delete(c)
         deleted_count += 1
-        
+
     db.session.commit()
     return json_response({"ok": True, "deleted": deleted_count})
 
@@ -1146,15 +1366,15 @@ def restore_collection(collection_id: str):
     c = db.session.get(Collection, collection_id)
     if not c or c.owner_user_id != user.id:
         raise api_error(404, "not_found", "Collection not found")
-        
+
     if c.deleted_at is None:
         return json_response({"collection": _collection_json(c)})
-        
+
     c.deleted_at = None
     c.deleted_by_id = None
     c.modified_at = datetime.utcnow()
     c.modified_by_id = user.id
-    
+
     db.session.commit()
     return json_response({"collection": _collection_json(c)})
 
@@ -1166,24 +1386,45 @@ def permanent_delete_collection(collection_id: str):
     c = db.session.get(Collection, collection_id)
     if not c or c.owner_user_id != user.id:
         raise api_error(404, "not_found", "Collection not found")
-        
+
     if c.deleted_at is None:
         raise api_error(400, "invalid_state", "Collection is not in the trash")
-        
-    from snipsel_api.models import CollectionSnipsel, CollectionShare, CollectionFavorite, CollectionVisit, SnipselCollectionRef, Notification
+
+    from snipsel_api.models import (
+        CollectionSnipsel,
+        CollectionShare,
+        CollectionFavorite,
+        CollectionVisit,
+        SnipselCollectionRef,
+        Notification,
+    )
     from snipsel_api.routes_attachments import delete_collection_header_attachments
-    
+
     delete_collection_header_attachments(c.id)
-    
+
     # Manually clear relationships without cascade
-    db.session.execute(db.delete(CollectionSnipsel).where(CollectionSnipsel.collection_id == c.id))
-    db.session.execute(db.delete(CollectionShare).where(CollectionShare.collection_id == c.id))
-    db.session.execute(db.delete(CollectionFavorite).where(CollectionFavorite.collection_id == c.id))
-    db.session.execute(db.delete(CollectionVisit).where(CollectionVisit.collection_id == c.id))
-    db.session.execute(db.delete(SnipselCollectionRef).where(SnipselCollectionRef.collection_id == c.id))
-    db.session.execute(db.delete(Notification).where(Notification.collection_id == c.id))
-    
+    db.session.execute(
+        db.delete(CollectionSnipsel).where(CollectionSnipsel.collection_id == c.id)
+    )
+    db.session.execute(
+        db.delete(CollectionShare).where(CollectionShare.collection_id == c.id)
+    )
+    db.session.execute(
+        db.delete(CollectionFavorite).where(CollectionFavorite.collection_id == c.id)
+    )
+    db.session.execute(
+        db.delete(CollectionVisit).where(CollectionVisit.collection_id == c.id)
+    )
+    db.session.execute(
+        db.delete(SnipselCollectionRef).where(
+            SnipselCollectionRef.collection_id == c.id
+        )
+    )
+    db.session.execute(
+        db.delete(Notification).where(Notification.collection_id == c.id)
+    )
+
     db.session.delete(c)
     db.session.commit()
-    
+
     return json_response({"ok": True, "deleted": 1})

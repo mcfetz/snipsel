@@ -6,7 +6,12 @@ from dateutil import rrule
 
 from flask import Blueprint, request
 
-from snipsel_api.auth_session import current_user, enforce_json, json_response, require_auth
+from snipsel_api.auth_session import (
+    current_user,
+    enforce_json,
+    json_response,
+    require_auth,
+)
 from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
 from snipsel_api.permissions import (
@@ -18,6 +23,7 @@ from snipsel_api.permissions import (
 )
 
 from snipsel_api.models import (
+    Attachment,
     CollectionSnipsel,
     Collection,
     CollectionShare,
@@ -26,10 +32,11 @@ from snipsel_api.models import (
     SnipselCollectionRef,
     SnipselLink,
     SnipselMention,
+    SnipselReaction,
     SnipselTag,
     Tag,
     User,
-    Notification
+    Notification,
 )
 
 
@@ -37,7 +44,9 @@ def _touch_collections_for_snipsel(*, snipsel_id: str, modified_by_id: str) -> N
     now = datetime.utcnow()
     collection_ids = (
         db.session.execute(
-            db.select(CollectionSnipsel.collection_id).where(CollectionSnipsel.snipsel_id == snipsel_id)
+            db.select(CollectionSnipsel.collection_id).where(
+                CollectionSnipsel.snipsel_id == snipsel_id
+            )
         )
         .scalars()
         .all()
@@ -50,8 +59,50 @@ def _touch_collections_for_snipsel(*, snipsel_id: str, modified_by_id: str) -> N
         .values(modified_at=now, modified_by_id=modified_by_id)
     )
 
+
+def _is_empty_snipsel(s: Snipsel) -> bool:
+    has_content = bool(s.content_markdown and s.content_markdown.strip())
+    has_url = bool(s.external_url and s.external_url.strip())
+    has_attachments = len(s.attachments) > 0
+    return not has_content and not has_url and not has_attachments
+
+
+def _hard_delete_snipsel(s: Snipsel) -> None:
+    from snipsel_api.routes_attachments import delete_attachment_file
+
+    for att in s.attachments:
+        delete_attachment_file(att)
+
+    db.session.execute(
+        db.delete(CollectionSnipsel).where(CollectionSnipsel.snipsel_id == s.id)
+    )
+    db.session.execute(
+        db.delete(SnipselCollectionRef).where(SnipselCollectionRef.snipsel_id == s.id)
+    )
+    db.session.execute(
+        db.delete(SnipselLink).where(
+            db.or_(
+                SnipselLink.from_snipsel_id == s.id, SnipselLink.to_snipsel_id == s.id
+            )
+        )
+    )
+    db.session.execute(db.delete(SnipselTag).where(SnipselTag.snipsel_id == s.id))
+    db.session.execute(
+        db.delete(SnipselMention).where(SnipselMention.snipsel_id == s.id)
+    )
+    db.session.execute(
+        db.delete(SnipselReaction).where(SnipselReaction.snipsel_id == s.id)
+    )
+    db.session.execute(db.delete(Notification).where(Notification.snipsel_id == s.id))
+    db.session.delete(s)
+
+
 from sqlalchemy.orm import joinedload, selectinload
-from snipsel_api.utils_text import extract_collection_refs, extract_mentions, extract_tags
+from snipsel_api.utils_text import (
+    extract_collection_refs,
+    extract_mentions,
+    extract_tags,
+)
 
 snipsels_bp = Blueprint("snipsels", __name__)
 
@@ -68,7 +119,9 @@ def list_collection_snipsels(collection_id: str):
         raise api_error(404, "not_found", "Collection not found")
 
     if c.is_passcode_protected and not is_passcode_unlocked(collection_id):
-        raise api_error(403, "passcode_required", "This collection is passcode protected")
+        raise api_error(
+            403, "passcode_required", "This collection is passcode protected"
+        )
 
     items = (
         db.session.execute(
@@ -79,7 +132,7 @@ def list_collection_snipsels(collection_id: str):
                 joinedload(CollectionSnipsel.snipsel).joinedload(Snipsel.modified_by),
                 joinedload(CollectionSnipsel.snipsel).joinedload(Snipsel.done_by),
                 joinedload(CollectionSnipsel.snipsel).selectinload(Snipsel.reactions),
-                joinedload(CollectionSnipsel.snipsel).selectinload(Snipsel.attachments)
+                joinedload(CollectionSnipsel.snipsel).selectinload(Snipsel.attachments),
             )
             .where(
                 CollectionSnipsel.collection_id == collection_id,
@@ -95,19 +148,30 @@ def list_collection_snipsels(collection_id: str):
     snipsel_ids = [cs.snipsel_id for cs in items]
     refs_by_snipsel_id = {sid: [] for sid in snipsel_ids}
     if snipsel_ids:
-        all_refs = db.session.execute(
-            db.select(SnipselCollectionRef)
-            .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
-            .options(joinedload(SnipselCollectionRef.collection))
-            .where(
-                SnipselCollectionRef.snipsel_id.in_(snipsel_ids),
-                Collection.deleted_at.is_(None),
+        all_refs = (
+            db.session.execute(
+                db.select(SnipselCollectionRef)
+                .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
+                .options(joinedload(SnipselCollectionRef.collection))
+                .where(
+                    SnipselCollectionRef.snipsel_id.in_(snipsel_ids),
+                    Collection.deleted_at.is_(None),
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for r in all_refs:
             refs_by_snipsel_id[r.snipsel_id].append(r)
 
-    return json_response({"items": [_collection_item_json(cs, user.id, refs_by_snipsel_id[cs.snipsel_id]) for cs in items]})
+    return json_response(
+        {
+            "items": [
+                _collection_item_json(cs, user.id, refs_by_snipsel_id[cs.snipsel_id])
+                for cs in items
+            ]
+        }
+    )
 
 
 @snipsels_bp.post("/collections/<collection_id>/snipsels")
@@ -121,14 +185,20 @@ def create_snipsel(collection_id: str):
 
     snipsel_type = data.get("type")
     if not snipsel_type:
-        col = db.session.execute(
-            db.select(Collection).where(
-                Collection.id == collection_id,
-                Collection.owner_user_id == user.id,
-                Collection.deleted_at.is_(None),
+        col = (
+            db.session.execute(
+                db.select(Collection).where(
+                    Collection.id == collection_id,
+                    Collection.owner_user_id == user.id,
+                    Collection.deleted_at.is_(None),
+                )
             )
-        ).scalars().first()
-        snipsel_type = (col.default_snipsel_type if col and col.default_snipsel_type else "text")
+            .scalars()
+            .first()
+        )
+        snipsel_type = (
+            col.default_snipsel_type if col and col.default_snipsel_type else "text"
+        )
     content_markdown = data.get("content_markdown")
 
     geo_lat = data.get("geo_lat")
@@ -142,7 +212,9 @@ def create_snipsel(collection_id: str):
         geo_lat=float(geo_lat) if geo_lat is not None else None,
         geo_lng=float(geo_lng) if geo_lng is not None else None,
         geo_accuracy_m=float(geo_accuracy_m) if geo_accuracy_m is not None else None,
-        reminder_at=datetime.fromisoformat(data["reminder_at"].replace("Z", "")) if data.get("reminder_at") else None,
+        reminder_at=datetime.fromisoformat(data["reminder_at"].replace("Z", ""))
+        if data.get("reminder_at")
+        else None,
         reminder_rrule=data.get("reminder_rrule"),
         created_by_id=user.id,
         modified_by_id=user.id,
@@ -151,14 +223,21 @@ def create_snipsel(collection_id: str):
     db.session.flush()
 
     indent = data.get("indent", 0)
-    
+
     max_pos = (
         db.session.execute(
-            db.select(db.func.max(CollectionSnipsel.position)).where(CollectionSnipsel.collection_id == collection_id)
+            db.select(db.func.max(CollectionSnipsel.position)).where(
+                CollectionSnipsel.collection_id == collection_id
+            )
         ).scalar()
         or 0
     )
-    cs = CollectionSnipsel(collection_id=collection_id, snipsel_id=s.id, position=max_pos + 1, indent=indent)
+    cs = CollectionSnipsel(
+        collection_id=collection_id,
+        snipsel_id=s.id,
+        position=max_pos + 1,
+        indent=indent,
+    )
     db.session.add(cs)
 
     _sync_tags_mentions(user_id=user.id, snipsel=s)
@@ -177,24 +256,35 @@ def reference_snipsel(collection_id: str, snipsel_id: str):
     if not can_write_collection(user.id, collection_id):
         raise api_error(404, "not_found", "Collection not found")
 
-    exists = db.session.execute(
-        db.select(CollectionSnipsel).where(
-            CollectionSnipsel.collection_id == collection_id,
-            CollectionSnipsel.snipsel_id == snipsel_id,
+    exists = (
+        db.session.execute(
+            db.select(CollectionSnipsel).where(
+                CollectionSnipsel.collection_id == collection_id,
+                CollectionSnipsel.snipsel_id == snipsel_id,
+            )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
     if exists:
         return json_response({"item": _collection_item_json(exists, user.id)})
 
     indent = data.get("indent", 0)
-    
+
     max_pos = (
         db.session.execute(
-            db.select(db.func.max(CollectionSnipsel.position)).where(CollectionSnipsel.collection_id == collection_id)
+            db.select(db.func.max(CollectionSnipsel.position)).where(
+                CollectionSnipsel.collection_id == collection_id
+            )
         ).scalar()
         or 0
     )
-    cs = CollectionSnipsel(collection_id=collection_id, snipsel_id=s.id, position=max_pos + 1, indent=indent)
+    cs = CollectionSnipsel(
+        collection_id=collection_id,
+        snipsel_id=s.id,
+        position=max_pos + 1,
+        indent=indent,
+    )
     db.session.add(cs)
     db.session.execute(
         db.update(Collection)
@@ -216,7 +306,9 @@ def copy_snipsel(collection_id: str, snipsel_id: str):
     src = db.session.get(Snipsel, snipsel_id)
     if not src or src.deleted_at is not None:
         raise api_error(404, "not_found", "Snipsel not found")
-    if src.owner_user_id != user.id and not can_read_snipsel_via_collections(user.id, snipsel_id):
+    if src.owner_user_id != user.id and not can_read_snipsel_via_collections(
+        user.id, snipsel_id
+    ):
         raise api_error(404, "not_found", "Snipsel not found")
 
     s = Snipsel(
@@ -238,14 +330,21 @@ def copy_snipsel(collection_id: str, snipsel_id: str):
     db.session.flush()
 
     indent = data.get("indent", 0)
-    
+
     max_pos = (
         db.session.execute(
-            db.select(db.func.max(CollectionSnipsel.position)).where(CollectionSnipsel.collection_id == collection_id)
+            db.select(db.func.max(CollectionSnipsel.position)).where(
+                CollectionSnipsel.collection_id == collection_id
+            )
         ).scalar()
         or 0
     )
-    cs = CollectionSnipsel(collection_id=collection_id, snipsel_id=s.id, position=max_pos + 1, indent=indent)
+    cs = CollectionSnipsel(
+        collection_id=collection_id,
+        snipsel_id=s.id,
+        position=max_pos + 1,
+        indent=indent,
+    )
     db.session.add(cs)
     _sync_tags_mentions(user_id=user.id, snipsel=s)
     _sync_backlinks(user_id=user.id, snipsel=s)
@@ -264,7 +363,7 @@ def get_snipsel(snipsel_id: str):
                 joinedload(Snipsel.created_by),
                 joinedload(Snipsel.modified_by),
                 joinedload(Snipsel.done_by),
-                joinedload(Snipsel.reactions)
+                joinedload(Snipsel.reactions),
             )
             .where(Snipsel.id == snipsel_id)
         )
@@ -275,7 +374,9 @@ def get_snipsel(snipsel_id: str):
     if not s or s.deleted_at is not None:
         raise api_error(404, "not_found", "Snipsel not found")
 
-    can_read = s.owner_user_id == user.id or can_read_snipsel_via_collections(user.id, snipsel_id)
+    can_read = s.owner_user_id == user.id or can_read_snipsel_via_collections(
+        user.id, snipsel_id
+    )
     if not can_read:
         uname = (getattr(user, "username", "") or "").strip().casefold()
         if not uname:
@@ -292,8 +393,13 @@ def get_snipsel(snipsel_id: str):
         if is_mentioned <= 0:
             raise api_error(404, "not_found", "Snipsel not found")
 
-    has_collection_access = s.owner_user_id == user.id or can_read_snipsel_via_collections(user.id, snipsel_id)
-    has_write_access = s.owner_user_id == user.id or can_write_snipsel_via_collections(user.id, snipsel_id)
+    has_collection_access = (
+        s.owner_user_id == user.id
+        or can_read_snipsel_via_collections(user.id, snipsel_id)
+    )
+    has_write_access = s.owner_user_id == user.id or can_write_snipsel_via_collections(
+        user.id, snipsel_id
+    )
     placements = (
         db.session.execute(
             db.select(CollectionSnipsel)
@@ -331,14 +437,19 @@ def get_snipsel(snipsel_id: str):
         db.session.execute(
             db.select(Mention.name)
             .join(SnipselMention, SnipselMention.mention_id == Mention.id)
-            .where(Mention.owner_user_id == user.id, SnipselMention.snipsel_id == snipsel_id)
+            .where(
+                Mention.owner_user_id == user.id,
+                SnipselMention.snipsel_id == snipsel_id,
+            )
             .order_by(Mention.name.asc())
         )
         .scalars()
         .all()
     )
 
-    can_toggle_task_done = bool(s.type == "task" and (has_collection_access or is_mentioned))
+    can_toggle_task_done = bool(
+        s.type == "task" and (has_collection_access or is_mentioned)
+    )
 
     return json_response(
         {
@@ -377,21 +488,26 @@ def update_snipsel(snipsel_id: str):
     s = db.session.get(Snipsel, snipsel_id)
     if not s or s.deleted_at is not None:
         raise api_error(404, "not_found", "Snipsel not found")
-    has_collection_access = s.owner_user_id == user.id or can_read_snipsel_via_collections(user.id, snipsel_id)
-    has_write_access = s.owner_user_id == user.id or can_write_snipsel_via_collections(user.id, snipsel_id)
+    has_collection_access = (
+        s.owner_user_id == user.id
+        or can_read_snipsel_via_collections(user.id, snipsel_id)
+    )
+    has_write_access = s.owner_user_id == user.id or can_write_snipsel_via_collections(
+        user.id, snipsel_id
+    )
 
     uname = (getattr(user, "username", "") or "").strip().casefold()
     is_mentioned = False
     if uname:
         is_mentioned = (
-            (db.session.execute(
+            db.session.execute(
                 db.select(db.func.count())
                 .select_from(SnipselMention)
                 .join(Mention, Mention.id == SnipselMention.mention_id)
                 .where(SnipselMention.snipsel_id == snipsel_id, Mention.name == uname)
-            ).scalar() or 0)
-            > 0
-        )
+            ).scalar()
+            or 0
+        ) > 0
 
     can_toggle_task_done = bool(
         s.type == "task" and (has_collection_access or is_mentioned)
@@ -418,12 +534,14 @@ def update_snipsel(snipsel_id: str):
             s.done_by_id = user.id
             if not old_done and user.id != s.created_by_id and s.created_by_id:
                 task_preview = _get_task_preview(s.content_markdown or "")
-                msg = f"{user.username} completed a task you created: {task_preview}" if task_preview else f"{user.username} completed a task you created."
+                msg = (
+                    f"{user.username} completed a task you created: {task_preview}"
+                    if task_preview
+                    else f"{user.username} completed a task you created."
+                )
                 if not _is_snipsel_muted(s.id):
                     n = Notification(
-                        user_id=s.created_by_id,
-                        message=msg,
-                        snipsel_id=s.id
+                        user_id=s.created_by_id, message=msg, snipsel_id=s.id
                     )
                     db.session.add(n)
 
@@ -447,21 +565,33 @@ def update_snipsel(snipsel_id: str):
                             reminder_rrule=s.reminder_rrule,
                             geo_lat=s.geo_lat,
                             geo_lng=s.geo_lng,
-                            geo_accuracy_m=s.geo_accuracy_m
+                            geo_accuracy_m=s.geo_accuracy_m,
                         )
                         db.session.add(new_s)
-                        db.session.flush() # Get new_s.id
+                        db.session.flush()  # Get new_s.id
 
                         # Copy tags and mentions
                         for t in s.tags:
-                            db.session.add(SnipselTag(snipsel_id=new_s.id, tag_id=t.tag_id))
+                            db.session.add(
+                                SnipselTag(snipsel_id=new_s.id, tag_id=t.tag_id)
+                            )
                         for m in s.mentions:
-                            db.session.add(SnipselMention(snipsel_id=new_s.id, mention_id=m.mention_id))
+                            db.session.add(
+                                SnipselMention(
+                                    snipsel_id=new_s.id, mention_id=m.mention_id
+                                )
+                            )
 
                         # Insert into same collections at position + 1
-                        placements = db.session.execute(
-                            db.select(CollectionSnipsel).where(CollectionSnipsel.snipsel_id == s.id)
-                        ).scalars().all()
+                        placements = (
+                            db.session.execute(
+                                db.select(CollectionSnipsel).where(
+                                    CollectionSnipsel.snipsel_id == s.id
+                                )
+                            )
+                            .scalars()
+                            .all()
+                        )
 
                         for p in placements:
                             # Shift others
@@ -469,7 +599,7 @@ def update_snipsel(snipsel_id: str):
                                 db.update(CollectionSnipsel)
                                 .where(
                                     CollectionSnipsel.collection_id == p.collection_id,
-                                    CollectionSnipsel.position > p.position
+                                    CollectionSnipsel.position > p.position,
                                 )
                                 .values(position=CollectionSnipsel.position + 1)
                             )
@@ -478,7 +608,7 @@ def update_snipsel(snipsel_id: str):
                                 collection_id=p.collection_id,
                                 snipsel_id=new_s.id,
                                 position=p.position + 1,
-                                indent=p.indent
+                                indent=p.indent,
                             )
                             db.session.add(new_p)
                 except Exception as e:
@@ -501,7 +631,11 @@ def update_snipsel(snipsel_id: str):
 
     s.modified_by_id = user.id
     if has_write_access:
-        _sync_tags_mentions(user_id=s.owner_user_id, snipsel=s, newly_became_task=(old_type != "task" and s.type == "task"))
+        _sync_tags_mentions(
+            user_id=s.owner_user_id,
+            snipsel=s,
+            newly_became_task=(old_type != "task" and s.type == "task"),
+        )
     _touch_collections_for_snipsel(snipsel_id=snipsel_id, modified_by_id=user.id)
     db.session.commit()
     return json_response({"snipsel": _snipsel_json(s, user.id)})
@@ -517,26 +651,38 @@ def delete_from_collection(collection_id: str, snipsel_id: str):
     s = db.session.get(Snipsel, snipsel_id)
     if not s or s.deleted_at is not None:
         raise api_error(404, "not_found", "Snipsel not found")
-    if s.owner_user_id != user.id and not can_read_snipsel_via_collections(user.id, snipsel_id):
+    if s.owner_user_id != user.id and not can_read_snipsel_via_collections(
+        user.id, snipsel_id
+    ):
         raise api_error(404, "not_found", "Snipsel not found")
 
-    cs = db.session.execute(
-        db.select(CollectionSnipsel).where(
-            CollectionSnipsel.collection_id == collection_id,
-            CollectionSnipsel.snipsel_id == snipsel_id,
+    cs = (
+        db.session.execute(
+            db.select(CollectionSnipsel).where(
+                CollectionSnipsel.collection_id == collection_id,
+                CollectionSnipsel.snipsel_id == snipsel_id,
+            )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
     if not cs:
         raise api_error(404, "not_found", "Snipsel not in collection")
 
     db.session.delete(cs)
 
     remaining = (
-        db.session.execute(db.select(db.func.count()).select_from(CollectionSnipsel).where(CollectionSnipsel.snipsel_id == snipsel_id)).scalar()
+        db.session.execute(
+            db.select(db.func.count())
+            .select_from(CollectionSnipsel)
+            .where(CollectionSnipsel.snipsel_id == snipsel_id)
+        ).scalar()
         or 0
     )
     if remaining == 0 and s.owner_user_id == user.id:
-        if s.deleted_at is None:
+        if _is_empty_snipsel(s):
+            _hard_delete_snipsel(s)
+        elif s.deleted_at is None:
             s.deleted_at = datetime.utcnow()
             s.deleted_by_id = user.id
 
@@ -573,15 +719,21 @@ def reorder_collection(collection_id: str):
         s = db.session.get(Snipsel, snipsel_id)
         if not s or s.deleted_at is not None:
             continue
-        if s.owner_user_id != user.id and not can_read_snipsel_via_collections(user.id, snipsel_id):
+        if s.owner_user_id != user.id and not can_read_snipsel_via_collections(
+            user.id, snipsel_id
+        ):
             continue
 
-        cs = db.session.execute(
-            db.select(CollectionSnipsel).where(
-                CollectionSnipsel.collection_id == collection_id,
-                CollectionSnipsel.snipsel_id == snipsel_id,
+        cs = (
+            db.session.execute(
+                db.select(CollectionSnipsel).where(
+                    CollectionSnipsel.collection_id == collection_id,
+                    CollectionSnipsel.snipsel_id == snipsel_id,
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
         if not cs:
             continue
 
@@ -613,35 +765,41 @@ def delete_completed_tasks(collection_id: str):
         .where(
             CollectionSnipsel.collection_id == collection_id,
             Snipsel.task_done.is_(True),
-            Snipsel.deleted_at.is_(None)
+            Snipsel.deleted_at.is_(None),
         )
     )
     items = db.session.execute(stmt).scalars().all()
-    
+
     deleted_count = 0
     now = datetime.utcnow()
-    
+
     for cs in items:
         snipsel_id = cs.snipsel_id
         s = cs.snipsel
-        
+
         # Remove from this collection
         db.session.delete(cs)
-        
+
         # Check if it should be fully deleted (last reference and owned by user)
         remaining = (
             db.session.execute(
                 db.select(db.func.count())
                 .select_from(CollectionSnipsel)
-                .where(CollectionSnipsel.snipsel_id == snipsel_id, CollectionSnipsel.collection_id != collection_id)
+                .where(
+                    CollectionSnipsel.snipsel_id == snipsel_id,
+                    CollectionSnipsel.collection_id != collection_id,
+                )
             ).scalar()
             or 0
         )
-        
+
         if remaining == 0 and s.owner_user_id == user.id:
-            s.deleted_at = now
-            s.deleted_by_id = user.id
-            
+            if _is_empty_snipsel(s):
+                _hard_delete_snipsel(s)
+            else:
+                s.deleted_at = now
+                s.deleted_by_id = user.id
+
         deleted_count += 1
 
     if deleted_count > 0:
@@ -669,14 +827,14 @@ def reset_completed_tasks(collection_id: str):
         .where(
             CollectionSnipsel.collection_id == collection_id,
             Snipsel.task_done.is_(True),
-            Snipsel.deleted_at.is_(None)
+            Snipsel.deleted_at.is_(None),
         )
     )
     snipsels = db.session.execute(stmt).scalars().all()
-    
+
     reset_count = 0
     now = datetime.utcnow()
-    
+
     for s in snipsels:
         s.task_done = False
         s.done_at = None
@@ -703,19 +861,28 @@ def _get_owned_snipsel(user_id: str, snipsel_id: str) -> Snipsel:
     return s
 
 
-def _sync_tags_mentions(*, user_id: str, snipsel: Snipsel, newly_became_task: bool = False) -> None:
+def _sync_tags_mentions(
+    *, user_id: str, snipsel: Snipsel, newly_became_task: bool = False
+) -> None:
     text = snipsel.content_markdown or ""
     tag_names = extract_tags(text)
     mention_names = extract_mentions(text)
 
-    old_mention_names = set(db.session.execute(
-        db.select(Mention.name).join(SnipselMention, SnipselMention.mention_id == Mention.id)
-        .where(SnipselMention.snipsel_id == snipsel.id)
-    ).scalars().all())
+    old_mention_names = set(
+        db.session.execute(
+            db.select(Mention.name)
+            .join(SnipselMention, SnipselMention.mention_id == Mention.id)
+            .where(SnipselMention.snipsel_id == snipsel.id)
+        )
+        .scalars()
+        .all()
+    )
     existing_tags = (
         db.session.execute(
             db.select(Tag).where(Tag.owner_user_id == user_id, Tag.name.in_(tag_names))
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
         if tag_names
         else []
     )
@@ -733,8 +900,12 @@ def _sync_tags_mentions(*, user_id: str, snipsel: Snipsel, newly_became_task: bo
 
     existing_mentions = (
         db.session.execute(
-            db.select(Mention).where(Mention.owner_user_id == user_id, Mention.name.in_(mention_names))
-        ).scalars().all()
+            db.select(Mention).where(
+                Mention.owner_user_id == user_id, Mention.name.in_(mention_names)
+            )
+        )
+        .scalars()
+        .all()
         if mention_names
         else []
     )
@@ -746,53 +917,77 @@ def _sync_tags_mentions(*, user_id: str, snipsel: Snipsel, newly_became_task: bo
             db.session.flush()
             m_by_name[name] = m
 
-    db.session.execute(db.delete(SnipselMention).where(SnipselMention.snipsel_id == snipsel.id))
+    db.session.execute(
+        db.delete(SnipselMention).where(SnipselMention.snipsel_id == snipsel.id)
+    )
     for m in m_by_name.values():
         db.session.add(SnipselMention(snipsel_id=snipsel.id, mention_id=m.id))
 
     for name in set(mention_names):
         if name not in old_mention_names or newly_became_task:
-            mentioned_user = db.session.execute(db.select(User).where(User.username == name)).scalar_one_or_none()
+            mentioned_user = db.session.execute(
+                db.select(User).where(User.username == name)
+            ).scalar_one_or_none()
             if mentioned_user and mentioned_user.id != user_id:
-                if snipsel.type == "task" or can_read_snipsel_via_collections(mentioned_user.id, snipsel.id):
+                if snipsel.type == "task" or can_read_snipsel_via_collections(
+                    mentioned_user.id, snipsel.id
+                ):
                     author = db.session.get(User, user_id)
                     author_name = author.username if author else "Someone"
                     if snipsel.type == "task":
                         task_first = _get_task_preview(snipsel.content_markdown or "")
-                        msg = f"{author_name} assigned a task to you: {task_first}" if task_first else f"{author_name} assigned a task to you."
+                        msg = (
+                            f"{author_name} assigned a task to you: {task_first}"
+                            if task_first
+                            else f"{author_name} assigned a task to you."
+                        )
                     else:
                         msg = f"{author_name} mentioned you in a snipsel."
                     if not _is_snipsel_muted(snipsel.id):
                         n = Notification(
                             user_id=mentioned_user.id,
                             message=msg,
-                            snipsel_id=snipsel.id
+                            snipsel_id=snipsel.id,
                         )
                         db.session.add(n)
 
     # Sync collection refs ([[Collection Title]] wiki-links)
     ref_titles = extract_collection_refs(text)
-    db.session.execute(db.delete(SnipselCollectionRef).where(SnipselCollectionRef.snipsel_id == snipsel.id))
+    db.session.execute(
+        db.delete(SnipselCollectionRef).where(
+            SnipselCollectionRef.snipsel_id == snipsel.id
+        )
+    )
     for title in ref_titles:
         # Look up accessible collections by title (case-insensitive)
-        matched = db.session.execute(
-            db.select(Collection)
-            .outerjoin(
-                CollectionShare,
-                db.and_(
-                    CollectionShare.collection_id == Collection.id,
-                    CollectionShare.shared_with_user_id == user_id,
-                ),
+        matched = (
+            db.session.execute(
+                db.select(Collection)
+                .outerjoin(
+                    CollectionShare,
+                    db.and_(
+                        CollectionShare.collection_id == Collection.id,
+                        CollectionShare.shared_with_user_id == user_id,
+                    ),
+                )
+                .where(
+                    Collection.deleted_at.is_(None),
+                    db.or_(
+                        Collection.owner_user_id == user_id,
+                        CollectionShare.permission.in_(["read", "write"]),
+                    ),
+                    db.func.lower(Collection.title) == title.lower(),
+                )
+                .limit(1)
             )
-            .where(
-                Collection.deleted_at.is_(None),
-                db.or_(Collection.owner_user_id == user_id, CollectionShare.permission.in_(["read", "write"])),
-                db.func.lower(Collection.title) == title.lower(),
-            )
-            .limit(1)
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
         if matched:
-            db.session.add(SnipselCollectionRef(snipsel_id=snipsel.id, collection_id=matched.id))
+            db.session.add(
+                SnipselCollectionRef(snipsel_id=snipsel.id, collection_id=matched.id)
+            )
+
 
 def _get_task_preview(content_markdown: str) -> str:
     if not content_markdown:
@@ -809,7 +1004,9 @@ def _get_task_preview(content_markdown: str) -> str:
 
 
 def _sync_backlinks(*, user_id: str, snipsel: Snipsel) -> None:
-    db.session.execute(db.delete(SnipselLink).where(SnipselLink.from_snipsel_id == snipsel.id))
+    db.session.execute(
+        db.delete(SnipselLink).where(SnipselLink.from_snipsel_id == snipsel.id)
+    )
 
     target_id = snipsel.internal_target_snipsel_id
     if not target_id:
@@ -827,8 +1024,9 @@ def _is_snipsel_muted(snipsel_id: str) -> bool:
     # Find all collections this snipsel is in
     collection_ids = (
         db.session.execute(
-            db.select(CollectionSnipsel.collection_id)
-            .where(CollectionSnipsel.snipsel_id == snipsel_id)
+            db.select(CollectionSnipsel.collection_id).where(
+                CollectionSnipsel.snipsel_id == snipsel_id
+            )
         )
         .scalars()
         .all()
@@ -844,7 +1042,7 @@ def _is_snipsel_muted(snipsel_id: str) -> bool:
             .where(
                 Collection.id.in_(collection_ids),
                 Collection.deleted_at.is_(None),
-                Collection.mute_notifications == False
+                Collection.mute_notifications == False,
             )
         ).scalar()
         or 0
@@ -890,17 +1088,25 @@ def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
     }
 
 
-def _collection_item_json(cs: CollectionSnipsel, user_id: str | None = None, refs: list[SnipselCollectionRef] | None = None) -> dict:
+def _collection_item_json(
+    cs: CollectionSnipsel,
+    user_id: str | None = None,
+    refs: list[SnipselCollectionRef] | None = None,
+) -> dict:
     if refs is None:
-        refs = db.session.execute(
-            db.select(SnipselCollectionRef)
-            .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
-            .options(joinedload(SnipselCollectionRef.collection))
-            .where(
-                SnipselCollectionRef.snipsel_id == cs.snipsel_id,
-                Collection.deleted_at.is_(None)
+        refs = (
+            db.session.execute(
+                db.select(SnipselCollectionRef)
+                .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
+                .options(joinedload(SnipselCollectionRef.collection))
+                .where(
+                    SnipselCollectionRef.snipsel_id == cs.snipsel_id,
+                    Collection.deleted_at.is_(None),
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
     return {
         "collection_id": cs.collection_id,
         "snipsel_id": cs.snipsel_id,
@@ -925,22 +1131,19 @@ def list_trash_snipsels():
             joinedload(Snipsel.modified_by),
             joinedload(Snipsel.done_by),
             selectinload(Snipsel.reactions),
-            selectinload(Snipsel.attachments)
+            selectinload(Snipsel.attachments),
         )
-        .where(
-            Snipsel.owner_user_id == user.id,
-            Snipsel.deleted_at.is_not(None)
-        )
+        .where(Snipsel.owner_user_id == user.id, Snipsel.deleted_at.is_not(None))
         .order_by(Snipsel.deleted_at.desc())
     )
     items = db.session.execute(stmt).scalars().unique().all()
-    
+
     out = []
     for s in items:
         j = _snipsel_json(s, user.id)
         j["deleted_at"] = s.deleted_at.isoformat() + "Z" if s.deleted_at else None
         out.append(j)
-        
+
     return json_response({"snipsels": out})
 
 
@@ -948,36 +1151,59 @@ def list_trash_snipsels():
 @require_auth
 def empty_trash_snipsels():
     user = current_user()
-    stmt = (
-        db.select(Snipsel)
-        .where(
-            Snipsel.owner_user_id == user.id,
-            Snipsel.deleted_at.is_not(None)
-        )
+    stmt = db.select(Snipsel).where(
+        Snipsel.owner_user_id == user.id, Snipsel.deleted_at.is_not(None)
     )
     snipsels = db.session.execute(stmt).scalars().all()
-    
-    from snipsel_api.models import CollectionSnipsel, SnipselCollectionRef, SnipselLink, SnipselTag, SnipselMention, SnipselReaction, Notification
+
+    from snipsel_api.models import (
+        CollectionSnipsel,
+        SnipselCollectionRef,
+        SnipselLink,
+        SnipselTag,
+        SnipselMention,
+        SnipselReaction,
+        Notification,
+    )
     from snipsel_api.routes_attachments import delete_attachment_file
-    
+
     deleted_count = 0
     for s in snipsels:
         for att in s.attachments:
             delete_attachment_file(att)
             # Attachment rows will be deleted by SQLAlchemy cascade on snipsel
-            
+
         # Manually clear relationships without cascade
-        db.session.execute(db.delete(CollectionSnipsel).where(CollectionSnipsel.snipsel_id == s.id))
-        db.session.execute(db.delete(SnipselCollectionRef).where(SnipselCollectionRef.snipsel_id == s.id))
-        db.session.execute(db.delete(SnipselLink).where(db.or_(SnipselLink.from_snipsel_id == s.id, SnipselLink.to_snipsel_id == s.id)))
+        db.session.execute(
+            db.delete(CollectionSnipsel).where(CollectionSnipsel.snipsel_id == s.id)
+        )
+        db.session.execute(
+            db.delete(SnipselCollectionRef).where(
+                SnipselCollectionRef.snipsel_id == s.id
+            )
+        )
+        db.session.execute(
+            db.delete(SnipselLink).where(
+                db.or_(
+                    SnipselLink.from_snipsel_id == s.id,
+                    SnipselLink.to_snipsel_id == s.id,
+                )
+            )
+        )
         db.session.execute(db.delete(SnipselTag).where(SnipselTag.snipsel_id == s.id))
-        db.session.execute(db.delete(SnipselMention).where(SnipselMention.snipsel_id == s.id))
-        db.session.execute(db.delete(SnipselReaction).where(SnipselReaction.snipsel_id == s.id))
-        db.session.execute(db.delete(Notification).where(Notification.snipsel_id == s.id))
-        
+        db.session.execute(
+            db.delete(SnipselMention).where(SnipselMention.snipsel_id == s.id)
+        )
+        db.session.execute(
+            db.delete(SnipselReaction).where(SnipselReaction.snipsel_id == s.id)
+        )
+        db.session.execute(
+            db.delete(Notification).where(Notification.snipsel_id == s.id)
+        )
+
         db.session.delete(s)
         deleted_count += 1
-        
+
     db.session.commit()
     return json_response({"ok": True, "deleted": deleted_count})
 
@@ -990,44 +1216,55 @@ def restore_snipsel(snipsel_id: str):
     s = db.session.get(Snipsel, snipsel_id)
     if not s or s.owner_user_id != user.id:
         raise api_error(404, "not_found", "Snipsel not found")
-        
+
     data = request.get_json() or {}
     collection_id = data.get("collection_id")
-    
+
     if s.deleted_at is not None:
         s.deleted_at = None
         s.deleted_by_id = None
         s.modified_at = datetime.utcnow()
         s.modified_by_id = user.id
-        
+
     if collection_id:
         if not can_write_collection(user.id, collection_id):
             raise api_error(404, "not_found", "Target collection not found")
-            
+
         # Check if it's already in the collection
-        exists = db.session.execute(
-            db.select(CollectionSnipsel).where(
-                CollectionSnipsel.collection_id == collection_id,
-                CollectionSnipsel.snipsel_id == snipsel_id,
+        exists = (
+            db.session.execute(
+                db.select(CollectionSnipsel).where(
+                    CollectionSnipsel.collection_id == collection_id,
+                    CollectionSnipsel.snipsel_id == snipsel_id,
+                )
             )
-        ).scalars().first()
-        
+            .scalars()
+            .first()
+        )
+
         if not exists:
             max_pos = (
                 db.session.execute(
-                    db.select(db.func.max(CollectionSnipsel.position)).where(CollectionSnipsel.collection_id == collection_id)
+                    db.select(db.func.max(CollectionSnipsel.position)).where(
+                        CollectionSnipsel.collection_id == collection_id
+                    )
                 ).scalar()
                 or 0
             )
-            cs = CollectionSnipsel(collection_id=collection_id, snipsel_id=s.id, position=max_pos + 1, indent=0)
+            cs = CollectionSnipsel(
+                collection_id=collection_id,
+                snipsel_id=s.id,
+                position=max_pos + 1,
+                indent=0,
+            )
             db.session.add(cs)
-            
+
             db.session.execute(
                 db.update(Collection)
                 .where(Collection.id == collection_id, Collection.deleted_at.is_(None))
                 .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
             )
-            
+
     db.session.commit()
     return json_response({"snipsel": _snipsel_json(s, user.id)})
 
@@ -1039,26 +1276,48 @@ def permanent_delete_snipsel(snipsel_id: str):
     s = db.session.get(Snipsel, snipsel_id)
     if not s or s.owner_user_id != user.id:
         raise api_error(404, "not_found", "Snipsel not found")
-        
+
     if s.deleted_at is None:
         raise api_error(400, "invalid_state", "Snipsel is not in the trash")
-        
-    from snipsel_api.models import CollectionSnipsel, SnipselCollectionRef, SnipselLink, SnipselTag, SnipselMention, SnipselReaction, Notification
+
+    from snipsel_api.models import (
+        CollectionSnipsel,
+        SnipselCollectionRef,
+        SnipselLink,
+        SnipselTag,
+        SnipselMention,
+        SnipselReaction,
+        Notification,
+    )
     from snipsel_api.routes_attachments import delete_attachment_file
-    
+
     for att in s.attachments:
         delete_attachment_file(att)
-        
+
     # Manually clear relationships without cascade
-    db.session.execute(db.delete(CollectionSnipsel).where(CollectionSnipsel.snipsel_id == s.id))
-    db.session.execute(db.delete(SnipselCollectionRef).where(SnipselCollectionRef.snipsel_id == s.id))
-    db.session.execute(db.delete(SnipselLink).where(db.or_(SnipselLink.from_snipsel_id == s.id, SnipselLink.to_snipsel_id == s.id)))
+    db.session.execute(
+        db.delete(CollectionSnipsel).where(CollectionSnipsel.snipsel_id == s.id)
+    )
+    db.session.execute(
+        db.delete(SnipselCollectionRef).where(SnipselCollectionRef.snipsel_id == s.id)
+    )
+    db.session.execute(
+        db.delete(SnipselLink).where(
+            db.or_(
+                SnipselLink.from_snipsel_id == s.id, SnipselLink.to_snipsel_id == s.id
+            )
+        )
+    )
     db.session.execute(db.delete(SnipselTag).where(SnipselTag.snipsel_id == s.id))
-    db.session.execute(db.delete(SnipselMention).where(SnipselMention.snipsel_id == s.id))
-    db.session.execute(db.delete(SnipselReaction).where(SnipselReaction.snipsel_id == s.id))
+    db.session.execute(
+        db.delete(SnipselMention).where(SnipselMention.snipsel_id == s.id)
+    )
+    db.session.execute(
+        db.delete(SnipselReaction).where(SnipselReaction.snipsel_id == s.id)
+    )
     db.session.execute(db.delete(Notification).where(Notification.snipsel_id == s.id))
-    
+
     db.session.delete(s)
     db.session.commit()
-    
+
     return json_response({"ok": True, "deleted": 1})
