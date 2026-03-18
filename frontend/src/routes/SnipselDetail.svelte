@@ -1,4 +1,9 @@
 <script lang="ts">
+  import Download from '@animated-color-icons/lucide-svelte/Download.svelte';
+  import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
+  import Heart from '@animated-color-icons/lucide-svelte/Heart.svelte';
+  import Info from '@animated-color-icons/lucide-svelte/Info.svelte';
+  import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
   import { api, type Attachment, type Snipsel, type SnipselDetailResponse } from '../lib/api';
   import ImageModal from '../lib/ImageModal.svelte';
   import { collectionAnchor, currentView, isLoading, searchError, searchQuery, searchResults } from '../lib/stores';
@@ -289,34 +294,6 @@
     return result.trim();
   }
 
-	function attachmentDownloadIcon() {
-		return {
-			__html:
-				'<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>',
-		};
-	}
-
-	function attachmentDeleteIcon() {
-		return {
-			__html:
-				'<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22m-5-3H6a1 1 0 00-1 1v2h14V5a1 1 0 00-1-1z" /></svg>',
-		};
-	}
-
-	function favoriteIcon(filled: boolean) {
-		return {
-			__html: filled
-				? '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>'
-				: '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>',
-		};
-	}
-
-	function infoIcon() {
-		return {
-			__html:
-				'<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10 18a8 8 0 100-16 8 8 0 000 16z"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v5"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 6h.01"/></svg>',
-		};
-	}
 
 	let favoriteByCollectionId = $state<Record<string, boolean>>({});
 
@@ -749,9 +726,7 @@
 									>
 										<img class="h-10 w-10 object-cover" src={api.attachments.thumbnailUrl(a.id)} alt={a.filename} loading="lazy" />
 										<div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-											<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-												<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-											</svg>
+											<CirclePlay size={20} className="text-white" />
 										</div>
 									</button>
 								{:else if isImageAttachment(a) && a.has_thumbnail}
@@ -783,7 +758,7 @@
 										aria-label="Download attachment"
 										title="Download"
 									>
-										{@html attachmentDownloadIcon().__html}
+										<Download size={20} />
 									</a>
 									<button
 										class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
@@ -792,7 +767,7 @@
 										onclick={() => deleteAttachment(a.id)}
 										title="Delete"
 									>
-										{@html attachmentDeleteIcon().__html}
+										<Trash2 size={20} />
 									</button>
 								</div>
 							</div>
@@ -828,7 +803,7 @@
 							onclick={() => toggleCollectionFavorite(p.collection_id)}
 							style={(favoriteByCollectionId[p.collection_id] ?? false) ? `color: ${getAccent()}` : undefined}
 						>
-							{@html favoriteIcon(Boolean(favoriteByCollectionId[p.collection_id])).__html}
+							<Heart size={16} className={favoriteByCollectionId[p.collection_id] ? "fill-current" : ""} strokeWidth={favoriteByCollectionId[p.collection_id] ? 0 : 1.6} />
 						</button>
 						<button
 							class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
@@ -837,7 +812,7 @@
 							title="Info"
 							onclick={() => openCollectionInfo(p.collection_id)}
 						>
-							{@html infoIcon().__html}
+							<Info size={16} strokeWidth={1.6} />
 						</button>
 					</div>
 				</div>

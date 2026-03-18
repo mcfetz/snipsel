@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Hash from '@animated-color-icons/lucide-svelte/Hash.svelte';
   import { api, type TagCount } from '../lib/api';
   import { collectionAnchor, currentView, isLoading, searchError, searchQuery, searchResults, searchScope } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -90,13 +91,7 @@
 
 <div class="space-y-4">
   <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-    <svg class="h-6 w-6 text-slate-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M4 12h16" />
-      <path d="M6 8h12" />
-      <path d="M6 16h12" />
-      <path d="M10 4l-2 16" />
-      <path d="M16 4l-2 16" />
-    </svg>
+    <Hash size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Tags / Mentions</span>
   </h2>
 

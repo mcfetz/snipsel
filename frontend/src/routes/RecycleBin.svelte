@@ -1,4 +1,8 @@
 <script lang="ts">
+  import ArrowLeft from '@animated-color-icons/lucide-svelte/ArrowLeft.svelte';
+  import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
+  import Trash from '@animated-color-icons/lucide-svelte/Trash.svelte';
+  import Undo from '@animated-color-icons/lucide-svelte/Undo.svelte';
   import { api, type Collection, type Snipsel } from '../lib/api';
   import { currentView } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -168,15 +172,10 @@
       title="Back to Settings"
       aria-label="Back to Settings"
     >
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
+      <ArrowLeft size={20} />
     </button>
     <h2 class="flex items-center gap-2 text-2xl font-semibold">
-      <svg class="h-6 w-6 text-slate-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      </svg>
+      <Trash2 size={24} className="text-slate-700 dark:text-slate-300" />
       <span>Recycle Bin</span>
     </h2>
   </div>
@@ -224,9 +223,7 @@
         disabled={isBusy}
         title="Empty {activeTab}"
       >
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
+        <Trash size={20} />
         <span class="hidden sm:inline">Empty {activeTab === 'collections' ? 'Collections' : 'Snipsels'}</span>
       </button>
     {/if}
@@ -256,9 +253,7 @@
                   disabled={isBusy}
                   title="Restore Collection"
                 >
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                  </svg>
+                  <Undo size={16} />
                 </button>
                 <button
                   class="flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors"
@@ -266,9 +261,7 @@
                   disabled={isBusy}
                   title="Permanently Delete"
                 >
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  <Trash size={16} />
                 </button>
               </div>
             </div>
@@ -298,9 +291,7 @@
                   disabled={isBusy}
                   title="Restores to Today's collection"
                 >
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                  </svg>
+                  <Undo size={16} />
                 </button>
                 <button
                   class="flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors"
@@ -308,9 +299,7 @@
                   disabled={isBusy}
                   title="Permanently Delete"
                 >
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  <Trash size={16} />
                 </button>
               </div>
             </div>

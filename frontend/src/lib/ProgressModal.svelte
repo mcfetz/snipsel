@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CloudUpload from '@animated-color-icons/lucide-svelte/CloudUpload.svelte';
   interface Props {
     filename: string;
     percent: number;
@@ -16,9 +17,7 @@
   <div class="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10 p-6">
     <div class="flex flex-col items-center text-center">
       <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-        </svg>
+        <CloudUpload size={24} className="animate-pulse" strokeWidth={2} />
       </div>
       
       <h2 id="progress-modal-title" class="text-xl font-bold text-slate-900 dark:text-slate-100">

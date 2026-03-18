@@ -1,4 +1,7 @@
 <script lang="ts">
+  import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
+  import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
+  import RotateCw from '@animated-color-icons/lucide-svelte/RotateCw.svelte';
   import { api, type SearchSnipselHit } from '../lib/api';
   import { collectionAnchor, currentView, isLoading } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -157,10 +160,7 @@
 
 <div class="space-y-4">
 	<h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-    <svg class="h-6 w-6 text-slate-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M9 11l3 3L22 4" />
-      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-    </svg>
+    <SquareCheck size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Todos</span>
 	</h2>
 
@@ -261,16 +261,11 @@
 										? undefined 
 										: `background-color: ${getAccentTint()}; color: ${getAccent()}`}
 								>
-									<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
-									</svg>
+									<Bell size={12} strokeWidth={2.5} />
 									{new Date(t.reminder_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
 									<span class="opacity-60">· {daysFromNow(t.reminder_at)}</span>
 									{#if t.reminder_rrule}
-										<svg class="h-3 w-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M12 3a9 9 0 1 1-9 9" />
-											<path d="M8 12H3V7" />
-										</svg>
+										<RotateCw size={12} strokeWidth={2.5} className="ml-0.5" />
 									{/if}
 								</span>
 							{/if}

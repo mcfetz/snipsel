@@ -1,4 +1,11 @@
 <script lang="ts">
+  import Heart from '@animated-color-icons/lucide-svelte/Heart.svelte';
+  import LayoutTemplate from '@animated-color-icons/lucide-svelte/LayoutTemplate.svelte';
+  import Lock from '@animated-color-icons/lucide-svelte/Lock.svelte';
+  import Unlock from '@animated-color-icons/lucide-svelte/Unlock.svelte';
+  import Link from '@animated-color-icons/lucide-svelte/Link.svelte';
+  import X from '@animated-color-icons/lucide-svelte/X.svelte';
+  import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
   import { api, type Collection, type CollectionShare, type UserLite, type CollectionBacklink } from '../lib/api';
   import { collectionAnchor, collections, currentCollection, currentView, isLoading } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -374,9 +381,7 @@
               onclick={toggleFavorite}
               style={isFavorite ? `color: ${getAccent()}` : undefined}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" stroke-width={isFavorite ? "0" : "1.6"}>
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-              </svg>
+              <Heart size={16} className={isFavorite ? "fill-current" : ""} strokeWidth={isFavorite ? 0 : 1.6} />
             </button>
             <button
               class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
@@ -386,11 +391,7 @@
               onclick={toggleTemplate}
               style={collection?.is_template ? `color: ${getAccent()}` : undefined}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <line x1="3" y1="9" x2="21" y2="9"/>
-                <line x1="9" y1="21" x2="9" y2="9"/>
-              </svg>
+              <LayoutTemplate size={16} />
             </button>
             <button
               class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors dark:text-slate-300 dark:hover:bg-white/5"
@@ -401,20 +402,11 @@
               disabled={!$currentUser?.passcode_set}
               style={collection?.is_passcode_protected ? `color: ${getAccent()}` : ''}
             >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                class="h-4 w-4" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor" 
-                stroke-width="2"
-              >
-                {#if collection?.is_passcode_protected}
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                {:else}
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 018 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                {/if}
-              </svg>
+              {#if collection?.is_passcode_protected}
+                <Lock size={16} />
+              {:else}
+                <Unlock size={16} />
+              {/if}
             </button>
           </div>
         </div>
@@ -680,10 +672,7 @@
                     <div class="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
                       {#if s.shared_with_user_id === 'public'}
                         <span class="inline-flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 10-5.656-5.656l-1.101 1.101" />
-                          </svg>
+                          <Link size={16} />
                           Public Link
                         </span>
                       {:else}
@@ -700,9 +689,7 @@
                     onclick={() => revokeShare(s.id)}
                     disabled={sharingBusy}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <X size={16} />
                   </button>
                 </div>
                 {#if s.shared_with_user_id === 'public' && collection.public_token}
@@ -721,9 +708,7 @@
                         }}
                         title="Copy link"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                        </svg>
+                        <Copy size={16} />
                       </button>
                     </div>
                   </div>

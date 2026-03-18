@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Youtube from '@animated-color-icons/lucide-svelte/Youtube.svelte';
+  import ExternalLink from '@animated-color-icons/lucide-svelte/ExternalLink.svelte';
   import { onMount } from 'svelte';
 
   interface Props {
@@ -65,9 +67,7 @@
           class="h-full w-full object-cover"
         />
         <div class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-          </svg>
+          <Youtube size={40} className="text-white" />
         </div>
       </a>
 
@@ -80,9 +80,7 @@
         </p>
         
         <div class="mt-2 flex items-center gap-1.5">
-          <svg class="h-3 w-3 text-red-600" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-          </svg>
+          <Youtube size={12} className="text-red-600" />
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">YouTube</span>
         </div>
       </div>
@@ -95,9 +93,7 @@
         onclick={(e) => e.stopPropagation()}
         aria-label="Open on YouTube"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
+        <ExternalLink size={20} strokeWidth={2} />
       </a>
     </div>
   </div>

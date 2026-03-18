@@ -1,4 +1,15 @@
 <script lang="ts">
+  import BookOpen from '@animated-color-icons/lucide-svelte/BookOpen.svelte';
+  import Plus from '@animated-color-icons/lucide-svelte/Plus.svelte';
+  import Heart from '@animated-color-icons/lucide-svelte/Heart.svelte';
+  import Calendar from '@animated-color-icons/lucide-svelte/Calendar.svelte';
+  import User from '@animated-color-icons/lucide-svelte/User.svelte';
+  import Users from '@animated-color-icons/lucide-svelte/Users.svelte';
+  import LayoutTemplate from '@animated-color-icons/lucide-svelte/LayoutTemplate.svelte';
+  import Archive from '@animated-color-icons/lucide-svelte/Archive.svelte';
+  import ArrowUp from '@animated-color-icons/lucide-svelte/ArrowUp.svelte';
+  import ArrowDown from '@animated-color-icons/lucide-svelte/ArrowDown.svelte';
+  import Info from '@animated-color-icons/lucide-svelte/Info.svelte';
   import { api, type Collection } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { collections, collectionAnchor, currentView, isLoading, pendingReference } from '../lib/stores';
@@ -184,10 +195,7 @@
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h2 class="flex items-center gap-2 text-2xl font-semibold text-slate-800 dark:text-slate-100">
-      <svg class="h-6 w-6 text-slate-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3 4h6a2 2 0 012 2v14H5a2 2 0 01-2-2V4z" />
-        <path d="M13 6a2 2 0 012-2h6v14a2 2 0 01-2 2h-6V6z" />
-      </svg>
+      <BookOpen size={24} className="text-slate-700 dark:text-slate-300" />
       <span>Collections</span>
     </h2>
     <button
@@ -197,9 +205,7 @@
       aria-label="New collection"
       title="New collection"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style={`color: ${getAccent()}`}>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-      </svg>
+      <Plus size={24} color={getAccent()} />
     </button>
   </div>
 
@@ -225,9 +231,7 @@
         style={filter === 'favorites' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Favs"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-        </svg>
+        <Heart size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'day'
@@ -238,9 +242,7 @@
         style={filter === 'day' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Days"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
+        <Calendar size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'mine'
@@ -251,9 +253,7 @@
         style={filter === 'mine' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="My"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
+        <User size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'shared'
@@ -264,9 +264,7 @@
         style={filter === 'shared' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Shared"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
+        <Users size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'templates'
@@ -277,11 +275,7 @@
         style={filter === 'templates' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Templates"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <line x1="3" y1="9" x2="21" y2="9"/>
-          <line x1="9" y1="21" x2="9" y2="9"/>
-        </svg>
+        <LayoutTemplate size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'archive'
@@ -292,9 +286,7 @@
         style={filter === 'archive' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Archive"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-        </svg>
+        <Archive size={20} />
       </button>
     </div>
   </div>
@@ -422,13 +414,9 @@
                 style={c.access_level === 'owner' && c.shared_out ? `color: ${getAccent()}` : undefined}
               >
                 {#if c.access_level === 'owner' && c.shared_out}
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                  </svg>
+                  <ArrowUp size={20} />
                 {:else}
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                  </svg>
+                  <ArrowDown size={20} />
                 {/if}
               </div>
               <div class="h-6 w-px bg-slate-100 mx-0.5 dark:bg-white/10"></div>
@@ -436,11 +424,7 @@
 
             {#if c.is_template}
               <div class="grid h-9 w-9 place-items-center text-slate-400" title="Template">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <line x1="3" y1="9" x2="21" y2="9" />
-                  <line x1="9" y1="21" x2="9" y2="9" />
-                </svg>
+                <LayoutTemplate size={16} />
               </div>
               <div class="h-6 w-px bg-slate-100 mx-0.5 dark:bg-white/10"></div>
             {/if}
@@ -454,13 +438,9 @@
               style={c.is_favorite ? `color: ${getAccent()}` : undefined}
             >
               {#if c.is_favorite}
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
+                <Heart size={20} className="fill-current" />
               {:else}
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
+                <Heart size={20} />
               {/if}
             </button>
             <div class="h-6 w-px bg-slate-100 mx-0.5 dark:bg-white/10"></div>
@@ -471,9 +451,7 @@
               title="Edit"
               onclick={() => editCollection(c)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <Info size={20} />
             </button>
           </div>
         </div>

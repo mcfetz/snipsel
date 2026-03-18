@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CalendarIcon from '@animated-color-icons/lucide-svelte/Calendar.svelte';
   import { api } from '../lib/api';
   import { fly } from 'svelte/transition';
   import { collectionAnchor, currentCollection, currentView, isLoading, toLocalIsoDay } from '../lib/stores';
@@ -160,12 +161,7 @@
 <div class="space-y-4">
   <div class="flex items-center justify-between gap-3">
     <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-      <svg class="h-6 w-6 text-slate-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <path d="M16 2v4" />
-        <path d="M8 2v4" />
-        <path d="M3 10h18" />
-      </svg>
+      <CalendarIcon size={24} className="text-slate-700 dark:text-slate-300" />
       <span>{monthLabel(cursor)}</span>
     </h2>
   </div>
@@ -199,9 +195,7 @@
 
     <div class="relative h-[46px] w-[46px] flex-shrink-0 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-colors dark:border-white/10 dark:bg-slate-900 dark:ring-white/10 dark:hover:bg-white/5">
       <div class="flex h-full items-center justify-center text-slate-600 pointer-events-none dark:text-slate-400">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
+        <CalendarIcon size={20} />
       </div>
       <input 
         type="month" 

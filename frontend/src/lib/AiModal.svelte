@@ -1,4 +1,7 @@
 <script lang="ts">
+  import Sparkles from '@animated-color-icons/lucide-svelte/Sparkles.svelte';
+  import X from '@animated-color-icons/lucide-svelte/X.svelte';
+  import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
   import { api } from './api';
   import { currentUser } from './session';
 
@@ -53,13 +56,7 @@
   <div class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-white/20 bg-white/90 shadow-2xl ring-1 ring-black/5 backdrop-blur-md transition-all dark:border-white/10 dark:bg-slate-900/90">
     <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-white/5">
       <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-          <circle cx="4.5" cy="4.5" r="1.5" />
-          <circle cx="19.5" cy="4.5" r="1.5" />
-          <circle cx="4.5" cy="19.5" r="1.5" />
-          <circle cx="19.5" cy="19.5" r="1.5" />
-        </svg>
+        <Sparkles size={20} />
         AI Assistant
       </h3>
       <button 
@@ -67,9 +64,7 @@
         onclick={onClose}
         aria-label="Close"
       >
-        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <X size={20} strokeWidth={2} />
       </button>
     </div>
 
@@ -136,10 +131,7 @@
             title="Copy to clipboard"
             onclick={copyToClipboard}
           >
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
+            <Copy size={20} strokeWidth={2} />
           </button>
         {/if}
       </div>

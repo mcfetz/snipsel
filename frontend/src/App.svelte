@@ -1,4 +1,12 @@
 <script lang="ts">
+  import Clock from '@animated-color-icons/lucide-svelte/Clock.svelte';
+  import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
+  import SettingsIcon from '@animated-color-icons/lucide-svelte/Settings.svelte';
+  import CalendarIcon from '@animated-color-icons/lucide-svelte/Calendar.svelte';
+  import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
+  import PlusIcon from '@animated-color-icons/lucide-svelte/Plus.svelte';
+  import BookOpen from '@animated-color-icons/lucide-svelte/BookOpen.svelte';
+  import Hash from '@animated-color-icons/lucide-svelte/Hash.svelte';
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
@@ -563,18 +571,7 @@
           aria-label="Recent collections"
           title="Recent"
         >
-            <svg
-              class="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Clock size={20} />
           </button>
           
           {#if showRecentPopup}
@@ -631,19 +628,7 @@
               {$notificationsStore.filter(n => !n.is_read).length}
             </span>
           {/if}
-          <svg
-            class="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
+          <Bell size={20} />
         </button>
         <button
           class="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {$currentView.type === 'settings'
@@ -653,19 +638,7 @@
           aria-label="Settings"
           title="Settings"
         >
-          <svg
-            class="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
+          <SettingsIcon size={20} />
         </button>
       </div>
     </header>
@@ -735,12 +708,7 @@
             aria-label="Calendar"
             title="Calendar"
           >
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <path d="M16 2v4" />
-              <path d="M8 2v4" />
-              <path d="M3 10h18" />
-            </svg>
+            <CalendarIcon size={24} />
           </button>
 
           <button
@@ -752,10 +720,7 @@
             aria-label="Todos"
             title="Todos"
           >
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M9 11l3 3L22 4" />
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-            </svg>
+            <SquareCheck size={24} />
           </button>
 
           <button
@@ -766,9 +731,7 @@
             aria-label="New snipsel (today)"
             title="New snipsel (today)"
           >
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <PlusIcon size={24} strokeWidth={2.5} />
           </button>
 
           <button
@@ -780,10 +743,7 @@
             aria-label="Collections"
             title="Collections"
           >
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 4h6a2 2 0 012 2v14H5a2 2 0 01-2-2V4z" />
-              <path d="M13 6a2 2 0 012-2h6v14a2 2 0 01-2 2h-6V6z" />
-            </svg>
+            <BookOpen size={24} />
           </button>
 
           <button
@@ -795,13 +755,7 @@
             aria-label="Tags and mentions"
             title="Tags / Mentions"
           >
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 12h16" />
-              <path d="M6 8h12" />
-              <path d="M6 16h12" />
-              <path d="M10 4l-2 16" />
-              <path d="M16 4l-2 16" />
-            </svg>
+            <Hash size={24} />
           </button>
           
         </div>

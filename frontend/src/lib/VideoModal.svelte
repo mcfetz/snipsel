@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Download from '@animated-color-icons/lucide-svelte/Download.svelte';
+  import X from '@animated-color-icons/lucide-svelte/X.svelte';
   import { api } from './api';
 
   interface Props {
@@ -105,9 +107,7 @@
             href={videoUrl}
             download={filename}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+            <Download size={16} strokeWidth={2} />
             Download
           </a>
         {/if}
@@ -119,9 +119,7 @@
         aria-label="Close"
         onclick={onClose}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <X size={24} strokeWidth={2.5} />
       </button>
     </div>
   </div>

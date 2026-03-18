@@ -1,4 +1,15 @@
 <script lang="ts">
+  import SettingsIcon from '@animated-color-icons/lucide-svelte/Settings.svelte';
+  import Folder from '@animated-color-icons/lucide-svelte/Folder.svelte';
+  import FileText from '@animated-color-icons/lucide-svelte/FileText.svelte';
+  import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
+  import Paperclip from '@animated-color-icons/lucide-svelte/Paperclip.svelte';
+  import BellRing from '@animated-color-icons/lucide-svelte/BellRing.svelte';
+  import Lock from '@animated-color-icons/lucide-svelte/Lock.svelte';
+  import Key from '@animated-color-icons/lucide-svelte/Key.svelte';
+  import Upload from '@animated-color-icons/lucide-svelte/Upload.svelte';
+  import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
+  import ChevronRight from '@animated-color-icons/lucide-svelte/ChevronRight.svelte';
   import { api, type Collection, type UserStats } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { collectionAnchor, currentView } from '../lib/stores';
@@ -357,10 +368,7 @@
 
 <div class="space-y-4">
   <h2 class="flex items-center gap-2 text-2xl font-semibold">
-    <svg class="h-6 w-6 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
+    <SettingsIcon size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Settings</span>
   </h2>
 
@@ -459,27 +467,13 @@
           <div class="flex flex-col items-center gap-1 rounded-lg bg-slate-50 px-3 py-3 dark:bg-white/5">
             <div class="mb-1 text-slate-500 dark:text-slate-400">
               {#if stat.type === 'collections'}
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                </svg>
+                <Folder size={20} />
               {:else if stat.type === 'snipsels'}
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                  <polyline points="10 9 9 9 8 9" />
-                </svg>
+                <FileText size={20} />
               {:else if stat.type === 'tasks'}
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M9 11l3 3L22 4" />
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-                </svg>
+                <SquareCheck size={20} />
               {:else if stat.type === 'attachments'}
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.82-2.82l8.49-8.48" />
-                </svg>
+                <Paperclip size={20} />
               {/if}
             </div>
             <span
@@ -620,10 +614,7 @@
             onclick={sendTestPush}
             disabled={isBusy}
           >
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-              <path d="M8 7a4 4 0 1 1 8 0c0 4.99 2 6.7 2 6.7h-12s2-1.71 2-6.7" />
-            </svg>
+            <BellRing size={14} />
             Send Test Notification
           </button>
         </div>
@@ -683,10 +674,7 @@
     <!-- Security -->
     <div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
       <div class="flex items-center gap-2 text-xs uppercase text-slate-500">
-        <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
+        <Lock size={12} strokeWidth={2.5} />
         <span>Security</span>
       </div>
       
@@ -952,13 +940,7 @@
             {#each passkeys as pk (pk.id)}
               <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-white/50 px-3 py-2 dark:border-white/5 dark:bg-slate-900/50">
                 <div class="flex items-center gap-2">
-                  <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 2l-2 2" />
-                    <circle cx="7" cy="15" r="5" />
-                    <path d="M12 9l2 2" />
-                    <path d="M16 5l2 2" />
-                    <path d="M9 18l3 3" />
-                  </svg>
+                  <Key size={16} className="text-slate-400" />
                   <span class="text-sm font-medium">{pk.name}</span>
                 </div>
                 <button
@@ -986,17 +968,13 @@
           type="button"
         >
           <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
+            <Upload size={20} />
           </div>
           <div class="flex-1">
             <div class="font-medium text-slate-900 dark:text-slate-100">Import from TwoS</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">Bring your lists and things into snipsel</div>
           </div>
-          <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight size={20} className="text-slate-400" />
         </button>
         
         <button
@@ -1005,18 +983,13 @@
           type="button"
         >
           <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
+            <Trash2 size={20} />
           </div>
           <div class="flex-1">
             <div class="font-medium text-slate-900 dark:text-slate-100">Recycle Bin</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">Restore deleted collections and snipsels</div>
           </div>
-          <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight size={20} className="text-slate-400" />
         </button>
       </div>
     </div>

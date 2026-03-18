@@ -1,4 +1,7 @@
 <script lang="ts">
+  import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
+  import Disc from '@animated-color-icons/lucide-svelte/Disc.svelte';
+  import ExternalLink from '@animated-color-icons/lucide-svelte/ExternalLink.svelte';
   import { onMount } from 'svelte';
   import { api } from './api';
 
@@ -110,10 +113,7 @@
           class="h-full w-full object-cover"
         />
         <div class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <CirclePlay size={32} className="text-white" />
         </div>
       </a>
 
@@ -126,9 +126,7 @@
         </p>
         
         <div class="mt-2 flex items-center gap-1">
-          <svg class="h-3 w-3 text-slate-400" viewBox="0 0 24 24" fill="currentColor">
-             <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 18.423c-3.547 0-6.423-2.876-6.423-6.423S8.453 5.577 12 5.577s6.423 2.876 6.423 6.423-2.876 6.423-6.423 6.423zM12 7.73c-2.358 0-4.27 1.912-4.27 4.27s1.912 4.27 4.27 4.27 4.27-1.912 4.27-4.27-1.912-4.27-4.27-4.27z"/>
-          </svg>
+          <Disc size={12} className="text-slate-400" />
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Deezer</span>
         </div>
       </div>
@@ -141,9 +139,7 @@
         onclick={(e) => e.stopPropagation()}
         aria-label="Open on Deezer"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
+        <ExternalLink size={20} />
       </a>
     </div>
   </div>

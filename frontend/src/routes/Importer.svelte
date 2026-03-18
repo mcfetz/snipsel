@@ -1,4 +1,8 @@
 <script lang="ts">
+  import ChevronLeft from '@animated-color-icons/lucide-svelte/ChevronLeft.svelte';
+  import LogIn from '@animated-color-icons/lucide-svelte/LogIn.svelte';
+  import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
+  import Search from '@animated-color-icons/lucide-svelte/Search.svelte';
   import { currentView } from '../lib/stores';
   import { api } from '../lib/api';
   import { currentUser } from '../lib/session';
@@ -219,9 +223,7 @@ async function startImport() {
       type="button"
       aria-label="Back to settings"
     >
-      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-      </svg>
+      <ChevronLeft size={24} />
     </button>
     <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Import from TwoS</h2>
   </div>
@@ -232,9 +234,7 @@ async function startImport() {
       <div class="rounded-xl border border-slate-200 bg-white/80 p-6 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
         <div class="mb-6 flex flex-col items-center text-center">
           <div class="mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-slate-50 text-slate-900 shadow-inner ring-1 ring-black/5 dark:bg-slate-800 dark:text-slate-100 dark:ring-white/5">
-            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-            </svg>
+            <LogIn size={32} />
           </div>
           <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Connect TwoS Account</h3>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -339,9 +339,7 @@ async function startImport() {
                 class="sr-only"
               />
               {#if overwrite}
-                <svg class="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
+                <Check size={14} className="text-white" strokeWidth={3} />
               {/if}
             </div>
             <span class="text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -366,9 +364,7 @@ async function startImport() {
               {#if isSearching}
                 <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-500 dark:border-white/20 dark:border-t-white/60"></div>
               {:else}
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <Search size={16} />
               {/if}
             </div>
           </div>
@@ -408,9 +404,7 @@ async function startImport() {
                   style={selectedLists.has(list.id) ? `background-color: ${getAccent()}; border-color: ${getAccent()}` : 'border-color: #475569; background-color: transparent'}
                 >
                   {#if selectedLists.has(list.id)}
-                    <svg class="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
+                    <Check size={14} className="text-white" strokeWidth={3} />
                   {/if}
                 </div>
                 <div class="flex-1 min-w-0">
@@ -457,9 +451,7 @@ async function startImport() {
         <div class="rounded-xl border border-green-200 bg-green-50/50 p-4 shadow-sm backdrop-blur-md dark:border-green-900/30 dark:bg-green-950/20">
           <div class="flex items-center gap-2">
             <div class="grid h-6 w-6 place-items-center rounded-full bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
+                <Check size={16} />
             </div>
             <div class="font-semibold text-green-900 dark:text-green-100">Import complete</div>
           </div>

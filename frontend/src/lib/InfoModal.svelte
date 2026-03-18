@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Info from '@animated-color-icons/lucide-svelte/Info.svelte';
   interface Props {
     title: string;
     message: string;
@@ -30,9 +31,7 @@
   <div class="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10 p-6">
     <div class="flex flex-col items-center text-center">
       <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <Info size={24} strokeWidth={2} />
       </div>
       
       <h2 id="info-modal-title" class="text-xl font-bold text-slate-900 dark:text-slate-100">

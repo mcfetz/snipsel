@@ -5,6 +5,10 @@
   import VideoModal from './VideoModal.svelte';
   import DeezerCard from './DeezerCard.svelte';
   import YouTubeCard from './YouTubeCard.svelte';
+  import ChevronDown from '@animated-color-icons/lucide-svelte/ChevronDown.svelte';
+  import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
+  import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
+  import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
 
   let { token, collection, items, canWrite = false, onReload } = $props<{
     token: string;
@@ -308,9 +312,7 @@
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
               title={isExpanded ? 'Collapse' : 'Expand'}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
+              <ChevronDown size={14} className="text-slate-400" strokeWidth={2} />
             </button>
           {:else if item.snipsel.type !== 'task'}
             <div 
@@ -328,9 +330,7 @@
               disabled={!canWrite}
             >
               {#if item.snipsel.task_done}
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
+                <Check size={14} strokeWidth={3} />
               {/if}
             </button>
           {/if}
@@ -383,9 +383,7 @@
                         class="h-full w-full object-cover transition-transform group-hover:scale-105"
                       />
                       <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white drop-shadow-md" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                        </svg>
+                        <CirclePlay size={32} className="text-white drop-shadow-md" />
                       </div>
                     </button>
                   {:else}
@@ -412,9 +410,7 @@
             aria-label="Delete snipsel"
             title="Delete snipsel"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            <Trash2 size={16} strokeWidth={2} />
           </button>
         {/if}
       </div>

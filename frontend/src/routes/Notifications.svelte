@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import { api, type Notification } from '../lib/api';
   import { notificationsStore, currentView } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -120,10 +121,7 @@
 
 <div class="space-y-4">
   <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-    <svg class="h-6 w-6 text-slate-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-    </svg>
+    <Bell size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Notifications</span>
   </h2>
 

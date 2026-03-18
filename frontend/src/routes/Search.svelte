@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SearchIcon from '@animated-color-icons/lucide-svelte/Search.svelte';
   import { collectionAnchor, currentView, isLoading, searchError, searchQuery, searchResults, searchType, searchScope } from '../lib/stores';
   import type { SearchSnipselHit } from '../lib/api';
   import { getCurrentUrl } from '../lib/router';
@@ -128,10 +129,7 @@
 
 <div class="space-y-4">
   <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-    <svg class="h-6 w-6 text-slate-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
+    <SearchIcon size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Search</span>
   </h2>
 

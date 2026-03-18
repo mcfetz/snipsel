@@ -1,4 +1,31 @@
 <script lang="ts">
+  import ChevronsUp from '@animated-color-icons/lucide-svelte/ChevronsUp.svelte';
+  import ChevronsDown from '@animated-color-icons/lucide-svelte/ChevronsDown.svelte';
+  import Loader2 from '@animated-color-icons/lucide-svelte/Loader2.svelte';
+  import ArrowUp from '@animated-color-icons/lucide-svelte/ArrowUp.svelte';
+  import ArrowDown from '@animated-color-icons/lucide-svelte/ArrowDown.svelte';
+  import Heart from '@animated-color-icons/lucide-svelte/Heart.svelte';
+  import LayoutTemplate from '@animated-color-icons/lucide-svelte/LayoutTemplate.svelte';
+  import Archive from '@animated-color-icons/lucide-svelte/Archive.svelte';
+  import Lock from '@animated-color-icons/lucide-svelte/Lock.svelte';
+  import Plus from '@animated-color-icons/lucide-svelte/Plus.svelte';
+  import ChevronDown from '@animated-color-icons/lucide-svelte/ChevronDown.svelte';
+  import ChevronUp from '@animated-color-icons/lucide-svelte/ChevronUp.svelte';
+  import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
+  import Repeat from '@animated-color-icons/lucide-svelte/Repeat.svelte';
+  import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
+  import Outdent from '@animated-color-icons/lucide-svelte/Outdent.svelte';
+  import Indent from '@animated-color-icons/lucide-svelte/Indent.svelte';
+  import Type from '@animated-color-icons/lucide-svelte/Type.svelte';
+  import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
+  import Sparkles from '@animated-color-icons/lucide-svelte/Sparkles.svelte';
+  import Paperclip from '@animated-color-icons/lucide-svelte/Paperclip.svelte';
+  import ArrowRightLeft from '@animated-color-icons/lucide-svelte/ArrowRightLeft.svelte';
+  import CornerDownRight from '@animated-color-icons/lucide-svelte/CornerDownRight.svelte';
+  import Info from '@animated-color-icons/lucide-svelte/Info.svelte';
+  import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
+  import X from '@animated-color-icons/lucide-svelte/X.svelte';
+
   import MarkdownIt from 'markdown-it';
   import { api, type Attachment, type CollectionItem, type SearchSnipselHit } from '../lib/api';
   import ImageModal from '../lib/ImageModal.svelte';
@@ -1732,15 +1759,10 @@
       >
         {#if pullReloading || pullTriggered}
           <!-- Spinning loader -->
-          <svg class="h-5 w-5 animate-spin" style="color: {getHeaderColor()}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-          </svg>
+          <Loader2 size={20} className="animate-spin" color={getHeaderColor()} />
         {:else}
           <!-- Arrow down -->
-          <svg class="h-5 w-5 transition-transform duration-150" style="color: {getHeaderColor()}; transform: rotate({Math.min(180, pullDeltaY * 180 / PULL_THRESHOLD)}deg)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-          </svg>
+          <ArrowDown size={20} className="transition-transform duration-150" color={getHeaderColor()} style={`transform: rotate(${Math.min(180, pullDeltaY * 180 / PULL_THRESHOLD)}deg)`} />
         {/if}
       </div>
     </div>
@@ -1875,13 +1897,11 @@
               onclick={toggleAllExpanded}
               title={allExpanded ? 'Collapse All' : 'Expand All'}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {#if allExpanded}
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-7 7-7-7M19 5l-7 7-7-7" />
-                {:else}
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11l7-7 7 7M5 19l7-7 7 7" />
-                {/if}
-              </svg>
+              {#if allExpanded}
+                <ChevronsUp size={14} strokeWidth={2} />
+              {:else}
+                <ChevronsDown size={14} strokeWidth={2} />
+              {/if}
             </button>
           {/if}
         </div>
@@ -1913,101 +1933,26 @@
           aria-label="Collection status"
         >
           {#if $currentCollection.is_favorite}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 text-slate-700 fill-current dark:text-slate-300"
-              viewBox="0 0 24 24"
-              aria-label="Favorite"
-            >
-              <title>Favorite</title>
-              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
+            <Heart size={16} className="text-slate-700 fill-current dark:text-slate-300" />
           {/if}
 
           {#if showSharedByYou}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 text-slate-700 dark:text-slate-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-label="Shared by you"
-            >
-              <title>Shared by you</title>
-              <path d="M7 11l5-5m0 0l5 5m-5-5v12" />
-            </svg>
+            <ArrowUp size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
           {/if}
           {#if showSharedWithYou}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 text-slate-700 dark:text-slate-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-label="Shared with you"
-            >
-              <title>Shared with you</title>
-              <path d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-            </svg>
+            <ArrowDown size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
           {/if}
 
           {#if $currentCollection.is_template}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 text-slate-700 dark:text-slate-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-label="Template"
-            >
-              <title>Template</title>
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <line x1="3" y1="9" x2="21" y2="9" />
-              <line x1="9" y1="21" x2="9" y2="9" />
-            </svg>
+            <LayoutTemplate size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
           {/if}
 
           {#if $currentCollection.archived}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 text-slate-700 dark:text-slate-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-label="Archived"
-            >
-              <title>Archived</title>
-              <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
+            <Archive size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
           {/if}
 
           {#if $currentCollection.is_passcode_protected}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 text-slate-700 dark:text-slate-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-label="Passcode protected"
-            >
-              <title>Passcode protected</title>
-              <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+            <Lock size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
           {/if}
         </div>
       {/if}
@@ -2073,9 +2018,7 @@
                           onclick={(e) => { e.stopPropagation(); activeReactionPickerId = activeReactionPickerId === snip.id ? null : snip.id; }}
                           aria-label="Add reaction"
                         >
-                          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 5v14M5 12h14" />
-                          </svg>
+                          <Plus size={14} strokeWidth={2.5} />
                         </button>
 
                         {#if activeReactionPickerId === snip.id}
@@ -2257,9 +2200,7 @@
                   }}
                   aria-label={expandedSnipsels.has(item.snipsel_id) ? 'Collapse' : 'Expand'}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <ChevronDown size={14} className="text-slate-400 dark:text-slate-500" strokeWidth={2} />
                 </button>
               {/if}
 
@@ -2329,9 +2270,7 @@
                   }}
                   aria-label={expandedSnipsels.has(item.snipsel_id) ? 'Collapse' : 'Expand'}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <ChevronDown size={14} className="text-slate-400" strokeWidth={2} />
                 </button>
               {:else}
                 <div 
@@ -2386,9 +2325,7 @@
                           onclick={(e) => { e.stopPropagation(); activeReactionPickerId = activeReactionPickerId === item.snipsel_id ? null : item.snipsel_id; }}
                           aria-label="Add reaction"
                         >
-                          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 5v14M5 12h14" />
-                          </svg>
+                          <Plus size={14} strokeWidth={2.5} />
                         </button>
 
                         {#if activeReactionPickerId === item.snipsel_id}
@@ -2484,16 +2421,11 @@
                       ? undefined 
                       : `background-color: ${getToolboxBg()}; color: ${getHeaderColor()}`}
                   >
-                    <svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
-                    </svg>
+                    <Bell size={10} strokeWidth={2.5} />
                     {new Date(item.snipsel.reminder_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     <span class="opacity-60">· {daysFromNow(item.snipsel.reminder_at)}</span>
                     {#if item.snipsel.reminder_rrule}
-                      <svg class="h-2.5 w-2.5 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3a9 9 0 1 1-9 9" />
-                        <path d="M8 12H3V7" />
-                      </svg>
+                      <Repeat size={10} className="ml-1" strokeWidth={2.5} />
                     {/if}
                   </span>
                 </div>
@@ -2540,9 +2472,7 @@
                         />
                         {#if isVideoAttachment(a)}
                           <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white drop-shadow-md" viewBox="0 0 20 20" fill="currentColor">
-                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
+                            <CirclePlay size={32} className="text-white drop-shadow-md" />
                           </div>
                         {:else}
                           <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
@@ -2641,9 +2571,7 @@
                           onclick={(e) => { e.stopPropagation(); activeReactionPickerId = activeReactionPickerId === snip.id ? null : snip.id; }}
                           aria-label="Add reaction"
                         >
-                          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 5v14M5 12h14" />
-                          </svg>
+                          <Plus size={14} strokeWidth={2.5} />
                         </button>
 
                         {#if activeReactionPickerId === snip.id}
@@ -2801,7 +2729,7 @@
         oncontextmenu={lpMoveTop.oncontextmenu}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+          <ChevronUp size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -2816,7 +2744,7 @@
         oncontextmenu={lpMoveBottom.oncontextmenu}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <ChevronDown size={20} strokeWidth={2} />
       </button>
 
       <button
@@ -2832,7 +2760,7 @@
         oncontextmenu={lpOutdentToZero.oncontextmenu}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12H9m0 0 4-4m-4 4 4 4M3 5v14"/></svg>
+          <Outdent size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -2842,7 +2770,7 @@
         onclick={() => adjustIndentSelected(1)}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h12m0 0-4-4m4 4-4 4M21 5v14"/></svg>
+          <Indent size={20} strokeWidth={2} />
       </button>
 
       <div class="relative">
@@ -2854,7 +2782,7 @@
           onclick={() => (showTypeMenu = !showTypeMenu)}
           disabled={!canWrite()}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+          <Type size={20} strokeWidth={2} />
         </button>
         {#if showTypeMenu}
           <div class="absolute bottom-12 right-0 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
@@ -2889,7 +2817,7 @@
         onclick={() => openCollectionModal('copy')}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          <Copy size={20} strokeWidth={2} />
       </button>
 
       {#if $currentUser?.ai_llm_url && selectedIds.size > 0}
@@ -2901,13 +2829,7 @@
           onclick={() => openAiModal()}
           disabled={!canWrite()}
         >
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-            <circle cx="4.5" cy="4.5" r="1.5" />
-            <circle cx="19.5" cy="4.5" r="1.5" />
-            <circle cx="4.5" cy="19.5" r="1.5" />
-            <circle cx="19.5" cy="19.5" r="1.5" />
-          </svg>
+          <Sparkles size={20} />
         </button>
       {/if}
 
@@ -2919,7 +2841,7 @@
         onclick={() => (showTemplateMenu = !showTemplateMenu)}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <LayoutTemplate size={20} strokeWidth={2} />
       </button>
       {#if showTemplateMenu}
         <div class="absolute bottom-12 right-0 w-64 max-h-80 overflow-y-auto rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
@@ -2956,7 +2878,7 @@
         onclick={() => attachmentsInputRef?.click()}
         disabled={uploadingAttachments || !canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.51a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          <Paperclip size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -2966,7 +2888,7 @@
         onclick={() => openCollectionModal('copy')}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <Copy size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -2976,7 +2898,7 @@
         onclick={() => openCollectionModal('move')}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 8 4 4-4 4M2 12h20M6 8l-4 4 4 4"/></svg>
+          <ArrowRightLeft size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 disabled:opacity-50"
@@ -2986,7 +2908,7 @@
         onclick={createCollectionFromSnipsel}
         disabled={selectedIds.size !== 1 || !canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v6"/><path d="M15 18h6"/><path d="M18 15v6"/></svg>
+          <CornerDownRight size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -2996,7 +2918,7 @@
         onclick={() => openCollectionModal('link')}
         disabled={!canWrite()}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>
+          <Plus size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -3005,7 +2927,7 @@
         title="Info"
         onclick={openDetailSelected}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <Info size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md bg-red-600/90 text-lg text-white hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600"
@@ -3015,7 +2937,7 @@
         onclick={deleteSelected}
         disabled={!canWrite()}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-9 5v6m4-6v6"/></svg>
+        <Trash2 size={20} strokeWidth={2} />
       </button>
       <button
         class="grid h-11 w-11 place-items-center rounded-md text-lg text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
@@ -3028,7 +2950,7 @@
           closeTemplateMenu();
         }}
       >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          <X size={20} strokeWidth={2} />
       </button>
     </div>
   </div>
@@ -3043,9 +2965,7 @@
       aria-label="Scroll to top" 
       title="Scroll to top"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
-      </svg>
+      <ChevronUp size={24} strokeWidth={2.5} />
     </button>
   </div>
 {/if}

@@ -23,6 +23,7 @@
     "vite-plugin-pwa": "^1.2.0"
   },
   "dependencies": {
+    "@animated-color-icons/lucide-svelte": "^1.0.0",
     "@simplewebauthn/browser": "^13.2.2",
     "idb": "^8.0.3",
     "markdown-it": "^14.1.0",
