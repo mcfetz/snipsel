@@ -15,47 +15,58 @@ from snipsel_api.permissions import can_read_snipsel_via_collections
 
 ai_bp = Blueprint("ai", __name__)
 
+
 @ai_bp.post("/generate")
 @require_auth
 def generate():
     user = current_user()
     if not user.ai_llm_url or not user.ai_api_key:
-        raise api_error(400, "ai_not_configured", "AI settings are not fully configured")
+        raise api_error(
+            400, "ai_not_configured", "AI settings are not fully configured"
+        )
 
     data = request.get_json() or {}
     prompt = data.get("prompt")
     context = data.get("context", "")
     attachment_ids = data.get("attachment_ids", [])
-    
+
     if not prompt:
         raise api_error(400, "invalid_input", "Prompt is required")
 
     model = user.ai_model_name or "gpt-3.5-turbo"
-    
+
     # Message content can be a string or a list of parts (for vision)
     message_content = []
-    
+
     # 1. Add text context
     text_content = f"Context/Note content:\n{context}"
-    message_content.append({"type": "text", "text": f"{text_content}\n\nTask: {prompt}"})
-    
+    message_content.append(
+        {"type": "text", "text": f"{text_content}\n\nTask: {prompt}"}
+    )
+
     # 2. Add attachments
     if attachment_ids:
         # Import the helper from routes_attachments to avoid duplication
         from snipsel_api.routes_attachments import _resolve_attachment_path
-        
-        attachments = db.session.execute(
-            db.select(Attachment).where(Attachment.id.in_(attachment_ids))
-        ).scalars().all()
-        
+
+        attachments = (
+            db.session.execute(
+                db.select(Attachment).where(Attachment.id.in_(attachment_ids))
+            )
+            .scalars()
+            .all()
+        )
+
         for att in attachments:
             # Verify permission: either owner OR can read the snipsel it belongs to
             is_authorized = False
             if att.created_by_id == user.id:
                 is_authorized = True
-            elif att.snipsel_id and can_read_snipsel_via_collections(user.id, att.snipsel_id):
+            elif att.snipsel_id and can_read_snipsel_via_collections(
+                user.id, att.snipsel_id
+            ):
                 is_authorized = True
-            
+
             if not is_authorized:
                 continue
 
@@ -66,25 +77,30 @@ def generate():
                     try:
                         with open(path, "rb") as f:
                             encoded_image = base64.b64encode(f.read()).decode("utf-8")
-                            message_content.append({
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:{att.mime_type};base64,{encoded_image}"
+                            message_content.append(
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{att.mime_type};base64,{encoded_image}"
+                                    },
                                 }
-                            })
+                            )
                     except Exception as e:
                         print(f"Error encoding image attachment {att.id}: {e}")
-            elif att.mime_type and (att.mime_type.startswith("text/") or att.mime_type == "application/json"):
-                # Optionally add text files as text parts if not too large
-                if att.size_bytes < 50000: # 50KB limit
+            else:
+                if att.size_bytes < 500000:
                     path = _resolve_attachment_path(att)
                     if path and path.exists():
                         try:
-                            with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                                message_content.append({
-                                    "type": "text",
-                                    "text": f"Attachment Content ({att.filename}):\n{f.read()}"
-                                })
+                            with open(
+                                path, "r", encoding="utf-8", errors="ignore"
+                            ) as f:
+                                message_content.append(
+                                    {
+                                        "type": "text",
+                                        "text": f"Attachment Content ({att.filename}):\n{f.read()}",
+                                    }
+                                )
                         except:
                             pass
 
@@ -92,9 +108,12 @@ def generate():
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are a helpful assistant integrated into a note-taking app called Snipsel. Help the user with their notes. You can see images and text files attached to the notes."},
-            {"role": "user", "content": message_content}
-        ]
+            {
+                "role": "system",
+                "content": "You are a helpful assistant integrated into a note-taking app called Snipsel. Help the user with their notes. You can see images and contents of files attached to the notes.",
+            },
+            {"role": "user", "content": message_content},
+        ],
     }
 
     try:
@@ -103,9 +122,9 @@ def generate():
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {user.ai_api_key}"
+                "Authorization": f"Bearer {user.ai_api_key}",
             },
-            method="POST"
+            method="POST",
         )
         with urllib_request.urlopen(req, timeout=30) as response:
             res_data = json.loads(response.read().decode("utf-8"))
@@ -114,15 +133,25 @@ def generate():
                 ai_text = res_data["choices"][0]["message"]["content"]
                 return json_response({"text": ai_text})
             else:
-                return json_response({"error": "Unexpected response format from LLM", "details": res_data}, status=502)
+                return json_response(
+                    {
+                        "error": "Unexpected response format from LLM",
+                        "details": res_data,
+                    },
+                    status=502,
+                )
 
     except HTTPError as e:
         error_body = e.read().decode("utf-8")
         try:
             error_json = json.loads(error_body)
-            return json_response({"error": f"LLM Error: {e.code}", "details": error_json}, status=e.code)
+            return json_response(
+                {"error": f"LLM Error: {e.code}", "details": error_json}, status=e.code
+            )
         except:
-            return json_response({"error": f"LLM Error: {e.code}", "details": error_body}, status=e.code)
+            return json_response(
+                {"error": f"LLM Error: {e.code}", "details": error_body}, status=e.code
+            )
     except URLError as e:
         raise api_error(502, "external_error", f"Failed to connect to LLM: {str(e)}")
     except Exception as e:
