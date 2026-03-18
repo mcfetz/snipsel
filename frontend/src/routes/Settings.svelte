@@ -1,6 +1,6 @@
 <script lang="ts">
   import SettingsIcon from '@animated-color-icons/lucide-svelte/Settings.svelte';
-  import Folder from '@animated-color-icons/lucide-svelte/Folder.svelte';
+  import List from '@animated-color-icons/lucide-svelte/List.svelte';
   import FileText from '@animated-color-icons/lucide-svelte/FileText.svelte';
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
   import Paperclip from '@animated-color-icons/lucide-svelte/Paperclip.svelte';
@@ -467,7 +467,7 @@
           <div class="flex flex-col items-center gap-1 rounded-lg bg-slate-50 px-3 py-3 dark:bg-white/5">
             <div class="mb-1 text-slate-500 dark:text-slate-400">
               {#if stat.type === 'collections'}
-                <Folder label="" size={20} />
+                <List label="" size={20} />
               {:else if stat.type === 'snipsels'}
                 <FileText label="" size={20} />
               {:else if stat.type === 'tasks'}
