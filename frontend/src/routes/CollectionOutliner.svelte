@@ -2821,16 +2821,7 @@
         {/if}
       </div>
 
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10"
-        type="button"
-        aria-label="Copy"
-        title="Copy"
-        onclick={() => openCollectionModal('copy')}
-        disabled={!canWrite()}
-      >
-          <Copy label="" size={20} strokeWidth={2} />
-      </button>
+
 
       {#if $currentUser?.ai_llm_url && selectedIds.size > 0}
         <button
