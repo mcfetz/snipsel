@@ -563,7 +563,7 @@
         />
         <div bind:this={recentContainerRef} class="relative">
           <button
-            class="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {showRecentPopup
+            class="al-icon-wrapper grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {showRecentPopup
               ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white text-white'
               : 'text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
             type="button"
@@ -613,7 +613,7 @@
         </div>
 
         <button
-          class="relative grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {$currentView.type === 'notifications'
+          class="al-icon-wrapper relative grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {$currentView.type === 'notifications'
             ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
             : 'text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
           type="button"
@@ -631,7 +631,7 @@
           <Bell label="" size={20} />
         </button>
         <button
-          class="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {$currentView.type === 'settings'
+          class="al-icon-wrapper grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {$currentView.type === 'settings'
             ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
             : 'text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
           onclick={() => currentView.set({ type: 'settings' })}
