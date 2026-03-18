@@ -49,8 +49,7 @@
       <div class="h-3 w-1/2 rounded bg-slate-200 dark:bg-white/10"></div>
     </div>
   </div>
-{:else if error || !data}
-{:else}
+{:else if data}
   <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900">
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
 

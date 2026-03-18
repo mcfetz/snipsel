@@ -11,14 +11,12 @@
 
   let { url, lat: initialLat, lng: initialLng }: Props = $props();
 
-  let lat = $state<number | null>(initialLat ?? null);
-  let lng = $state<number | null>(initialLng ?? null);
-  let resolved = $derived(initialLat !== undefined && initialLng !== undefined);
+  let lat = $state<number | null>(null);
+  let lng = $state<number | null>(null);
+  let resolved = $state(false);
   let error = $state(false);
 
   async function resolveCoordinates() {
-    if (resolved) return;
-    
     try {
       const res = await fetch(`/api/proxy/link-metadata?url=${encodeURIComponent(url)}`, {
         credentials: 'include'
@@ -39,7 +37,13 @@
   }
 
   onMount(() => {
-    resolveCoordinates();
+    if (initialLat !== undefined && initialLng !== undefined) {
+      lat = initialLat;
+      lng = initialLng;
+      resolved = true;
+    } else {
+      resolveCoordinates();
+    }
   });
 
   function getMapEmbedUrl(lat: number, lng: number): string {
