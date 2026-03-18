@@ -319,7 +319,6 @@
                   {c.title}
                 </span>
               </button>
-              </button>
             {/each}
           </div>
         {:else if query.trim() && !loading}
