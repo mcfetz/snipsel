@@ -113,7 +113,7 @@
           class="h-full w-full object-cover"
         />
         <div class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-          <CirclePlay size={32} className="text-white" />
+          <CirclePlay label="" size={32} className="text-white" />
         </div>
       </a>
 
@@ -126,7 +126,7 @@
         </p>
         
         <div class="mt-2 flex items-center gap-1">
-          <Disc size={12} className="text-slate-400" />
+          <Disc label="" size={12} className="text-slate-400" />
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Deezer</span>
         </div>
       </div>
@@ -139,7 +139,7 @@
         onclick={(e) => e.stopPropagation()}
         aria-label="Open on Deezer"
       >
-        <ExternalLink size={20} />
+        <ExternalLink label="" size={20} />
       </a>
     </div>
   </div>

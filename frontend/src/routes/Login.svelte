@@ -179,12 +179,12 @@
 
       {#if mode === 'login' && !isOtpStep}
         <button
-          class="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+          class="al-icon-wrapper flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
           type="button"
           onclick={loginWithPasskey}
           disabled={busy}
         >
-          <Lock size={20} />
+          <Lock label="" size={20} />
           Login with Passkey
         </button>
       {/if}

@@ -117,3 +117,7 @@ body {
 .prose tr:last-child td {
   border-bottom: 0;
 }
+
+.animated-lucide-icon {
+  pointer-events: none;
+}

@@ -93,17 +93,17 @@
           download={filename}
           aria-label="Download image"
         >
-          <Download size={20} strokeWidth={2} />
+          <Download label="" size={20} strokeWidth={2} />
         </a>
       {/if}
 
       <button
-        class="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition-colors hover:bg-white"
+        class="al-icon-wrapper absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition-colors hover:bg-white"
         type="button"
         aria-label="Close"
         onclick={onClose}
       >
-        <X size={20} strokeWidth={2} />
+        <X label="" size={20} strokeWidth={2} />
       </button>
     </div>
   </div>

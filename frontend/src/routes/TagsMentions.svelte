@@ -91,7 +91,7 @@
 
 <div class="space-y-4">
   <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-    <Hash size={24} className="text-slate-700 dark:text-slate-300" />
+    <Hash label="" size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Tags / Mentions</span>
   </h2>
 

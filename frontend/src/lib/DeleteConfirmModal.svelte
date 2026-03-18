@@ -36,7 +36,7 @@
   <div class="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10 p-6">
     <div class="flex flex-col items-center text-center">
       <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
-        <Trash2 size={24} />
+        <Trash2 label="" size={24} />
       </div>
       
       <h2 id="delete-modal-title" class="text-xl font-bold text-slate-900 dark:text-slate-100">

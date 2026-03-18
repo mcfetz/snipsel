@@ -107,19 +107,19 @@
             href={videoUrl}
             download={filename}
           >
-            <Download size={16} strokeWidth={2} />
+            <Download label="" size={16} strokeWidth={2} />
             Download
           </a>
         {/if}
       </div>
 
       <button
-        class="absolute -right-2 -top-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/20"
+        class="al-icon-wrapper absolute -right-2 -top-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/20"
         type="button"
         aria-label="Close"
         onclick={onClose}
       >
-        <X size={24} strokeWidth={2.5} />
+        <X label="" size={24} strokeWidth={2.5} />
       </button>
     </div>
   </div>

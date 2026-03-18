@@ -306,13 +306,13 @@
           {#if isCollapsible}
             <button
               type="button"
-              class="absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {isExpanded ? '' : '-rotate-90'}"
+              class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {isExpanded ? '' : '-rotate-90'}"
               style="left: calc(1.625rem + {item.indent * 1.25}rem)"
               onclick={() => toggleExpand(item.snipsel_id)}
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
               title={isExpanded ? 'Collapse' : 'Expand'}
             >
-              <ChevronDown size={14} className="text-slate-400" strokeWidth={2} />
+              <ChevronDown label="" size={14} className="text-slate-400" strokeWidth={2} />
             </button>
           {:else if item.snipsel.type !== 'task'}
             <div 
@@ -324,13 +324,13 @@
           {#if item.snipsel.type === 'task'}
             <button
               type="button"
-              class="absolute top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white dark:border-white/20 dark:bg-slate-800 transition-colors"
+              class="al-icon-wrapper absolute top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white dark:border-white/20 dark:bg-slate-800 transition-colors"
               style="left: calc(1.75rem + {item.indent * 1.25}rem); {item.snipsel.task_done ? `border-color: ${getHeaderColor()}; background-color: ${getHeaderColor()}; color: white;` : ''}"
               onclick={() => handleToggleTask(item)}
               disabled={!canWrite}
             >
               {#if item.snipsel.task_done}
-                <Check size={14} strokeWidth={3} />
+                <Check label="" size={14} strokeWidth={3} />
               {/if}
             </button>
           {/if}
@@ -374,7 +374,7 @@
                     </button>
                   {:else if isVideoAttachment(a)}
                     <button
-                      class="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5"
+                      class="al-icon-wrapper group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5"
                       onclick={(e) => { e.stopPropagation(); modalVideo = a; }}
                     >
                       <img 
@@ -383,7 +383,7 @@
                         class="h-full w-full object-cover transition-transform group-hover:scale-105"
                       />
                       <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                        <CirclePlay size={32} className="text-white drop-shadow-md" />
+                        <CirclePlay label="" size={32} className="text-white drop-shadow-md" />
                       </div>
                     </button>
                   {:else}
@@ -405,12 +405,12 @@
 
         {#if canWrite}
           <button 
-            class="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+            class="al-icon-wrapper absolute right-0 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
             onclick={() => handleDelete(item.snipsel_id)}
             aria-label="Delete snipsel"
             title="Delete snipsel"
           >
-            <Trash2 size={16} strokeWidth={2} />
+            <Trash2 label="" size={16} strokeWidth={2} />
           </button>
         {/if}
       </div>

@@ -1759,10 +1759,10 @@
       >
         {#if pullReloading || pullTriggered}
           <!-- Spinning loader -->
-          <Loader2 size={20} className="animate-spin" color={getHeaderColor()} />
+          <Loader2 label="" size={20} className="animate-spin" color={getHeaderColor()} />
         {:else}
           <!-- Arrow down -->
-          <ArrowDown size={20} className="transition-transform duration-150" color={getHeaderColor()} style={`transform: rotate(${Math.min(180, pullDeltaY * 180 / PULL_THRESHOLD)}deg)`} />
+          <ArrowDown label="" size={20} className="transition-transform duration-150" color={getHeaderColor()} style={`transform: rotate(${Math.min(180, pullDeltaY * 180 / PULL_THRESHOLD)}deg)`} />
         {/if}
       </div>
     </div>
@@ -1893,14 +1893,14 @@
           {#if collapsibleParentIds.size > 0}
             <button
               type="button"
-              class="grid h-6 w-6 place-items-center text-slate-400 hover:text-slate-600 transition-all focus:outline-none"
+              class="al-icon-wrapper grid h-6 w-6 place-items-center text-slate-400 hover:text-slate-600 transition-all focus:outline-none"
               onclick={toggleAllExpanded}
               title={allExpanded ? 'Collapse All' : 'Expand All'}
             >
               {#if allExpanded}
-                <ChevronsUp size={14} strokeWidth={2} />
+                <ChevronsUp label="" size={14} strokeWidth={2} />
               {:else}
-                <ChevronsDown size={14} strokeWidth={2} />
+                <ChevronsDown label="" size={14} strokeWidth={2} />
               {/if}
             </button>
           {/if}
@@ -1933,26 +1933,38 @@
           aria-label="Collection status"
         >
           {#if $currentCollection.is_favorite}
-            <Heart size={16} className="text-slate-700 fill-current dark:text-slate-300" />
+            <span class="al-icon-wrapper" title="Favorite">
+              <Heart label="" size={16} className="text-slate-700 fill-current dark:text-slate-300" />
+            </span>
           {/if}
 
           {#if showSharedByYou}
-            <ArrowUp size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            <span class="al-icon-wrapper" title="Shared by you">
+              <ArrowUp label="" size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            </span>
           {/if}
           {#if showSharedWithYou}
-            <ArrowDown size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            <span class="al-icon-wrapper" title="Shared with you">
+              <ArrowDown label="" size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            </span>
           {/if}
 
           {#if $currentCollection.is_template}
-            <LayoutTemplate size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            <span class="al-icon-wrapper" title="Template">
+              <LayoutTemplate label="" size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            </span>
           {/if}
 
           {#if $currentCollection.archived}
-            <Archive size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            <span class="al-icon-wrapper" title="Archived">
+              <Archive label="" size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            </span>
           {/if}
 
           {#if $currentCollection.is_passcode_protected}
-            <Lock size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            <span class="al-icon-wrapper" title="Passcode protected">
+              <Lock label="" size={16} className="text-slate-700 dark:text-slate-300" strokeWidth={2} />
+            </span>
           {/if}
         </div>
       {/if}
@@ -2014,11 +2026,11 @@
                       <div class="relative shrink-0 self-center ml-1">
                         <button
                           type="button"
-                          class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"
+                          class="al-icon-wrapper flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"
                           onclick={(e) => { e.stopPropagation(); activeReactionPickerId = activeReactionPickerId === snip.id ? null : snip.id; }}
                           aria-label="Add reaction"
                         >
-                          <Plus size={14} strokeWidth={2.5} />
+                          <Plus label="" size={14} strokeWidth={2.5} />
                         </button>
 
                         {#if activeReactionPickerId === snip.id}
@@ -2192,7 +2204,7 @@
               {#if hasChildren(item, $sortedItems)}
                 <button
                   type="button"
-                  class="absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {expandedSnipsels.has(item.snipsel_id) ? '' : '-rotate-90'}"
+                  class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {expandedSnipsels.has(item.snipsel_id) ? '' : '-rotate-90'}"
                   style="left: calc(0.125rem + {item.indent * 1.25}rem)"
                   onclick={(e) => {
                     e.stopPropagation();
@@ -2200,7 +2212,7 @@
                   }}
                   aria-label={expandedSnipsels.has(item.snipsel_id) ? 'Collapse' : 'Expand'}
                 >
-                  <ChevronDown size={14} className="text-slate-400 dark:text-slate-500" strokeWidth={2} />
+                  <ChevronDown label="" size={14} className="text-slate-400 dark:text-slate-500" strokeWidth={2} />
                 </button>
               {/if}
 
@@ -2262,7 +2274,7 @@
               {#if hasChildren(item, $sortedItems)}
                 <button
                   type="button"
-                  class="absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {expandedSnipsels.has(item.snipsel_id) ? '' : '-rotate-90'}"
+                  class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {expandedSnipsels.has(item.snipsel_id) ? '' : '-rotate-90'}"
                   style="left: calc(1.625rem + {item.indent * 1.25}rem)"
                   onclick={(e) => {
                     e.stopPropagation();
@@ -2270,7 +2282,7 @@
                   }}
                   aria-label={expandedSnipsels.has(item.snipsel_id) ? 'Collapse' : 'Expand'}
                 >
-                  <ChevronDown size={14} className="text-slate-400" strokeWidth={2} />
+                  <ChevronDown label="" size={14} className="text-slate-400" strokeWidth={2} />
                 </button>
               {:else}
                 <div 
@@ -2321,11 +2333,11 @@
                       <div class="relative shrink-0 self-center ml-1">
                         <button
                           type="button"
-                          class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"
+                          class="al-icon-wrapper flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"
                           onclick={(e) => { e.stopPropagation(); activeReactionPickerId = activeReactionPickerId === item.snipsel_id ? null : item.snipsel_id; }}
                           aria-label="Add reaction"
                         >
-                          <Plus size={14} strokeWidth={2.5} />
+                          <Plus label="" size={14} strokeWidth={2.5} />
                         </button>
 
                         {#if activeReactionPickerId === item.snipsel_id}
@@ -2421,11 +2433,11 @@
                       ? undefined 
                       : `background-color: ${getToolboxBg()}; color: ${getHeaderColor()}`}
                   >
-                    <Bell size={10} strokeWidth={2.5} />
+                    <Bell label="" size={10} strokeWidth={2.5} />
                     {new Date(item.snipsel.reminder_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     <span class="opacity-60">· {daysFromNow(item.snipsel.reminder_at)}</span>
                     {#if item.snipsel.reminder_rrule}
-                      <Repeat size={10} className="ml-1" strokeWidth={2.5} />
+                      <Repeat label="" size={10} className="ml-1" strokeWidth={2.5} />
                     {/if}
                   </span>
                 </div>
@@ -2453,7 +2465,7 @@
                     {#each media.slice(0, 9) as a}
                       <button
                         type="button"
-                        class="group relative aspect-square w-full overflow-hidden rounded-2xl border border-white/30 bg-white/20 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:scale-[1.03] hover:shadow-lg active:scale-95 dark:border-white/10 dark:bg-white/5"
+                        class="al-icon-wrapper group relative aspect-square w-full overflow-hidden rounded-2xl border border-white/30 bg-white/20 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:scale-[1.03] hover:shadow-lg active:scale-95 dark:border-white/10 dark:bg-white/5"
                         aria-label={isVideoAttachment(a) ? `Play ${a.filename}` : `View ${a.filename}`}
                         onclick={(e) => {
                           e.stopPropagation();
@@ -2472,7 +2484,7 @@
                         />
                         {#if isVideoAttachment(a)}
                           <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                            <CirclePlay size={32} className="text-white drop-shadow-md" />
+                            <CirclePlay label="" size={32} className="text-white drop-shadow-md" />
                           </div>
                         {:else}
                           <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
@@ -2567,11 +2579,11 @@
                       <div class="relative shrink-0 self-center ml-1">
                         <button
                           type="button"
-                          class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"
+                          class="al-icon-wrapper flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"
                           onclick={(e) => { e.stopPropagation(); activeReactionPickerId = activeReactionPickerId === snip.id ? null : snip.id; }}
                           aria-label="Add reaction"
                         >
-                          <Plus size={14} strokeWidth={2.5} />
+                          <Plus label="" size={14} strokeWidth={2.5} />
                         </button>
 
                         {#if activeReactionPickerId === snip.id}
@@ -2717,7 +2729,7 @@
        />
 
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Move up"
         title="Move up"
@@ -2729,10 +2741,10 @@
         oncontextmenu={lpMoveTop.oncontextmenu}
         disabled={!canWrite()}
       >
-          <ChevronUp size={20} strokeWidth={2} />
+          <ChevronUp label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Move down"
         title="Move down"
@@ -2744,11 +2756,11 @@
         oncontextmenu={lpMoveBottom.oncontextmenu}
         disabled={!canWrite()}
       >
-          <ChevronDown size={20} strokeWidth={2} />
+          <ChevronDown label="" size={20} strokeWidth={2} />
       </button>
 
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Outdent"
         title="Outdent"
@@ -2760,29 +2772,29 @@
         oncontextmenu={lpOutdentToZero.oncontextmenu}
         disabled={!canWrite()}
       >
-          <Outdent size={20} strokeWidth={2} />
+          <Outdent label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Indent"
         title="Indent"
         onclick={() => adjustIndentSelected(1)}
         disabled={!canWrite()}
       >
-          <Indent size={20} strokeWidth={2} />
+          <Indent label="" size={20} strokeWidth={2} />
       </button>
 
       <div class="relative">
         <button
-          class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+          class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
           type="button"
           aria-label="Change type"
           title="Change type"
           onclick={() => (showTypeMenu = !showTypeMenu)}
           disabled={!canWrite()}
         >
-          <Type size={20} strokeWidth={2} />
+          <Type label="" size={20} strokeWidth={2} />
         </button>
         {#if showTypeMenu}
           <div class="absolute bottom-12 right-0 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
@@ -2810,38 +2822,38 @@
       </div>
 
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10"
         type="button"
         aria-label="Copy"
         title="Copy"
         onclick={() => openCollectionModal('copy')}
         disabled={!canWrite()}
       >
-          <Copy size={20} strokeWidth={2} />
+          <Copy label="" size={20} strokeWidth={2} />
       </button>
 
       {#if $currentUser?.ai_llm_url && selectedIds.size > 0}
         <button
-          class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+          class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
           type="button"
           aria-label="AI Assistant"
           title="AI Assistant"
           onclick={() => openAiModal()}
           disabled={!canWrite()}
         >
-          <Sparkles size={20} />
+          <Sparkles label="" size={20} />
         </button>
       {/if}
 
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Insert template"
         title="Insert template"
         onclick={() => (showTemplateMenu = !showTemplateMenu)}
         disabled={!canWrite()}
       >
-          <LayoutTemplate size={20} strokeWidth={2} />
+          <LayoutTemplate label="" size={20} strokeWidth={2} />
       </button>
       {#if showTemplateMenu}
         <div class="absolute bottom-12 right-0 w-64 max-h-80 overflow-y-auto rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
@@ -2871,76 +2883,76 @@
       {/if}
 
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Upload files"
         title="Upload files"
         onclick={() => attachmentsInputRef?.click()}
         disabled={uploadingAttachments || !canWrite()}
       >
-          <Paperclip size={20} strokeWidth={2} />
+          <Paperclip label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Copy"
         title="Copy"
         onclick={() => openCollectionModal('copy')}
         disabled={!canWrite()}
       >
-          <Copy size={20} strokeWidth={2} />
+          <Copy label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Move"
         title="Move"
         onclick={() => openCollectionModal('move')}
         disabled={!canWrite()}
       >
-          <ArrowRightLeft size={20} strokeWidth={2} />
+          <ArrowRightLeft label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 disabled:opacity-50"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 disabled:opacity-50"
         type="button"
         aria-label="Create collection"
         title="Create collection from snipsel"
         onclick={createCollectionFromSnipsel}
         disabled={selectedIds.size !== 1 || !canWrite()}
       >
-          <CornerDownRight size={20} strokeWidth={2} />
+          <CornerDownRight label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Add to collection"
         title="Add to collection"
         onclick={() => openCollectionModal('link')}
         disabled={!canWrite()}
       >
-          <Plus size={20} strokeWidth={2} />
+          <Plus label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Info"
         title="Info"
         onclick={openDetailSelected}
       >
-          <Info size={20} strokeWidth={2} />
+          <Info label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md bg-red-600/90 text-lg text-white hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-red-600/90 text-lg text-white hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600"
         type="button"
         aria-label="Delete"
         title="Delete"
         onclick={deleteSelected}
         disabled={!canWrite()}
       >
-        <Trash2 size={20} strokeWidth={2} />
+        <Trash2 label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="grid h-11 w-11 place-items-center rounded-md text-lg text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md text-lg text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
         type="button"
         aria-label="Clear selection"
         title="Clear selection"
@@ -2950,7 +2962,7 @@
           closeTemplateMenu();
         }}
       >
-          <X size={20} strokeWidth={2} />
+          <X label="" size={20} strokeWidth={2} />
       </button>
     </div>
   </div>
@@ -2959,13 +2971,13 @@
 {#if showScrollTop}
   <div class="fixed bottom-32 left-0 right-0 z-10 flex justify-center pointer-events-none">
     <button 
-      class="pointer-events-auto grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-lg ring-1 ring-black/5 backdrop-blur-md transition-all hover:-translate-y-1 hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900" 
+      class="al-icon-wrapper pointer-events-auto grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-lg ring-1 ring-black/5 backdrop-blur-md transition-all hover:-translate-y-1 hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900" 
       type="button" 
       onclick={scrollToTop} 
       aria-label="Scroll to top" 
       title="Scroll to top"
     >
-      <ChevronUp size={24} strokeWidth={2.5} />
+      <ChevronUp label="" size={24} strokeWidth={2.5} />
     </button>
   </div>
 {/if}

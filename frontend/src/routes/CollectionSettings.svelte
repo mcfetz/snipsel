@@ -374,27 +374,27 @@
           <div class="text-xs font-medium uppercase text-slate-500">General</div>
           <div class="flex items-center gap-1 rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-800/80">
             <button
-              class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
+              class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
               type="button"
               aria-label={isFavorite ? 'Unfavorite' : 'Favorite'}
               title={isFavorite ? 'Unfavorite' : 'Favorite'}
               onclick={toggleFavorite}
               style={isFavorite ? `color: ${getAccent()}` : undefined}
             >
-              <Heart size={16} className={isFavorite ? "fill-current" : ""} strokeWidth={isFavorite ? 0 : 1.6} />
+              <Heart label="" size={16} className={isFavorite ? "fill-current" : ""} strokeWidth={isFavorite ? 0 : 1.6} />
             </button>
             <button
-              class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
+              class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
               type="button"
               aria-label={collection?.is_template ? 'Unset template' : 'Mark as template'}
               title={collection?.is_template ? 'Template' : 'Not a template'}
               onclick={toggleTemplate}
               style={collection?.is_template ? `color: ${getAccent()}` : undefined}
             >
-              <LayoutTemplate size={16} />
+              <LayoutTemplate label="" size={16} />
             </button>
             <button
-              class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors dark:text-slate-300 dark:hover:bg-white/5"
+              class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors dark:text-slate-300 dark:hover:bg-white/5"
               type="button"
               aria-label={collection?.is_passcode_protected ? 'Remove passcode protection' : 'Enable passcode protection'}
               title={$currentUser?.passcode_set ? (collection?.is_passcode_protected ? 'Protected — click to remove' : 'Protect with passcode') : 'Set a passcode in Settings first'}
@@ -403,9 +403,9 @@
               style={collection?.is_passcode_protected ? `color: ${getAccent()}` : ''}
             >
               {#if collection?.is_passcode_protected}
-                <Lock size={16} />
+                <Lock label="" size={16} />
               {:else}
-                <Unlock size={16} />
+                <Unlock label="" size={16} />
               {/if}
             </button>
           </div>
@@ -672,7 +672,7 @@
                     <div class="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
                       {#if s.shared_with_user_id === 'public'}
                         <span class="inline-flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-                          <Link size={16} />
+                          <Link label="" size={16} />
                           Public Link
                         </span>
                       {:else}
@@ -682,14 +682,14 @@
                     <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold dark:text-slate-400">{s.permission}</div>
                   </div>
                   <button
-                    class="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20"
+                    class="al-icon-wrapper grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20"
                     type="button"
                     aria-label="Remove share"
                     title="Remove"
                     onclick={() => revokeShare(s.id)}
                     disabled={sharingBusy}
                   >
-                    <X size={16} />
+                    <X label="" size={16} />
                   </button>
                 </div>
                 {#if s.shared_with_user_id === 'public' && collection.public_token}
@@ -702,13 +702,13 @@
                         value={`${window.location.origin}/?v=public&token=${collection.public_token}`}
                       />
                       <button 
-                        class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                        class="al-icon-wrapper text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
                         onclick={() => {
                           navigator.clipboard.writeText(`${window.location.origin}/?v=public&token=${collection!.public_token}`);
                         }}
                         title="Copy link"
                       >
-                        <Copy size={16} />
+                        <Copy label="" size={16} />
                       </button>
                     </div>
                   </div>

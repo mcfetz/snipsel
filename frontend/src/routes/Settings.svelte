@@ -368,7 +368,7 @@
 
 <div class="space-y-4">
   <h2 class="flex items-center gap-2 text-2xl font-semibold">
-    <SettingsIcon size={24} className="text-slate-700 dark:text-slate-300" />
+    <SettingsIcon label="" size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Settings</span>
   </h2>
 
@@ -467,13 +467,13 @@
           <div class="flex flex-col items-center gap-1 rounded-lg bg-slate-50 px-3 py-3 dark:bg-white/5">
             <div class="mb-1 text-slate-500 dark:text-slate-400">
               {#if stat.type === 'collections'}
-                <Folder size={20} />
+                <Folder label="" size={20} />
               {:else if stat.type === 'snipsels'}
-                <FileText size={20} />
+                <FileText label="" size={20} />
               {:else if stat.type === 'tasks'}
-                <SquareCheck size={20} />
+                <SquareCheck label="" size={20} />
               {:else if stat.type === 'attachments'}
-                <Paperclip size={20} />
+                <Paperclip label="" size={20} />
               {/if}
             </div>
             <span
@@ -609,12 +609,12 @@
       {#if hasPushEnabled}
         <div class="mt-3 flex items-center justify-end">
           <button
-            class="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors flex items-center gap-1.5"
+            class="al-icon-wrapper text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors flex items-center gap-1.5"
             type="button"
             onclick={sendTestPush}
             disabled={isBusy}
           >
-            <BellRing size={14} />
+            <BellRing label="" size={14} />
             Send Test Notification
           </button>
         </div>
@@ -674,7 +674,7 @@
     <!-- Security -->
     <div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
       <div class="flex items-center gap-2 text-xs uppercase text-slate-500">
-        <Lock size={12} strokeWidth={2.5} />
+        <Lock label="" size={12} strokeWidth={2.5} />
         <span>Security</span>
       </div>
       
@@ -940,7 +940,7 @@
             {#each passkeys as pk (pk.id)}
               <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-white/50 px-3 py-2 dark:border-white/5 dark:bg-slate-900/50">
                 <div class="flex items-center gap-2">
-                  <Key size={16} className="text-slate-400" />
+                  <Key label="" size={16} className="text-slate-400" />
                   <span class="text-sm font-medium">{pk.name}</span>
                 </div>
                 <button
@@ -963,33 +963,33 @@
       <div class="text-xs uppercase text-slate-500">Data & Migration</div>
       <div class="mt-3 space-y-3">
         <button
-          class="flex w-full items-center gap-4 rounded-xl border border-dashed border-slate-200 p-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50/50 dark:border-white/10 dark:hover:bg-white/5"
+          class="al-icon-wrapper flex w-full items-center gap-4 rounded-xl border border-dashed border-slate-200 p-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50/50 dark:border-white/10 dark:hover:bg-white/5"
           onclick={() => currentView.set({ type: 'importer' })}
           type="button"
         >
           <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-            <Upload size={20} />
+            <Upload label="" size={20} />
           </div>
           <div class="flex-1">
             <div class="font-medium text-slate-900 dark:text-slate-100">Import from TwoS</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">Bring your lists and things into snipsel</div>
           </div>
-          <ChevronRight size={20} className="text-slate-400" />
+          <ChevronRight label="" size={20} className="text-slate-400" />
         </button>
         
         <button
-          class="flex w-full items-center gap-4 rounded-xl border border-slate-200 p-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50/50 dark:border-white/10 dark:hover:bg-white/5"
+          class="al-icon-wrapper flex w-full items-center gap-4 rounded-xl border border-slate-200 p-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50/50 dark:border-white/10 dark:hover:bg-white/5"
           onclick={() => currentView.set({ type: 'recycle-bin' })}
           type="button"
         >
           <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            <Trash2 size={20} />
+            <Trash2 label="" size={20} />
           </div>
           <div class="flex-1">
             <div class="font-medium text-slate-900 dark:text-slate-100">Recycle Bin</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">Restore deleted collections and snipsels</div>
           </div>
-          <ChevronRight size={20} className="text-slate-400" />
+          <ChevronRight label="" size={20} className="text-slate-400" />
         </button>
       </div>
     </div>

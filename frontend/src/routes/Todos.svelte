@@ -160,7 +160,7 @@
 
 <div class="space-y-4">
 	<h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-    <SquareCheck size={24} className="text-slate-700 dark:text-slate-300" />
+    <SquareCheck label="" size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Todos</span>
 	</h2>
 
@@ -242,7 +242,7 @@
 					{/if}
 				</button>
 
-				<button class="min-w-0 flex flex-1 items-start gap-3 text-left" type="button" onclick={() => openInCollection(t)}>
+				<button class="al-icon-wrapper min-w-0 flex flex-1 items-start gap-3 text-left" type="button" onclick={() => openInCollection(t)}>
 					<div class="min-w-0 flex-1">
 						<div class="truncate text-lg font-medium text-slate-900 dark:text-slate-100">{t.content_markdown ?? ''}</div>
 						<div class="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
@@ -261,11 +261,11 @@
 										? undefined 
 										: `background-color: ${getAccentTint()}; color: ${getAccent()}`}
 								>
-									<Bell size={12} strokeWidth={2.5} />
+									<Bell label="" size={12} strokeWidth={2.5} />
 									{new Date(t.reminder_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
 									<span class="opacity-60">· {daysFromNow(t.reminder_at)}</span>
 									{#if t.reminder_rrule}
-										<RotateCw size={12} strokeWidth={2.5} className="ml-0.5" />
+										<RotateCw label="" size={12} strokeWidth={2.5} className="ml-0.5" />
 									{/if}
 								</span>
 							{/if}

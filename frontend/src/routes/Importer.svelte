@@ -218,12 +218,12 @@ async function startImport() {
 <div class="space-y-4">
   <div class="flex items-center gap-3">
     <button
-      class="grid h-10 w-10 place-items-center rounded-full text-slate-600 transition-colors hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
+      class="al-icon-wrapper grid h-10 w-10 place-items-center rounded-full text-slate-600 transition-colors hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
       onclick={goBack}
       type="button"
       aria-label="Back to settings"
     >
-      <ChevronLeft size={24} />
+      <ChevronLeft label="" size={24} />
     </button>
     <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Import from TwoS</h2>
   </div>
@@ -234,7 +234,7 @@ async function startImport() {
       <div class="rounded-xl border border-slate-200 bg-white/80 p-6 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
         <div class="mb-6 flex flex-col items-center text-center">
           <div class="mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-slate-50 text-slate-900 shadow-inner ring-1 ring-black/5 dark:bg-slate-800 dark:text-slate-100 dark:ring-white/5">
-            <LogIn size={32} />
+            <LogIn label="" size={32} />
           </div>
           <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Connect TwoS Account</h3>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -339,7 +339,7 @@ async function startImport() {
                 class="sr-only"
               />
               {#if overwrite}
-                <Check size={14} className="text-white" strokeWidth={3} />
+                <Check label="" size={14} className="text-white" strokeWidth={3} />
               {/if}
             </div>
             <span class="text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -364,7 +364,7 @@ async function startImport() {
               {#if isSearching}
                 <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-500 dark:border-white/20 dark:border-t-white/60"></div>
               {:else}
-                <Search size={16} />
+                <Search label="" size={16} />
               {/if}
             </div>
           </div>
@@ -404,7 +404,7 @@ async function startImport() {
                   style={selectedLists.has(list.id) ? `background-color: ${getAccent()}; border-color: ${getAccent()}` : 'border-color: #475569; background-color: transparent'}
                 >
                   {#if selectedLists.has(list.id)}
-                    <Check size={14} className="text-white" strokeWidth={3} />
+                    <Check label="" size={14} className="text-white" strokeWidth={3} />
                   {/if}
                 </div>
                 <div class="flex-1 min-w-0">
@@ -451,7 +451,7 @@ async function startImport() {
         <div class="rounded-xl border border-green-200 bg-green-50/50 p-4 shadow-sm backdrop-blur-md dark:border-green-900/30 dark:bg-green-950/20">
           <div class="flex items-center gap-2">
             <div class="grid h-6 w-6 place-items-center rounded-full bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400">
-                <Check size={16} />
+                <Check label="" size={16} />
             </div>
             <div class="font-semibold text-green-900 dark:text-green-100">Import complete</div>
           </div>

@@ -161,7 +161,7 @@
 <div class="space-y-4">
   <div class="flex items-center justify-between gap-3">
     <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-      <CalendarIcon size={24} className="text-slate-700 dark:text-slate-300" />
+      <CalendarIcon label="" size={24} className="text-slate-700 dark:text-slate-300" />
       <span>{monthLabel(cursor)}</span>
     </h2>
   </div>
@@ -195,7 +195,7 @@
 
     <div class="relative h-[46px] w-[46px] flex-shrink-0 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-colors dark:border-white/10 dark:bg-slate-900 dark:ring-white/10 dark:hover:bg-white/5">
       <div class="flex h-full items-center justify-center text-slate-600 pointer-events-none dark:text-slate-400">
-        <CalendarIcon size={20} />
+        <CalendarIcon label="" size={20} />
       </div>
       <input 
         type="month" 

@@ -5,7 +5,7 @@
   import CalendarIcon from '@animated-color-icons/lucide-svelte/Calendar.svelte';
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
   import PlusIcon from '@animated-color-icons/lucide-svelte/Plus.svelte';
-  import BookOpen from '@animated-color-icons/lucide-svelte/BookOpen.svelte';
+  import List from '@animated-color-icons/lucide-svelte/List.svelte';
   import Hash from '@animated-color-icons/lucide-svelte/Hash.svelte';
   import { untrack } from 'svelte';
   import { api } from './lib/api';
@@ -571,7 +571,7 @@
           aria-label="Recent collections"
           title="Recent"
         >
-            <Clock size={20} />
+            <Clock label="" size={20} />
           </button>
           
           {#if showRecentPopup}
@@ -622,13 +622,13 @@
           title="Notifications"
         >
           {#if $notificationsStore.filter(n => !n.is_read).length > 0}
-            <span class="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900"
+            <span class="al-icon-wrapper absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900"
                   style="background-color: {getAccent()}"
             >
               {$notificationsStore.filter(n => !n.is_read).length}
             </span>
           {/if}
-          <Bell size={20} />
+          <Bell label="" size={20} />
         </button>
         <button
           class="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {$currentView.type === 'settings'
@@ -638,7 +638,7 @@
           aria-label="Settings"
           title="Settings"
         >
-          <SettingsIcon size={20} />
+          <SettingsIcon label="" size={20} />
         </button>
       </div>
     </header>
@@ -700,7 +700,7 @@
       <div class="mx-auto max-w-3xl px-4 pt-2" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);">
         <div class="pointer-events-auto mx-auto flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-slate-700 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 dark:ring-white/10">
           <button
-            class="grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'calendar'
+            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'calendar'
               ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
               : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
             type="button"
@@ -708,11 +708,11 @@
             aria-label="Calendar"
             title="Calendar"
           >
-            <CalendarIcon size={24} />
+            <CalendarIcon label="" size={24} />
           </button>
 
           <button
-            class="grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'todos'
+            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'todos'
               ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
               : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
             type="button"
@@ -720,22 +720,22 @@
             aria-label="Todos"
             title="Todos"
           >
-            <SquareCheck size={24} />
+            <SquareCheck label="" size={24} />
           </button>
 
           <button
-            class="grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg"
             style={`background-color: ${getAccent()}; color: white`}
             type="button"
             onclick={onNewSnipsel}
             aria-label="New snipsel (today)"
             title="New snipsel (today)"
           >
-            <PlusIcon size={24} strokeWidth={2.5} />
+            <PlusIcon label="" size={24} strokeWidth={2.5} />
           </button>
 
           <button
-            class="grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'collections'
+            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'collections'
               ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
               : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
             type="button"
@@ -743,11 +743,11 @@
             aria-label="Collections"
             title="Collections"
           >
-            <BookOpen size={24} />
+            <List label="" size={24} />
           </button>
 
           <button
-            class="grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'tags_mentions'
+            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'tags_mentions'
               ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
               : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
             type="button"
@@ -755,7 +755,7 @@
             aria-label="Tags and mentions"
             title="Tags / Mentions"
           >
-            <Hash size={24} />
+            <Hash label="" size={24} />
           </button>
           
         </div>

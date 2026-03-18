@@ -167,15 +167,15 @@
 <div class="space-y-4">
   <div class="flex items-center gap-2">
     <button
-      class="rounded-full p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+      class="al-icon-wrapper rounded-full p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
       onclick={() => currentView.set({ type: 'settings' })}
       title="Back to Settings"
       aria-label="Back to Settings"
     >
-      <ArrowLeft size={20} />
+      <ArrowLeft label="" size={20} />
     </button>
     <h2 class="flex items-center gap-2 text-2xl font-semibold">
-      <Trash2 size={24} className="text-slate-700 dark:text-slate-300" />
+      <Trash2 label="" size={24} className="text-slate-700 dark:text-slate-300" />
       <span>Recycle Bin</span>
     </h2>
   </div>
@@ -218,12 +218,12 @@
     
     {#if (activeTab === 'collections' && deletedCollections.length > 0) || (activeTab === 'snipsels' && deletedSnipsels.length > 0)}
       <button
-        class="flex shrink-0 h-12 w-12 sm:w-auto sm:px-4 items-center justify-center gap-2 rounded-full border border-red-200 bg-white text-sm font-medium text-red-600 shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:border-red-900/30 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-900/20"
+        class="al-icon-wrapper flex shrink-0 h-12 w-12 sm:w-auto sm:px-4 items-center justify-center gap-2 rounded-full border border-red-200 bg-white text-sm font-medium text-red-600 shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:border-red-900/30 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-900/20"
         onclick={() => showEmptyConfirm = true}
         disabled={isBusy}
         title="Empty {activeTab}"
       >
-        <Trash size={20} />
+        <Trash label="" size={20} />
         <span class="hidden sm:inline">Empty {activeTab === 'collections' ? 'Collections' : 'Snipsels'}</span>
       </button>
     {/if}
@@ -248,20 +248,20 @@
               </div>
               <div class="ml-3 flex items-center gap-1 shrink-0">
                 <button
-                  class="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors"
+                  class="al-icon-wrapper flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors"
                   onclick={() => restoreCollection(col.id)}
                   disabled={isBusy}
                   title="Restore Collection"
                 >
-                  <Undo size={16} />
+                  <Undo label="" size={16} />
                 </button>
                 <button
-                  class="flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors"
+                  class="al-icon-wrapper flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors"
                   onclick={() => showDeleteConfirmId = col.id}
                   disabled={isBusy}
                   title="Permanently Delete"
                 >
-                  <Trash size={16} />
+                  <Trash label="" size={16} />
                 </button>
               </div>
             </div>
@@ -286,20 +286,20 @@
               </div>
               <div class="ml-3 flex items-center gap-1 shrink-0">
                 <button
-                  class="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors"
+                  class="al-icon-wrapper flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors"
                   onclick={() => restoreSnipsel(snip.id)}
                   disabled={isBusy}
                   title="Restores to Today's collection"
                 >
-                  <Undo size={16} />
+                  <Undo label="" size={16} />
                 </button>
                 <button
-                  class="flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors"
+                  class="al-icon-wrapper flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors"
                   onclick={() => showDeleteConfirmId = snip.id}
                   disabled={isBusy}
                   title="Permanently Delete"
                 >
-                  <Trash size={16} />
+                  <Trash label="" size={16} />
                 </button>
               </div>
             </div>

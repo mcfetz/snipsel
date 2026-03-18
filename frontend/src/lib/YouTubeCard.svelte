@@ -67,7 +67,7 @@
           class="h-full w-full object-cover"
         />
         <div class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-          <Youtube size={40} className="text-white" />
+          <Youtube label="" size={40} className="text-white" />
         </div>
       </a>
 
@@ -80,7 +80,7 @@
         </p>
         
         <div class="mt-2 flex items-center gap-1.5">
-          <Youtube size={12} className="text-red-600" />
+          <Youtube label="" size={12} className="text-red-600" />
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">YouTube</span>
         </div>
       </div>
@@ -93,7 +93,7 @@
         onclick={(e) => e.stopPropagation()}
         aria-label="Open on YouTube"
       >
-        <ExternalLink size={20} strokeWidth={2} />
+        <ExternalLink label="" size={20} strokeWidth={2} />
       </a>
     </div>
   </div>

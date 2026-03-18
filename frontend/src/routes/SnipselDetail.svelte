@@ -720,13 +720,13 @@
 								{#if isVideoAttachment(a) && a.has_thumbnail}
 									<button
 										type="button"
-										class="relative h-10 w-10 overflow-hidden rounded group"
+										class="al-icon-wrapper relative h-10 w-10 overflow-hidden rounded group"
 										aria-label={`Play ${a.filename}`}
 										onclick={() => openVideoModal(a.id, a.filename)}
 									>
 										<img class="h-10 w-10 object-cover" src={api.attachments.thumbnailUrl(a.id)} alt={a.filename} loading="lazy" />
 										<div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-											<CirclePlay size={20} className="text-white" />
+											<CirclePlay label="" size={20} className="text-white" />
 										</div>
 									</button>
 								{:else if isImageAttachment(a) && a.has_thumbnail}
@@ -758,16 +758,16 @@
 										aria-label="Download attachment"
 										title="Download"
 									>
-										<Download size={20} />
+										<Download label="" size={20} />
 									</a>
 									<button
-										class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
+										class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
 										type="button"
 										aria-label="Delete attachment"
 										onclick={() => deleteAttachment(a.id)}
 										title="Delete"
 									>
-										<Trash2 size={20} />
+										<Trash2 label="" size={20} />
 									</button>
 								</div>
 							</div>
@@ -796,23 +796,23 @@
 					</button>
 					<div class="flex items-center gap-1 rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-800/80">
 						<button
-							class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
+							class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
 							type="button"
 							aria-label={(favoriteByCollectionId[p.collection_id] ?? false) ? 'Unfavorite collection' : 'Favorite collection'}
 							title={(favoriteByCollectionId[p.collection_id] ?? false) ? 'Unfavorite' : 'Favorite'}
 							onclick={() => toggleCollectionFavorite(p.collection_id)}
 							style={(favoriteByCollectionId[p.collection_id] ?? false) ? `color: ${getAccent()}` : undefined}
 						>
-							<Heart size={16} className={favoriteByCollectionId[p.collection_id] ? "fill-current" : ""} strokeWidth={favoriteByCollectionId[p.collection_id] ? 0 : 1.6} />
+							<Heart label="" size={16} className={favoriteByCollectionId[p.collection_id] ? "fill-current" : ""} strokeWidth={favoriteByCollectionId[p.collection_id] ? 0 : 1.6} />
 						</button>
 						<button
-							class="grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
+							class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
 							type="button"
 							aria-label="Collection info"
 							title="Info"
 							onclick={() => openCollectionInfo(p.collection_id)}
 						>
-							<Info size={16} strokeWidth={1.6} />
+							<Info label="" size={16} strokeWidth={1.6} />
 						</button>
 					</div>
 				</div>

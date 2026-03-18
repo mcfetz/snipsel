@@ -96,19 +96,19 @@
         {title}
       </h2>
       <button
-        class="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/5 dark:hover:text-slate-300"
+        class="al-icon-wrapper rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/5 dark:hover:text-slate-300"
         type="button"
         onclick={onClose}
         aria-label="Close"
       >
-        <X size={20} />
+        <X label="" size={20} />
       </button>
     </div>
 
     <div class="p-6">
       <div class="relative">
         <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <Search size={20} className="text-slate-400" />
+          <Search label="" size={20} className="text-slate-400" />
         </div>
         <input
           bind:this={inputRef}
@@ -122,7 +122,7 @@
       
       {#if loading && !query && recentCollections.length === 0}
          <div class="mt-8 flex justify-center text-slate-400">
-           <Loader2 size={24} className="animate-spin" />
+           <Loader2 label="" size={24} className="animate-spin" />
          </div>
       {/if}
     </div>

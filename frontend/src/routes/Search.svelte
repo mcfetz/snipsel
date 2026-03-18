@@ -129,7 +129,7 @@
 
 <div class="space-y-4">
   <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-    <SearchIcon size={24} className="text-slate-700 dark:text-slate-300" />
+    <SearchIcon label="" size={24} className="text-slate-700 dark:text-slate-300" />
     <span>Search</span>
   </h2>
 

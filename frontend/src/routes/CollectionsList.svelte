@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BookOpen from '@animated-color-icons/lucide-svelte/BookOpen.svelte';
+  import List from '@animated-color-icons/lucide-svelte/List.svelte';
   import Plus from '@animated-color-icons/lucide-svelte/Plus.svelte';
   import Heart from '@animated-color-icons/lucide-svelte/Heart.svelte';
   import Calendar from '@animated-color-icons/lucide-svelte/Calendar.svelte';
@@ -195,17 +195,17 @@
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h2 class="flex items-center gap-2 text-2xl font-semibold text-slate-800 dark:text-slate-100">
-      <BookOpen size={24} className="text-slate-700 dark:text-slate-300" />
+      <List label="" size={24} className="text-slate-700 dark:text-slate-300" />
       <span>Collections</span>
     </h2>
     <button
-      class="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-all dark:border-white/10 dark:bg-slate-900 dark:ring-white/5 dark:hover:bg-white/5"
+      class="al-icon-wrapper grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-all dark:border-white/10 dark:bg-slate-900 dark:ring-white/5 dark:hover:bg-white/5"
       type="button"
       onclick={() => (showCreate = true)}
       aria-label="New collection"
       title="New collection"
     >
-      <Plus size={24} color={getAccent()} />
+      <Plus label="" size={24} color={getAccent()} />
     </button>
   </div>
 
@@ -231,7 +231,7 @@
         style={filter === 'favorites' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Favs"
       >
-        <Heart size={20} />
+        <Heart label="" size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'day'
@@ -242,7 +242,7 @@
         style={filter === 'day' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Days"
       >
-        <Calendar size={20} />
+        <Calendar label="" size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'mine'
@@ -253,7 +253,7 @@
         style={filter === 'mine' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="My"
       >
-        <User size={20} />
+        <User label="" size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'shared'
@@ -264,7 +264,7 @@
         style={filter === 'shared' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Shared"
       >
-        <Users size={20} />
+        <Users label="" size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'templates'
@@ -275,7 +275,7 @@
         style={filter === 'templates' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Templates"
       >
-        <LayoutTemplate size={20} />
+        <LayoutTemplate label="" size={20} />
       </button>
       <button
         class="grid place-items-center border-l border-black/5 py-3 text-sm transition-colors {filter === 'archive'
@@ -286,7 +286,7 @@
         style={filter === 'archive' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         title="Archive"
       >
-        <Archive size={20} />
+        <Archive label="" size={20} />
       </button>
     </div>
   </div>
@@ -414,9 +414,9 @@
                 style={c.access_level === 'owner' && c.shared_out ? `color: ${getAccent()}` : undefined}
               >
                 {#if c.access_level === 'owner' && c.shared_out}
-                  <ArrowUp size={20} />
+                  <ArrowUp label="" size={20} />
                 {:else}
-                  <ArrowDown size={20} />
+                  <ArrowDown label="" size={20} />
                 {/if}
               </div>
               <div class="h-6 w-px bg-slate-100 mx-0.5 dark:bg-white/10"></div>
@@ -424,13 +424,13 @@
 
             {#if c.is_template}
               <div class="grid h-9 w-9 place-items-center text-slate-400" title="Template">
-                <LayoutTemplate size={16} />
+                <LayoutTemplate label="" size={16} />
               </div>
               <div class="h-6 w-px bg-slate-100 mx-0.5 dark:bg-white/10"></div>
             {/if}
 
             <button
-              class="grid h-9 w-9 place-items-center rounded-full text-slate-400 hover:bg-slate-50 transition-colors"
+              class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-400 hover:bg-slate-50 transition-colors"
               type="button"
               aria-label={c.is_favorite ? 'Unfavorite' : 'Favorite'}
               title={c.is_favorite ? 'Unfavorite' : 'Favorite'}
@@ -438,20 +438,20 @@
               style={c.is_favorite ? `color: ${getAccent()}` : undefined}
             >
               {#if c.is_favorite}
-                <Heart size={20} className="fill-current" />
+                <Heart label="" size={20} className="fill-current" />
               {:else}
-                <Heart size={20} />
+                <Heart label="" size={20} />
               {/if}
             </button>
             <div class="h-6 w-px bg-slate-100 mx-0.5 dark:bg-white/10"></div>
             <button
-              class="grid h-9 w-9 place-items-center rounded-full text-slate-400 hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
+              class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-400 hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
               type="button"
               aria-label="Edit collection"
               title="Edit"
               onclick={() => editCollection(c)}
             >
-              <Info size={20} />
+              <Info label="" size={20} />
             </button>
           </div>
         </div>

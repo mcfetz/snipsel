@@ -103,7 +103,7 @@
   <div class="mx-4 w-full max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-8 shadow-2xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
     <div class="mb-6 flex flex-col items-center">
       <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-        <Lock size={32} strokeWidth={2} />
+        <Lock label="" size={32} strokeWidth={2} />
       </div>
       <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Protected Collection</h2>
       <p class="mt-1 text-center text-sm text-slate-500 dark:text-slate-400">Enter your 4-digit passcode to unlock this collection.</p>
@@ -137,12 +137,12 @@
     <div class="mt-8 flex flex-col gap-3">
       <button
         type="button"
-        class="flex h-12 items-center justify-center rounded-xl bg-indigo-600 font-semibold text-white transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+        class="al-icon-wrapper flex h-12 items-center justify-center rounded-xl bg-indigo-600 font-semibold text-white transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
         onclick={handleSubmit}
         disabled={loading || digits.some(d => !d)}
       >
         {#if loading}
-          <Loader2 size={20} className="animate-spin text-white" />
+          <Loader2 label="" size={20} className="animate-spin text-white" />
         {:else}
           Unlock Collection
         {/if}
