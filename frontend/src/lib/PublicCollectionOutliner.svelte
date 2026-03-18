@@ -5,6 +5,8 @@
   import VideoModal from './VideoModal.svelte';
   import DeezerCard from './DeezerCard.svelte';
   import YouTubeCard from './YouTubeCard.svelte';
+  import HyperlinkCard from './HyperlinkCard.svelte';
+  import MapCard from './MapCard.svelte';
   import ChevronDown from '@animated-color-icons/lucide-svelte/ChevronDown.svelte';
   import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
@@ -225,6 +227,60 @@
     return null;
   }
 
+  function getMapLink(text: string | null) {
+    if (!text) return null;
+    // Short links that need server-side resolution (no coords in URL)
+    const googleShortMatch = text.match(/https?:\/\/maps\.app\.goo\.gl\/[A-Za-z0-9]+/);
+    const appleShortMatch = text.match(/https?:\/\/maps\.apple(?:\.com)?\/p\/[^\s]*/);
+    if (googleShortMatch || appleShortMatch) {
+      const match = googleShortMatch || appleShortMatch;
+      return { url: match![0] };
+    }
+    // Google Maps patterns (full URL)
+    const googleAtMatch = text.match(/https?:\/\/(?:www\.)?google\.com\/maps\/[^\s]*@(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
+    const googleQMatch = text.match(/https?:\/\/(?:www\.)?google\.com\/maps\?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
+    const mapsGoogleQMatch = text.match(/https?:\/\/maps\.google\.[a-z]+\/?\?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
+    // Apple Maps patterns (full URL)
+    const appleLlMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
+    const appleQMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
+    const appleCenterMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]center=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
+    const appleCoordMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]coordinate=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
+    
+    if (googleAtMatch) {
+      return { lat: parseFloat(googleAtMatch[1]), lng: parseFloat(googleAtMatch[2]), url: googleAtMatch[0] };
+    }
+    if (googleQMatch) {
+      return { lat: parseFloat(googleQMatch[1]), lng: parseFloat(googleQMatch[2]), url: googleQMatch[0] };
+    }
+    if (mapsGoogleQMatch) {
+      return { lat: parseFloat(mapsGoogleQMatch[1]), lng: parseFloat(mapsGoogleQMatch[2]), url: mapsGoogleQMatch[0] };
+    }
+    if (appleLlMatch) {
+      return { lat: parseFloat(appleLlMatch[1]), lng: parseFloat(appleLlMatch[2]), url: appleLlMatch[0] };
+    }
+    if (appleQMatch) {
+      return { lat: parseFloat(appleQMatch[1]), lng: parseFloat(appleQMatch[2]), url: appleQMatch[0] };
+    }
+    if (appleCenterMatch) {
+      return { lat: parseFloat(appleCenterMatch[1]), lng: parseFloat(appleCenterMatch[2]), url: appleCenterMatch[0] };
+    }
+    if (appleCoordMatch) {
+      return { lat: parseFloat(appleCoordMatch[1]), lng: parseFloat(appleCoordMatch[2]), url: appleCoordMatch[0] };
+    }
+    return null;
+  }
+
+  function getGenericLink(text: string | null) {
+    if (!text) return null;
+    if (getDeezerLink(text)) return null;
+    if (getYouTubeLink(text)) return null;
+    if (getMapLink(text)) return null;
+    const trimmed = text.trim();
+    const urlMatch = trimmed.match(/^(https?:\/\/\S+)$/);
+    if (urlMatch) return { url: urlMatch[1] };
+    return null;
+  }
+
   function stripMediaLinks(text: string | null): string {
     if (!text) return '';
     let result = text;
@@ -232,6 +288,10 @@
     if (dz) result = result.replace(dz.url, '');
     const yt = getYouTubeLink(text);
     if (yt) result = result.replace(yt.url, '');
+    const ml = getMapLink(text);
+    if (ml) result = result.replace(ml.url, '');
+    const gl = getGenericLink(text);
+    if (gl) result = result.replace(gl.url, '');
     return result.trim();
   }
 
@@ -349,6 +409,14 @@
             {#if getYouTubeLink(item.snipsel.content_markdown)}
               {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
               <YouTubeCard url={yt.url} />
+            {/if}
+            {#if getMapLink(item.snipsel.content_markdown)}
+              {@const ml = getMapLink(item.snipsel.content_markdown)!}
+              <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} />
+            {/if}
+            {#if getGenericLink(item.snipsel.content_markdown)}
+              {@const gl = getGenericLink(item.snipsel.content_markdown)!}
+              <HyperlinkCard url={gl.url} />
             {/if}
 
             <div 

@@ -53,7 +53,7 @@
 <div class="al-icon-wrapper group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900">
   <div class="absolute inset-0 z-0 bg-gradient-to-br from-slate-500/5 to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
 
-  <div class="relative z-10 flex items-center gap-4 p-4">
+  <div class="relative flex items-center gap-4 p-4">
     {#if thumbnailUrl}
       <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100 shadow-sm dark:bg-white/5">
         <img src={thumbnailUrl} alt={attachment.filename} class="h-full w-full object-cover" />

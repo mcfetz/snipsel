@@ -99,7 +99,7 @@
     <!-- Glassmorphic background effect -->
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
     
-    <div class="relative z-10 flex items-center gap-4 p-4">
+    <div class="relative flex items-center gap-4 p-4">
       <a 
         href={url} 
         target="_blank" 
