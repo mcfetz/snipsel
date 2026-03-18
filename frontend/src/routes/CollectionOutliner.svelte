@@ -25,6 +25,9 @@
   import Info from '@animated-color-icons/lucide-svelte/Info.svelte';
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
   import X from '@animated-color-icons/lucide-svelte/X.svelte';
+  import FileText from '@animated-color-icons/lucide-svelte/FileText.svelte';
+  import ImageIcon from '@animated-color-icons/lucide-svelte/Image.svelte';
+  import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
 
   import MarkdownIt from 'markdown-it';
   import { api, type Attachment, type CollectionItem, type SearchSnipselHit } from '../lib/api';
@@ -2797,26 +2800,35 @@
           <Type label="" size={20} strokeWidth={2} />
         </button>
         {#if showTypeMenu}
-          <div class="absolute bottom-12 right-0 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
-            <button class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('text')}>
-              Note
-            </button>
-            <button class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('image')}>
-              Image
-            </button>
-            <button class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('attachment')}>
-              File
-            </button>
-            <button class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('task')}>
-              Task
-            </button>
-            <button
-              class="w-full border-t px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/5"
-              type="button"
-              onclick={closeTypeMenu}
-            >
-              Cancel
-            </button>
+          <div class="absolute bottom-12 right-0 z-50 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
+            <div class="border-b border-slate-100 bg-slate-50/50 px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:border-white/5 dark:bg-slate-950/50 dark:text-slate-400">Change type</div>
+            <div class="py-1">
+              <button class="al-icon-wrapper flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('text')}>
+                <FileText label="" size={16} strokeWidth={2} />
+                Note
+              </button>
+              <button class="al-icon-wrapper flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('image')}>
+                <ImageIcon label="" size={16} strokeWidth={2} />
+                Image
+              </button>
+              <button class="al-icon-wrapper flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('attachment')}>
+                <Paperclip label="" size={16} strokeWidth={2} />
+                File
+              </button>
+              <button class="al-icon-wrapper flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('task')}>
+                <SquareCheck label="" size={16} strokeWidth={2} />
+                Task
+              </button>
+            </div>
+            <div class="border-t border-slate-100 p-1 dark:border-white/5">
+              <button
+                class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5"
+                type="button"
+                onclick={closeTypeMenu}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         {/if}
       </div>
