@@ -45,27 +45,6 @@ Snipsel is an open-source PWA for capturing ideas, notes, tasks, bookmarks, and 
 
 Most note apps are either too simple (just plain text) or too heavy (Notion, Obsidian). Snipsel hits the sweet spot: structured collections, multiple content types, sharing, reminders — yet still feels as lightweight and instant as a sticky note.
 
-### Comparison: Snipsel vs. Alternatives
-
-| Feature | Snipsel | Standard Notes | Joplin | Notesnook |
-| :--- | :---: | :---: | :---: | :---: |
-| **PWA / mobile-first** | ✅ | ✅ | ⚠️ (1) | ✅ |
-| **Images & Attachments** | ✅ | ✅ (2) | ✅ | ✅ |
-| **Collection sharing** | ✅ | ✅ (2) | ✅ (3) | ✅ |
-| **Daily journal / carry-over** | ✅ | ❌ (4) | ⚠️ (5) | ❌ (4) |
-| **Passkey login** | ✅ | ✅ (2) | ❌ | ❌ |
-| **AI Assistant (LLM Proxy)** | ✅ | ❌ | ❌ | ❌ |
-| **Push notifications** | ✅ | ❌ | ✅ | ✅ |
-| **Self-hosted (Container)** | ✅ | ✅ | ✅ | ✅ |
-| **Import from Twos** | ✅ | ❌ | ❌ | ❌ |
-
-1. **Joplin (PWA):** Joplin relies on native applications. There is no official web version or PWA that offers the full feature set without an installed client.  
-2. **Standard Notes (Features):** Many of these features (Attachments, Sharing, Passkeys) are only available in the paid "Productivity" or "Professional" plans.  
-3. **Joplin (Sharing):** Collaboration requires either "Joplin Cloud" (subscription) or a self-hosted "Joplin Server".  
-4. **Standard Notes / Notesnook (Carry-over):** While daily notes can be created, there is no built-in system to automatically move unfinished tasks to the next day.  
-5. **Joplin (Daily Journal):** Community plugins for "Daily Notes" exist, but task carry-over is not natively integrated and requires manual moving or complex scripts.
-
-
 ---
 
 ## 🚀 Features
@@ -100,12 +79,6 @@ A built-in **daily collection** auto-created for each day. Open tasks from the p
 
 ### 📥 Import from Twos
 Coming from [Twos](https://www.twosapp.com/)? Snipsel can import all your lists, tasks, photos, and reminders with a single click — including recurrence rules.
-
-<p align="center">
-  <img src="docs/screenshot_settings.png" width="180" alt="Settings" />
-  &nbsp;
-  <img src="docs/screenshot_search.png" width="180" alt="Search" />
-</p>
 
 ---
 
