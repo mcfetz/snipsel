@@ -537,6 +537,14 @@
     return rgba(mixed, 0.96);
   }
 
+  function getHeaderGradient(): string {
+    const headerColor = getHeaderColor();
+    const base = hexToRgb(headerColor);
+    if (!base) return headerColor;
+    const lighter = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.3);
+    return `linear-gradient(135deg, ${headerColor} 0%, ${rgba(lighter, 1)} 100%)`;
+  }
+
   function openImageModal(id: string, filename: string) {
     modalImage = { id, filename };
   }
@@ -1918,7 +1926,7 @@
     <div class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-slate-900">
       <div
         class="relative h-28 w-full rounded-t-[calc(0.75rem-1px)] overflow-hidden dark:brightness-75"
-        style="background-color: {getHeaderColor()}"
+        style="background: {$currentCollection?.header_image_url ? getHeaderColor() : getHeaderGradient()}"
       >
         {#if $currentCollection?.header_image_url}
           <div 

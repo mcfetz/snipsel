@@ -33,6 +33,7 @@
   let dayCollections = $state<Map<string, { icon: string | null }>>(new Map());
   let direction = $state(1);
   let isCreatingDay = $state(false);
+  let pressedCell = $state<number | null>(null);
 
   const DEFAULT_ACCENT = '#4f46e5';
   type Rgb = { r: number; g: number; b: number };
@@ -137,12 +138,13 @@
     }
   }
 
-  async function openDay(day: Date) {
+  async function openDay(day: Date, cellIndex: number) {
     if (isCreatingDay) return;
+    pressedCell = cellIndex;
+    await new Promise(resolve => setTimeout(resolve, 120));
     isCreatingDay = true;
     const iso = toLocalIsoDay(day);
     try {
-      // api.collections.today creates it if it doesn't exist
       const res = await api.collections.today(iso);
       onSelect(res.collection.id);
       onClose();
@@ -150,6 +152,7 @@
       console.error('Failed to open/create day collection', err);
     } finally {
       isCreatingDay = false;
+      pressedCell = null;
     }
   }
 
@@ -173,12 +176,6 @@
     void cursor;
     if (mode === 'days') {
       loadHighlights();
-    }
-  });
-
-  $effect(() => {
-    if (mode === 'collections' && inputRef) {
-      inputRef.focus();
     }
   });
 
@@ -386,7 +383,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-500">
+          <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-medium text-slate-500">
             {#each weekdays as w}
               <div class="py-1">{w}</div>
             {/each}
@@ -395,42 +392,47 @@
           <div class="cal-stack overflow-hidden" role="none" ontouchstart={onTouchStart} ontouchend={onTouchEnd}>
             {#key cursor}
               <div
-                class="grid grid-cols-7 gap-1"
+                class="grid grid-cols-7 gap-1.5"
                 in:fly={{ x: direction * 60, duration: 220, opacity: 0 }}
                 out:fly={{ x: direction * -60, duration: 220, opacity: 0 }}
               >
-                {#each getGridDays(cursor) as cell}
+                {#each getGridDays(cursor) as cell, idx}
                   {@const iso = toLocalIsoDay(cell.day)}
                   {@const collectionData = dayCollections.get(iso)}
                   {@const hasCollection = !!collectionData}
                   {@const isToday = isSameLocalDay(cell.day, new Date())}
                   {@const showIcon = collectionData?.icon && collectionData.icon !== '📅'}
+                  {@const isPressed = pressedCell === idx}
                   <button
-                    class="relative aspect-square rounded-lg text-sm transition-colors {cell.inMonth
-                      ? 'bg-white hover:bg-slate-50 dark:bg-slate-900/40 dark:hover:bg-slate-800/60'
+                    class="group relative aspect-square rounded-lg transition-all {isPressed ? 'scale-90 opacity-80' : ''} {cell.inMonth
+                      ? 'bg-white hover:bg-slate-100 dark:bg-slate-900/40 dark:hover:bg-slate-800/50'
                       : 'bg-slate-50 text-slate-400 hover:bg-slate-100 dark:bg-slate-950/40 dark:text-slate-600 dark:hover:bg-slate-900/40'} {isCreatingDay ? 'opacity-50 cursor-not-allowed' : ''}"
                     type="button"
-                    onclick={() => openDay(cell.day)}
+                    onclick={() => openDay(cell.day, idx)}
                     disabled={isCreatingDay}
-                    style={isToday ? `box-shadow: inset 0 0 0 2px ${getAccent()}` : undefined}
+                    style={isToday ? `border: 2px solid ${getAccent()}` : undefined}
                   >
-                    {#if showIcon}
-                      <span class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] shadow-sm ring-1 ring-black/5 dark:bg-slate-800 dark:ring-white/10">
-                        {collectionData.icon}
-                      </span>
-                    {/if}
-                    <span
-                      class="mx-auto grid h-7 w-7 place-items-center rounded-full {hasCollection
-                        ? 'font-semibold'
-                        : isToday
-                          ? 'bg-slate-100 font-semibold text-slate-900 dark:bg-slate-800 dark:text-white'
+                    <div class="flex h-full flex-col items-center justify-center gap-0.5">
+                      <span
+                        class="text-base font-medium transition-all {isPressed ? 'scale-90' : ''} group-hover:scale-110 {isToday
+                          ? 'text-slate-900 dark:text-white'
                           : cell.inMonth
                             ? 'text-slate-800 dark:text-slate-300'
                             : 'text-slate-400 dark:text-slate-600'}"
-                      style={hasCollection ? `background-color: ${getAccent()}; color: white` : undefined}
-                    >
-                      {cell.day.getDate()}
-                    </span>
+                      >
+                        {cell.day.getDate()}
+                      </span>
+                      {#if hasCollection}
+                        <span
+                          class="h-1 w-4 rounded-full transition-all {isPressed ? 'scale-75' : ''} group-hover:scale-110"
+                          style="background-color: {getAccent()}"
+                        ></span>
+                      {:else if isToday}
+                        <span
+                          class="h-1 w-4 rounded-full bg-slate-300 transition-all {isPressed ? 'scale-75' : ''} group-hover:scale-110 dark:bg-slate-600"
+                        ></span>
+                      {/if}
+                    </div>
                   </button>
                 {/each}
               </div>

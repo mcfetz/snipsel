@@ -210,7 +210,6 @@ def get_today_collection():
         title=day.isoformat(),
         icon="📅",
         list_for_day=day,
-        header_color=user.default_collection_header_color,
         created_by_id=user.id,
         modified_by_id=user.id,
     )
@@ -711,11 +710,7 @@ def create_collection():
     title = (data.get("title") or "").strip()
     icon = (data.get("icon") or "🗒").strip() or "🗒"
     header_image_url = (data.get("header_image_url") or "").strip() or None
-    header_color = (
-        (data.get("header_color") or "").strip()
-        or user.default_collection_header_color
-        or None
-    )
+    header_color = (data.get("header_color") or "").strip() or None
     default_snipsel_type = (data.get("default_snipsel_type") or "").strip() or None
     show_completed_tasks = (
         data.get("show_completed_tasks") if "show_completed_tasks" in data else True

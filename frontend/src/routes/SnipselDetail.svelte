@@ -29,6 +29,7 @@
   }>>([]);
 	let loading = $state(true);
   let changingType = $state(false);
+  let changingCardView = $state(false);
   let saveStatus = $state<'success' | 'error' | null>(null);
 
   let copied = $state(false);
@@ -156,6 +157,24 @@
 			changingType = false;
 		}
 	}
+
+  async function toggleCardView() {
+    if (!hasWriteAccess) return;
+    if (!snipsel) return;
+    changingCardView = true;
+    try {
+      await api.snipsels.update(snipselId, { card_view: !snipsel.card_view });
+      saveStatus = 'success';
+      setTimeout(() => { if (saveStatus === 'success') saveStatus = null; }, 5000);
+      await load();
+    } catch (err) {
+      console.error('Failed to update card_view:', err);
+      saveStatus = 'error';
+      setTimeout(() => { if (saveStatus === 'error') saveStatus = null; }, 5000);
+    } finally {
+      changingCardView = false;
+    }
+  }
   
 	async function updateReminders() {
 		if (!hasWriteAccess) return;
@@ -483,9 +502,22 @@
             Task
           </button>
 				</div>
+</div>
+          <div class="mt-3 flex items-center justify-between">
+            <span class="text-sm text-slate-600 dark:text-slate-400">Use card view</span>
+            <button
+              type="button"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {snipsel?.card_view !== false ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'}"
+              onclick={toggleCardView}
+              disabled={changingCardView || !hasWriteAccess}
+              role="switch"
+              aria-checked={snipsel?.card_view !== false}
+            >
+              <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {snipsel?.card_view !== false ? 'translate-x-5' : 'translate-x-0'}"></span>
+            </button>
+          </div>
 			</div>
-		</div>
-			
+
 			<div class="rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80">
 				<div class="text-xs uppercase text-slate-500 dark:text-slate-400">Timestamps</div>
 				<div class="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400">

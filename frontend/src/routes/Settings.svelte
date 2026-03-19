@@ -27,6 +27,7 @@
   let templateCollections = $state<Collection[]>([]);
   let dayTemplateId = $state<string>('');
   let isBusy = $state(false);
+  let initialized = $state(false);
   let showPasscodeForm = $state(false);
   let passcode = $state('');
   let passcodeError = $state('');
@@ -343,10 +344,12 @@
   }
 
   $effect(() => {
-    defaultHeaderColor = $currentUser?.default_collection_header_color ?? DEFAULT_ACCENT;
-    dayTemplateId = $currentUser?.day_collection_template_id ?? '';
-    aiLlmUrl = $currentUser?.ai_llm_url ?? '';
-    aiModelName = $currentUser?.ai_model_name ?? '';
+    if (!$currentUser || initialized) return;
+    defaultHeaderColor = $currentUser.default_collection_header_color ?? DEFAULT_ACCENT;
+    dayTemplateId = $currentUser.day_collection_template_id ?? '';
+    aiLlmUrl = $currentUser.ai_llm_url ?? '';
+    aiModelName = $currentUser.ai_model_name ?? '';
+    initialized = true;
   });
 
   $effect(() => {
@@ -520,8 +523,24 @@
         <label for="accent-color-picker" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Default collection header color</label>
         <div class="mt-2 flex items-center gap-2">
           <div class="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
-            <input id="accent-color-picker" class="h-8 w-8 cursor-pointer overflow-hidden rounded border-none bg-transparent" type="color" bind:value={defaultHeaderColor} />
-            <input class="min-w-0 flex-1 border-none bg-transparent text-sm font-mono text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-300" bind:value={defaultHeaderColor} />
+            <label class="relative block h-8 w-8 cursor-pointer">
+              <input 
+                id="accent-color-picker" 
+                class="h-full w-full cursor-pointer rounded border-0 p-0" 
+                type="color" 
+                value={defaultHeaderColor} 
+                oninput={(e) => defaultHeaderColor = (e.target as HTMLInputElement).value}
+              />
+            </label>
+            <input 
+              class="min-w-0 flex-1 border-none bg-transparent text-sm font-mono text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-300" 
+              value={defaultHeaderColor}
+              oninput={(e) => {
+                let v = (e.target as HTMLInputElement).value;
+                if (v && !v.startsWith('#')) v = '#' + v;
+                if (/^#[0-9a-fA-F]{6}$/.test(v)) defaultHeaderColor = v;
+              }}
+            />
           </div>
           <button
             class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"

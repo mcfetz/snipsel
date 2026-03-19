@@ -101,6 +101,7 @@ export type ReactionSummary = {
 export type Snipsel = {
   id: string;
   type: string;
+  card_view: boolean;
   content_markdown: string | null;
   task_done: boolean;
   done_at: string | null;
@@ -674,6 +675,7 @@ export const api = {
       collectionId: string,
       input: {
         type?: string;
+        card_view?: boolean;
         content_markdown?: string;
         geo_lat?: number;
         geo_lng?: number;
@@ -687,6 +689,7 @@ export const api = {
         const snipsel: Snipsel = {
           id: tempId,
           type: input.type || 'text',
+          card_view: input.card_view ?? true,
           content_markdown: input.content_markdown || null,
           task_done: false,
           done_at: null,
@@ -730,6 +733,7 @@ export const api = {
       snipselId: string,
       input: {
         type?: string;
+        card_view?: boolean;
         content_markdown?: string | null;
         task_done?: boolean;
         external_url?: string | null;

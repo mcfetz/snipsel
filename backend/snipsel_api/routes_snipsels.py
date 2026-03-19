@@ -208,6 +208,7 @@ def create_snipsel(collection_id: str):
     s = Snipsel(
         owner_user_id=user.id,
         type=snipsel_type,
+        card_view=data.get("card_view", True),
         content_markdown=content_markdown,
         geo_lat=float(geo_lat) if geo_lat is not None else None,
         geo_lng=float(geo_lng) if geo_lng is not None else None,
@@ -523,6 +524,8 @@ def update_snipsel(snipsel_id: str):
         new_type = data.get("type")
         if isinstance(new_type, str) and new_type:
             s.type = new_type
+    if "card_view" in data and has_write_access:
+        s.card_view = bool(data.get("card_view", True))
     if "content_markdown" in data and has_write_access:
         s.content_markdown = data.get("content_markdown")
     if "task_done" in data:
@@ -554,6 +557,7 @@ def update_snipsel(snipsel_id: str):
                         # Create new snipsel
                         new_s = Snipsel(
                             type=s.type,
+                            card_view=s.card_view,
                             content_markdown=s.content_markdown,
                             owner_user_id=s.owner_user_id,
                             created_by_id=user.id,
@@ -1055,6 +1059,7 @@ def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
     return {
         "id": s.id,
         "type": s.type,
+        "card_view": s.card_view,
         "content_markdown": s.content_markdown,
         "task_done": s.task_done,
         "done_at": s.done_at.isoformat() + "Z" if s.done_at else None,
