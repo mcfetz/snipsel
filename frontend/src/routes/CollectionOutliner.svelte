@@ -1277,6 +1277,38 @@
     }
   }
 
+  async function toggleCardViewSelected() {
+    if (!canWrite()) return;
+    if (selectedIds.size === 0) return;
+
+    const firstId = Array.from(selectedIds)[0];
+    const firstItem = $collectionItems.find(item => item.snipsel_id === firstId);
+    const newValue = firstItem ? !(firstItem.snipsel.card_view ?? true) : true;
+
+    isLoading.set(true);
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) {
+        await api.snipsels.update(id, { card_view: newValue });
+      }
+      await loadItems();
+      closeTypeMenu();
+    } finally {
+      isLoading.set(false);
+    }
+  }
+
+  function getSelectedCardView(): boolean {
+    const firstId = Array.from(selectedIds)[0];
+    const firstItem = $collectionItems.find(item => item.snipsel_id === firstId);
+    return firstItem?.snipsel.card_view ?? true;
+  }
+
+  function getEditingSnipselCardView(): boolean {
+    const editingItem = $sortedItems.find(item => item.snipsel_id === $editingSnipselId);
+    return editingItem?.snipsel.card_view ?? true;
+  }
+
   function openCollectionModal(mode: 'copy' | 'move' | 'link') {
     if (!$currentCollection) return;
     if (!canWrite()) return;
