@@ -2263,6 +2263,7 @@
                 oninput={handleEditInput}
                 onkeydown={handleKeydown}
                 onpaste={handlePaste}
+                autofocus
               ></textarea>
               {#if uploadingAttachments}
                 <div class="absolute right-3 top-3 flex items-center gap-2 text-xs text-slate-400">
