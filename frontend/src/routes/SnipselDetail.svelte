@@ -490,6 +490,7 @@
               disabled={changingCardView || !hasWriteAccess}
               role="switch"
               aria-checked={snipsel?.card_view !== false}
+              aria-label="Toggle card view"
             >
               <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {snipsel?.card_view !== false ? 'translate-x-5' : 'translate-x-0'}"></span>
             </button>
