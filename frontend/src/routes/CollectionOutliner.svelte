@@ -1180,8 +1180,10 @@
   });
 
   // Handle create snipsel on load (from nav bar + button)
+  // This effect waits for items to be loaded after collection switch
   $effect(() => {
-    if ($createSnipselOnLoad && $currentCollection && collectionItems.length > 0) {
+    // Only proceed if flag is set and we have items
+    if ($createSnipselOnLoad && $currentCollection && $sortedItems.length > 0) {
       createSnipselOnLoad.set(false);
       focusProxyRef?.focus();
       createSnipsel().then(() => {
