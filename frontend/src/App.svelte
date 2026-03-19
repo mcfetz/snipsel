@@ -53,6 +53,7 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
 
   let recentContainerRef: HTMLDivElement | undefined = $state();
   let showRecentPopup = $state(false);
+  let focusProxyNavRef: HTMLInputElement | undefined = $state();
   async function toggleRecentPopup() {
     if (!showRecentPopup) {
       try {
@@ -166,15 +167,13 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
   }
 
   async function onNewSnipsel() {
-    // If collection is already open, use the callback directly for better mobile support
-    // This keeps focus within the user gesture context
-    if ($createSnipselCallback && $currentView.type === 'collection') {
-      $createSnipselCallback();
-      return;
-    }
-    // Otherwise, open today and then create snipsel
+    // Always open today's collection first, then create snipsel
+    // Focus proxy before async to keep mobile keyboard context
+    focusProxyNavRef?.focus();
     await openToday();
-    requestNewSnipsel();
+    // Now the callback should be available since CollectionOutliner is mounted
+    $createSnipselCallback?.();
+    focusProxyNavRef?.blur();
   }
 
   async function openToday() {
@@ -754,6 +753,13 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
         </div>
       </div>
     </nav>
+    <!-- Hidden input for mobile keyboard focus -->
+    <input
+      bind:this={focusProxyNavRef}
+      class="pointer-events-none absolute left-0 top-0 h-0 w-0 opacity-0"
+      tabindex="-1"
+      aria-hidden="true"
+    />
     <div class="h-24"></div>
   {/if}
 </div>
