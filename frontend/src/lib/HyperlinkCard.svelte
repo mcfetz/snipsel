@@ -6,9 +6,10 @@
 
   interface Props {
     url: string;
+    accentColor?: string;
   }
 
-  let { url }: Props = $props();
+  let { url, accentColor = '#3b82f6' }: Props = $props();
 
   interface LinkMetadata {
     title: string;
@@ -51,7 +52,7 @@
     </div>
   </div>
 {:else if data}
-  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
+  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" style={`--accent: ${accentColor}`} in:scale={{ start: 0.95, duration: 150 }}>
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
 
     <div class="relative flex items-center gap-4 p-4">
@@ -86,7 +87,7 @@
           class="hover:underline"
           onclick={(e) => e.stopPropagation()}
         >
-          <h4 class="truncate text-base font-semibold text-slate-900 group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400">
+          <h4 class="truncate text-base font-semibold text-slate-900 group-hover:text-[var(--accent)] dark:text-slate-100 dark:group-hover:text-[var(--accent)]">
             {data.title}
           </h4>
         </a>
@@ -99,7 +100,7 @@
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-blue-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-blue-400"
+        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 group-hover:text-[var(--accent)] active:scale-90 dark:bg-white/5 dark:hover:bg-white/10"
         onclick={(e) => e.stopPropagation()}
         aria-label="Open link"
       >

@@ -2078,19 +2078,19 @@
                 {#if snip.content_markdown}
                   {#if getDeezerLink(snip.content_markdown)}
                     {@const dz = getDeezerLink(snip.content_markdown)!}
-                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} />
+                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getYouTubeLink(snip.content_markdown)}
                     {@const yt = getYouTubeLink(snip.content_markdown)!}
-                    <YouTubeCard url={yt.url} />
+                    <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getMapLink(snip.content_markdown)}
                     {@const ml = getMapLink(snip.content_markdown)!}
-                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} />
+                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getGenericLink(snip.content_markdown)}
                     {@const gl = getGenericLink(snip.content_markdown)!}
-                    <HyperlinkCard url={gl.url} />
+                    <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
                   <div class="flex items-start gap-2">
                     <div class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0">
@@ -2246,19 +2246,19 @@
               {/if}
               {#if getDeezerLink(editContent)}
                 {@const dz = getDeezerLink(editContent)!}
-                <DeezerCard url={dz.url} type={dz.type} id={dz.id} />
+                <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={getHeaderColor()} />
               {/if}
               {#if getYouTubeLink(editContent)}
                 {@const yt = getYouTubeLink(editContent)!}
-                <YouTubeCard url={yt.url} />
+                <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
               {/if}
               {#if getMapLink(editContent)}
                 {@const ml = getMapLink(editContent)!}
-                <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} />
+                <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
               {/if}
               {#if getGenericLink(editContent)}
                 {@const gl = getGenericLink(editContent)!}
-                <HyperlinkCard url={gl.url} />
+                <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
               {/if}
               {#if showAutocomplete && suggestions.length > 0}
                 <div class="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
@@ -2399,19 +2399,19 @@
               {#if item.snipsel.content_markdown}
                   {#if getDeezerLink(item.snipsel.content_markdown)}
                     {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
-                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} />
+                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getYouTubeLink(item.snipsel.content_markdown)}
                     {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
-                    <YouTubeCard url={yt.url} />
+                    <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getMapLink(item.snipsel.content_markdown)}
                     {@const ml = getMapLink(item.snipsel.content_markdown)!}
-                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} />
+                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getGenericLink(item.snipsel.content_markdown)}
                     {@const gl = getGenericLink(item.snipsel.content_markdown)!}
-                    <HyperlinkCard url={gl.url} />
+                    <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
 
                   <div class="flex items-start gap-2">
@@ -2639,19 +2639,19 @@
                 {#if snip.content_markdown}
                   {#if getDeezerLink(snip.content_markdown)}
                     {@const dz = getDeezerLink(snip.content_markdown)!}
-                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} />
+                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getYouTubeLink(snip.content_markdown)}
                     {@const yt = getYouTubeLink(snip.content_markdown)!}
-                    <YouTubeCard url={yt.url} />
+                    <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getMapLink(snip.content_markdown)}
                     {@const ml = getMapLink(snip.content_markdown)!}
-                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} />
+                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getGenericLink(snip.content_markdown)}
                     {@const gl = getGenericLink(snip.content_markdown)!}
-                    <HyperlinkCard url={gl.url} />
+                    <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
                   <div class="flex items-start gap-2">
                     <div class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0">

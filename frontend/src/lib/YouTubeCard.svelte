@@ -6,9 +6,10 @@
 
   interface Props {
     url: string;
+    accentColor?: string;
   }
 
-  let { url }: Props = $props();
+  let { url, accentColor = '#ef4444' }: Props = $props();
 
   let data = $state<any>(null);
   let loading = $state(true);
@@ -51,7 +52,7 @@
 {:else if error || !data}
   <!-- Silently fail -->
 {:else}
-  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
+  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" style={`--accent: ${accentColor}`} in:scale={{ start: 0.95, duration: 150 }}>
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
     
     <div class="relative flex flex-col sm:flex-row items-center gap-4 p-4">
@@ -73,7 +74,7 @@
       </a>
 
       <div class="min-w-0 flex-1">
-        <h4 class="line-clamp-2 text-lg font-semibold text-slate-900 group-hover:text-red-600 dark:text-slate-100 dark:group-hover:text-red-400">
+        <h4 class="line-clamp-2 text-lg font-semibold text-slate-900 group-hover:text-[var(--accent)] dark:text-slate-100">
           {title}
         </h4>
         <p class="truncate text-sm text-slate-500 dark:text-slate-400">
@@ -90,7 +91,7 @@
         href={url} 
         target="_blank" 
         rel="noopener noreferrer"
-        class="hidden sm:grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-red-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-red-400"
+        class="hidden sm:grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 group-hover:text-[var(--accent)] active:scale-90 dark:bg-white/5 dark:hover:bg-white/10"
         onclick={(e) => e.stopPropagation()}
         aria-label="Open on YouTube"
       >

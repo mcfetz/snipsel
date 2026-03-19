@@ -8,9 +8,10 @@
     url: string;
     lat?: number;
     lng?: number;
+    accentColor?: string;
   }
 
-  let { url, lat: initialLat, lng: initialLng }: Props = $props();
+  let { url, lat: initialLat, lng: initialLng, accentColor = '#22c55e' }: Props = $props();
 
   let lat = $state<number | null>(null);
   let lng = $state<number | null>(null);
@@ -62,7 +63,7 @@
     </div>
   </div>
 {:else if error}
-  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
+  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" style={`--accent: ${accentColor}`} in:scale={{ start: 0.95, duration: 150 }}>
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
 
     <div class="relative flex items-center gap-4 p-4">
@@ -86,7 +87,7 @@
           class="hover:underline"
           onclick={(e) => e.stopPropagation()}
         >
-          <h4 class="truncate text-base font-semibold text-slate-900 group-hover:text-green-600 dark:text-slate-100 dark:group-hover:text-green-400">
+          <h4 class="truncate text-base font-semibold text-slate-900 group-hover:text-[var(--accent)] dark:text-slate-100">
             Open in Maps
           </h4>
         </a>
@@ -99,7 +100,7 @@
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-green-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-green-400"
+        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 group-hover:text-[var(--accent)] active:scale-90 dark:bg-white/5 dark:hover:bg-white/10"
         onclick={(e) => e.stopPropagation()}
         aria-label="Open in original maps"
       >
@@ -108,7 +109,7 @@
     </div>
   </div>
 {:else}
-  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
+  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" style={`--accent: ${accentColor}`} in:scale={{ start: 0.95, duration: 150 }}>
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
 
     <div class="relative">
@@ -137,7 +138,7 @@
         </div>
 
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-semibold text-slate-900 group-hover:text-green-600 dark:text-slate-100 dark:group-hover:text-green-400">
+          <p class="truncate text-sm font-semibold text-slate-900 group-hover:text-[var(--accent)] dark:text-slate-100">
             {lat!.toFixed(4)}, {lng!.toFixed(4)}
           </p>
           <p class="truncate text-xs text-slate-500 dark:text-slate-400">
@@ -149,7 +150,7 @@
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-green-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-green-400"
+          class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 group-hover:text-[var(--accent)] active:scale-90 dark:bg-white/5 dark:hover:bg-white/10"
           onclick={(e) => e.stopPropagation()}
           aria-label="Open in original maps"
         >

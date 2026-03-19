@@ -10,9 +10,10 @@
     type: 'track' | 'album' | 'artist' | null;
     id: string | null;
     url: string;
+    accentColor?: string;
   }
 
-  let { type, id, url }: Props = $props();
+  let { type, id, url, accentColor = '#6366f1' }: Props = $props();
 
   let data = $state<any>(null);
   let loading = $state(true);
@@ -96,7 +97,7 @@
 {:else if error || !data || data.error}
   <!-- Silently fail or minimal fallback -->
 {:else}
-  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
+  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" style={`--accent: ${accentColor}`} in:scale={{ start: 0.95, duration: 150 }}>
     <!-- Glassmorphic background effect -->
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
     
@@ -119,7 +120,7 @@
       </a>
 
       <div class="min-w-0 flex-1">
-        <h4 class="truncate text-lg font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-slate-100 dark:group-hover:text-indigo-400">
+        <h4 class="truncate text-lg font-semibold text-slate-900 group-hover:text-[var(--accent)] dark:text-slate-100">
           {title}
         </h4>
         <p class="truncate text-sm text-slate-500 dark:text-slate-400">
@@ -136,7 +137,7 @@
         href={url} 
         target="_blank" 
         rel="noopener noreferrer"
-        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-indigo-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-indigo-400"
+        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 group-hover:text-[var(--accent)] active:scale-90 dark:bg-white/5 dark:hover:bg-white/10"
         onclick={(e) => e.stopPropagation()}
         aria-label="Open on Deezer"
       >
