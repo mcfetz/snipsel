@@ -762,26 +762,23 @@
     }
   }
 
-  function startEdit(item: CollectionItem) {
-    if (!canWrite()) return;
-    if (selectedIds.size > 0) {
-      toggleSelection(item.snipsel_id);
-      return;
-    }
-    editingSnipselId.set(item.snipsel_id);
+function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
+    $editingSnipselId = item.snipsel_id;
     editContent = item.snipsel.content_markdown || '';
     editIndent = item.indent;
     
     // Scroll to the new item first
     const el = document.getElementById(`snipsel-${item.snipsel_id}`);
     
-    // Scroll to bottom of the list to show the new snipsel
-    setTimeout(() => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    }, 100);
-    
-    // Also scroll the element into view as backup
-    el?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    // Only scroll to bottom when creating via nav bar + button
+    if (scrollToBottom) {
+      setTimeout(() => {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }, 100);
+      
+      // Also scroll the element into view as backup
+      el?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
     
     // Focus the textarea with multiple attempts for mobile compatibility
     // Mobile browsers often require focus to be within a user gesture context
@@ -1113,7 +1110,7 @@
 
       itemsMutationSeq += 1;
       collectionItems.update((items) => [...items, res.item]);
-      startEdit(res.item);
+      startEdit(res.item, true);  // Scroll to bottom when creating via nav bar
     } finally {
       isLoading.set(false);
     }
