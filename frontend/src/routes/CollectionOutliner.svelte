@@ -2267,7 +2267,7 @@
                   {@const images = snip.attachments.filter((a) => a.mime_type?.startsWith('image/') || a.has_thumbnail)}
                   {#if images.length > 0}
                     <div class="mt-3 grid grid-cols-3 gap-3">
-                      {#each images.slice(0, 9) as a (a.id)}
+                      {#each images as a (a.id)}
                         <button
                           class="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-95 dark:border-white/10 dark:bg-slate-900"
                           type="button"
@@ -2287,9 +2287,6 @@
                         </button>
                       {/each}
                     </div>
-                    {#if images.length > 9}
-                      <div class="mt-2 text-sm text-slate-400">+{images.length - 9} more</div>
-                    {/if}
                   {/if}
                 {/if}
               </div>
@@ -2648,7 +2645,7 @@
 
                 {#if media.length > 0}
                   <div class="mt-3 grid grid-cols-3 gap-3">
-                    {#each media.slice(0, 9) as a}
+                    {#each media as a}
                       <button
                         type="button"
                         class="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md dark:border-white/10 dark:bg-slate-900"
@@ -2678,9 +2675,6 @@
                       </button>
                     {/each}
                   </div>
-                  {#if media.length > 9}
-                    <div class="mt-2 text-sm text-slate-400">+{media.length - 9} more</div>
-                  {/if}
                 {/if}
 
                 {#if others.length > 0}
@@ -2828,7 +2822,7 @@
                   {@const images = snip.attachments.filter((a) => a.mime_type?.startsWith('image/') || a.has_thumbnail)}
                   {#if images.length > 0}
                     <div class="mt-3 grid grid-cols-3 gap-3">
-                      {#each images.slice(0, 9) as a (a.id)}
+                      {#each images as a (a.id)}
                         <button
                           class="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-95 dark:border-white/10 dark:bg-slate-900"
                           type="button"
@@ -2848,9 +2842,6 @@
                         </button>
                       {/each}
                     </div>
-                    {#if images.length > 9}
-                      <div class="mt-2 text-sm text-slate-400">+{images.length - 9} more</div>
-                    {/if}
                   {/if}
                 {/if}
               </div>
