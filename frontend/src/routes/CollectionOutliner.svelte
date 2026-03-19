@@ -1168,8 +1168,15 @@
       clearSelection();
       closeTypeMenu();
       closeTemplateMenu();
+      // On mobile, focus proxy first to open keyboard within user gesture context
+      focusProxyRef?.focus();
       // Ensure we start from the correct collection's list before optimistic append.
-      loadItems().then(() => createSnipsel());
+      loadItems().then(async () => {
+        await createSnipsel();
+        // Focus the textarea after creation
+        textareaRef?.focus();
+        focusProxyRef?.blur();
+      });
     }
   });
 
