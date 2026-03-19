@@ -181,6 +181,11 @@
   }
 
   async function onNewSnipsel() {
+    // Set focus intent immediately within user gesture context
+    // This helps mobile browsers keep the keyboard open
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     await openToday();
     requestNewSnipsel();
   }

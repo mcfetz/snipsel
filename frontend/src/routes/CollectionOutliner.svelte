@@ -761,15 +761,25 @@
     editingSnipselId.set(item.snipsel_id);
     editContent = item.snipsel.content_markdown || '';
     editIndent = item.indent;
-    // Use requestAnimationFrame to ensure DOM is ready, then focus
-    // On mobile, we need to focus within the same user gesture context
-    requestAnimationFrame(() => {
+    
+    // Scroll to the new item first
+    const el = document.getElementById(`snipsel-${item.snipsel_id}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Focus the textarea with multiple attempts for mobile compatibility
+    // Mobile browsers often require focus to be within a user gesture context
+    const tryFocus = (attempts: number) => {
+      if (attempts <= 0) return;
       textareaRef?.focus();
       autosizeTextarea();
-      // Scroll the new item into view
-      const el = document.getElementById(`snipsel-${item.snipsel_id}`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
+      // If still not focused, try again after a short delay
+      if (document.activeElement !== textareaRef) {
+        setTimeout(() => tryFocus(attempts - 1), 50);
+      }
+    };
+    
+    // Start with requestAnimationFrame for DOM readiness, then try multiple times
+    requestAnimationFrame(() => tryFocus(3));
   }
 
   async function saveEdit() {
@@ -1168,13 +1178,13 @@
       clearSelection();
       closeTypeMenu();
       closeTemplateMenu();
-      // On mobile, focus proxy first to open keyboard within user gesture context
+      // Focus proxy immediately within user gesture context (before any await)
+      // This opens the keyboard on mobile
       focusProxyRef?.focus();
       // Ensure we start from the correct collection's list before optimistic append.
       loadItems().then(async () => {
         await createSnipsel();
-        // Focus the textarea after creation
-        textareaRef?.focus();
+        // The startEdit function will handle focusing the textarea
         focusProxyRef?.blur();
       });
     }
