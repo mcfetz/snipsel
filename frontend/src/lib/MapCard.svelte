@@ -99,7 +99,7 @@
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all hover:bg-slate-100 hover:text-green-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-green-400"
+        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-green-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-green-400"
         onclick={(e) => e.stopPropagation()}
         aria-label="Open in original maps"
       >
@@ -108,7 +108,7 @@
     </div>
   </div>
 {:else}
-  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
+  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
 
     <div class="relative">
@@ -149,7 +149,7 @@
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all hover:bg-slate-100 hover:text-green-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-green-400"
+          class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-green-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-green-400"
           onclick={(e) => e.stopPropagation()}
           aria-label="Open in original maps"
         >

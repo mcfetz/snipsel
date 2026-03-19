@@ -90,7 +90,7 @@
         href={url} 
         target="_blank" 
         rel="noopener noreferrer"
-        class="hidden sm:grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all hover:bg-slate-100 hover:text-red-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-red-400"
+        class="hidden sm:grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-red-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-red-400"
         onclick={(e) => e.stopPropagation()}
         aria-label="Open on YouTube"
       >
