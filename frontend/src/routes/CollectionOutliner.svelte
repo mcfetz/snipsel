@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly, fade, scale } from 'svelte/transition';
   import ChevronsUp from '@animated-color-icons/lucide-svelte/ChevronsUp.svelte';
   import ChevronsDown from '@animated-color-icons/lucide-svelte/ChevronsDown.svelte';
   import Loader2 from '@animated-color-icons/lucide-svelte/Loader2.svelte';
@@ -1936,7 +1937,7 @@
           >
             <div class="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
               <div
-                class="h-full rounded-full"
+                class="h-full rounded-full transition-all duration-300 ease-out"
                 style={`width: ${Math.round(taskProgress().ratio * 100)}%; background-color: ${getHeaderColor()}`}
               ></div>
             </div>
@@ -2301,7 +2302,7 @@
               <button
                 type="button"
                 aria-label={item.snipsel.task_done ? 'Mark task not done' : 'Mark task done'}
-                class="absolute top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white dark:border-white/20 dark:bg-slate-800"
+                class="absolute top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800"
                 onclick={(e) => {
                   e.stopPropagation();
                   toggleTaskDone(item);
@@ -2311,7 +2312,7 @@
                   : ''}"
               >
                 {#if item.snipsel.task_done}
-                  ✓
+                  <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
                 {/if}
               </button>
 
@@ -2768,7 +2769,7 @@
       {/if}
 
       <button
-        class="mt-6 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-base text-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="mt-6 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-base text-slate-400 transition-all hover:scale-[1.01] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-500 active:scale-[0.99] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Add new snipsel"
         onclick={() => {
@@ -2793,7 +2794,7 @@
 </div>
 
 {#if selectedIds.size > 0}
-  <div class="fixed bottom-20 left-0 right-0 z-20 px-4 pb-4">
+  <div class="fixed bottom-20 left-0 right-0 z-20 px-4 pb-4" in:fly={{ y: 30, duration: 200 }} out:fade={{ duration: 150 }}>
     <div
       class="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-3 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:text-slate-100 dark:ring-white/10"
       style={`background-color: ${getToolboxBg()}`}
@@ -3049,9 +3050,9 @@
 {/if}
 
 {#if showScrollTop}
-  <div class="fixed bottom-32 left-0 right-0 z-10 flex justify-center pointer-events-none">
+  <div class="fixed bottom-32 left-0 right-0 z-10 flex justify-center pointer-events-none" in:fly={{ y: 20, duration: 200 }} out:fade={{ duration: 150 }}>
     <button 
-      class="al-icon-wrapper pointer-events-auto grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-lg ring-1 ring-black/5 backdrop-blur-md transition-all hover:-translate-y-1 hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900" 
+      class="al-icon-wrapper pointer-events-auto grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-lg ring-1 ring-black/5 backdrop-blur-md transition-all hover:-translate-y-1 hover:bg-white hover:shadow-xl dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900" 
       type="button" 
       onclick={scrollToTop} 
       aria-label="Scroll to top" 

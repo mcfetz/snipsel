@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly, fade, scale } from 'svelte/transition';
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import RotateCw from '@animated-color-icons/lucide-svelte/RotateCw.svelte';
@@ -221,15 +222,15 @@
 	</div>
 
 	{#if items.length === 0}
-		<div class="py-8 text-center text-sm text-slate-500">No {showDone ? 'done' : 'open'} tasks</div>
+		<div class="py-8 text-center text-sm text-slate-500" in:fade={{ duration: 200 }}>No {showDone ? 'done' : 'open'} tasks</div>
 	{:else}
     <div class="space-y-2">
-		{#each items as t}
+		{#each items as t (t.id)}
 			{@const hasAccess = t.has_collection_access !== false}
 			{@const canToggle = t.can_toggle_task_done === true}
-			<div class="flex w-full items-center gap-3 px-1 py-2">
+			<div class="flex w-full items-center gap-3 px-1 py-2" in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 150 }}>
 				<button
-					class="grid h-8 w-8 place-items-center rounded-full border border-slate-300 bg-white disabled:opacity-40 dark:border-white/20 dark:bg-slate-900"
+					class="grid h-8 w-8 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 dark:border-white/20 dark:bg-slate-900"
 					type="button"
 					aria-label={t.task_done ? 'Mark open' : 'Mark done'}
 					title={t.task_done ? 'Open' : 'Done'}
@@ -238,7 +239,7 @@
 					onclick={() => toggleDone(t.id, t.task_done)}
 				>
 					{#if t.task_done}
-						<span class="text-sm font-semibold" style={`color: ${getAccent()}`}>✓</span>
+						<span in:scale={{ start: 0.5, duration: 150 }} class="text-sm font-semibold" style={`color: ${getAccent()}`}>✓</span>
 					{/if}
 				</button>
 

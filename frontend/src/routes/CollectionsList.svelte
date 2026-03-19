@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fly, fade, scale } from 'svelte/transition';
+  import { flip } from 'svelte/animate';
   import List from '@animated-color-icons/lucide-svelte/List.svelte';
   import Plus from '@animated-color-icons/lucide-svelte/Plus.svelte';
   import Heart from '@animated-color-icons/lucide-svelte/Heart.svelte';
@@ -340,6 +342,8 @@
   {#if showCreate}
     <form
       class="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10"
+      in:fly={{ y: -20, duration: 200 }}
+      out:fade={{ duration: 150 }}
       onsubmit={(e) => {
         e.preventDefault();
         createCollection();
@@ -379,15 +383,15 @@
   {/if}
 
   {#if $isLoading}
-    <div class="py-8 text-center text-sm text-slate-500 font-medium">Loading collections...</div>
+    <div class="py-8 text-center text-sm text-slate-500 font-medium" in:fade={{ duration: 200 }}>Loading collections...</div>
   {:else if filtered.length === 0}
-    <div class="py-8 text-center text-sm text-slate-500 font-medium">No collections found</div>
+    <div class="py-8 text-center text-sm text-slate-500 font-medium" in:fade={{ duration: 200 }}>No collections found</div>
   {:else}
     <div class="space-y-2">
-      {#each filtered as c}
-        <div class="flex w-full items-center gap-3 px-1 py-2 group">
-          <button class="flex flex-1 items-center gap-3 text-left" type="button" onclick={() => openCollection(c)}>
-            <span class="text-3xl transition-transform group-hover:scale-110">{c.icon}</span>
+      {#each filtered as c (c.id)}
+        <div class="flex w-full items-center gap-3 px-1 py-2 group" animate:flip={{ duration: 200 }} in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 150 }}>
+          <button class="flex flex-1 items-center gap-3 text-left transition-all hover:translate-x-0.5" type="button" onclick={() => openCollection(c)}>
+            <span class="text-3xl transition-transform duration-200 group-hover:scale-110">{c.icon}</span>
             <div class="min-w-0 flex-1">
               <div class="truncate text-lg font-medium text-slate-800 dark:text-slate-200">{c.title}</div>
               <div class="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
