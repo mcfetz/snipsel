@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly, fade } from 'svelte/transition';
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
   interface Props {
     title: string;
@@ -26,14 +27,14 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-  class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm transition-all"
+  class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
   role="dialog"
   aria-modal="true"
   aria-labelledby="delete-modal-title"
   tabindex="-1"
   onclick={(e) => e.target === e.currentTarget && onCancel()}
 >
-  <div class="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10 p-6">
+  <div class="w-full max-w-sm overflow-hidden rounded-2xl bg-white/95 shadow-2xl ring-1 ring-black/5 backdrop-blur-md dark:bg-slate-900/95 dark:ring-white/10 p-6" in:fly={{ y: 20, duration: 200 }} out:fade={{ duration: 150 }}>
     <div class="flex flex-col items-center text-center">
       <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
         <Trash2 label="" size={24} />

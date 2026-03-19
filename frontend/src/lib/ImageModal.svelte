@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly, fade, scale } from 'svelte/transition';
   import Download from '@animated-color-icons/lucide-svelte/Download.svelte';
   import X from '@animated-color-icons/lucide-svelte/X.svelte';
   interface Props {
@@ -61,7 +62,7 @@
 
 {#if attachmentId}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
     aria-label="Image preview"
@@ -69,7 +70,7 @@
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}
   >
-    <div class="relative max-h-full max-w-full">
+    <div class="relative max-h-full max-w-full" in:scale={{ start: 0.9, duration: 150 }} out:fade={{ duration: 100 }}>
       {#if loading}
         <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
           <div class="text-sm text-white/70">Loading...</div>

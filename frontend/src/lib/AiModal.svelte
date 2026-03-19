@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly, fade } from 'svelte/transition';
   import Sparkles from '@animated-color-icons/lucide-svelte/Sparkles.svelte';
   import X from '@animated-color-icons/lucide-svelte/X.svelte';
   import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
@@ -53,7 +54,7 @@
     aria-label="Close modal"
   ></div>
   
-  <div class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-white/20 bg-white/90 shadow-2xl ring-1 ring-black/5 backdrop-blur-md transition-all dark:border-white/10 dark:bg-slate-900/90">
+  <div class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-white/20 bg-white/90 shadow-2xl ring-1 ring-black/5 backdrop-blur-md transition-all dark:border-white/10 dark:bg-slate-900/90" in:fly={{ y: 20, duration: 200 }} out:fade={{ duration: 150 }}>
     <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-white/5">
       <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
         <Sparkles label="" size={20} />
