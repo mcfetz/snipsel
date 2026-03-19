@@ -2694,7 +2694,7 @@
                   {/if}
                 {:else}
                   <div class="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
-                    <span aria-hidden="true">📎</span>
+                    <Paperclip label="" size={12} strokeWidth={2} />
                     <span>{item.snipsel.attachments.length}</span>
                   </div>
                 {/if}
