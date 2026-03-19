@@ -761,10 +761,15 @@
     editingSnipselId.set(item.snipsel_id);
     editContent = item.snipsel.content_markdown || '';
     editIndent = item.indent;
-    setTimeout(() => {
+    // Use requestAnimationFrame to ensure DOM is ready, then focus
+    // On mobile, we need to focus within the same user gesture context
+    requestAnimationFrame(() => {
       textareaRef?.focus();
       autosizeTextarea();
-    }, 0);
+      // Scroll the new item into view
+      const el = document.getElementById(`snipsel-${item.snipsel_id}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   }
 
   async function saveEdit() {
@@ -1147,8 +1152,12 @@
   }
 
   async function createSnipselFromUserGesture() {
+    // On mobile, we need to focus within the user gesture context
+    // The focus proxy is a hidden input that triggers the keyboard
     focusProxyRef?.focus();
     await createSnipsel();
+    // Focus the actual textarea now that it exists
+    textareaRef?.focus();
     focusProxyRef?.blur();
   }
 
