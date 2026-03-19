@@ -458,7 +458,7 @@
           {/if}
         </div>
         <div class="mt-2 overflow-hidden rounded-full border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900">
-          <div class="grid grid-cols-4">
+          <div class="grid grid-cols-2">
           <button
             class="px-4 py-3 text-sm font-medium transition-colors {snipsel.type === 'text' ? 'text-slate-900 dark:text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
             type="button"
@@ -467,28 +467,6 @@
             style={snipsel.type === 'text' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
           >
             Note
-          </button>
-          <button
-            class="border-l border-black/5 px-4 py-3 text-sm font-medium transition-colors dark:border-white/5 {snipsel.type === 'image'
-              ? 'text-slate-900 dark:text-white'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
-            type="button"
-            onclick={() => setType('image')}
-            disabled={changingType}
-            style={snipsel.type === 'image' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
-          >
-            Image
-          </button>
-          <button
-            class="border-l border-black/5 px-4 py-3 text-sm font-medium transition-colors dark:border-white/5 {snipsel.type === 'attachment'
-              ? 'text-slate-900 dark:text-white'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
-            type="button"
-            onclick={() => setType('attachment')}
-            disabled={changingType}
-            style={snipsel.type === 'attachment' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
-          >
-            File
           </button>
           <button
             class="border-l border-black/5 px-4 py-3 text-sm font-medium transition-colors dark:border-white/5 {snipsel.type === 'task'
