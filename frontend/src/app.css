@@ -1,7 +1,14 @@
 @import "tailwindcss";
-@import "non.geist";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/Geist.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --bg-app: #f8fafc;
