@@ -2176,7 +2176,7 @@
                     <div class="mt-3 grid grid-cols-3 gap-3">
                       {#each images.slice(0, 9) as a (a.id)}
                         <button
-                          class="group relative aspect-square overflow-hidden rounded-2xl border border-white/30 bg-white/20 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:scale-[1.03] hover:shadow-lg active:scale-95"
+                          class="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-95 dark:border-white/10 dark:bg-slate-900"
                           type="button"
                           aria-label="View image"
                           onclick={(e) => {
@@ -2558,7 +2558,7 @@
                     {#each media.slice(0, 9) as a}
                       <button
                         type="button"
-                        class="al-icon-wrapper group relative aspect-square w-full overflow-hidden rounded-2xl border border-white/30 bg-white/20 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:scale-[1.03] hover:shadow-lg active:scale-95 dark:border-white/10 dark:bg-white/5"
+                        class="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md dark:border-white/10 dark:bg-slate-900"
                         aria-label={isVideoAttachment(a) ? `Play ${a.filename}` : `View ${a.filename}`}
                         onclick={(e) => {
                           e.stopPropagation();
@@ -2737,7 +2737,7 @@
                     <div class="mt-3 grid grid-cols-3 gap-3">
                       {#each images.slice(0, 9) as a (a.id)}
                         <button
-                          class="group relative aspect-square overflow-hidden rounded-2xl border border-white/30 bg-white/20 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:scale-[1.03] hover:shadow-lg active:scale-95"
+                          class="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-95 dark:border-white/10 dark:bg-slate-900"
                           type="button"
                           aria-label="View image"
                           onclick={(e) => {
