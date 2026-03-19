@@ -766,7 +766,14 @@
     
     // Scroll to the new item first
     const el = document.getElementById(`snipsel-${item.snipsel_id}`);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Scroll to bottom of the list to show the new snipsel
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 100);
+    
+    // Also scroll the element into view as backup
+    el?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     
     // Focus the textarea with multiple attempts for mobile compatibility
     // Mobile browsers often require focus to be within a user gesture context
