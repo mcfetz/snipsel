@@ -2334,21 +2334,23 @@
                   Uploading...
                 </div>
               {/if}
-              {#if getDeezerLink(editContent)}
-                {@const dz = getDeezerLink(editContent)!}
-                <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={getHeaderColor()} />
-              {/if}
-              {#if getYouTubeLink(editContent)}
-                {@const yt = getYouTubeLink(editContent)!}
-                <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
-              {/if}
-              {#if getMapLink(editContent)}
-                {@const ml = getMapLink(editContent)!}
-                <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
-              {/if}
-              {#if getGenericLink(editContent)}
-                {@const gl = getGenericLink(editContent)!}
-                <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+              {#if getEditingSnipselCardView()}
+                {#if getDeezerLink(editContent)}
+                  {@const dz = getDeezerLink(editContent)!}
+                  <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={getHeaderColor()} />
+                {/if}
+                {#if getYouTubeLink(editContent)}
+                  {@const yt = getYouTubeLink(editContent)!}
+                  <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
+                {/if}
+                {#if getMapLink(editContent)}
+                  {@const ml = getMapLink(editContent)!}
+                  <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
+                {/if}
+                {#if getGenericLink(editContent)}
+                  {@const gl = getGenericLink(editContent)!}
+                  <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+                {/if}
               {/if}
               {#if showAutocomplete && suggestions.length > 0}
                 <div class="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
