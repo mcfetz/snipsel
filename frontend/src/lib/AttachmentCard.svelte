@@ -97,7 +97,7 @@
       href={downloadUrl}
       target="_blank"
       rel="noreferrer"
-      class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all hover:bg-slate-100 hover:text-blue-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-blue-400"
+      class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 group-hover:text-[var(--accent)] active:scale-90 dark:bg-white/5 dark:hover:bg-white/10"
       onclick={(e) => e.stopPropagation()}
       aria-label="Download {attachment.filename}"
     >
