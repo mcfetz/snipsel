@@ -55,6 +55,7 @@
     newSnipselRequest,
     pendingReference,
     sortedItems,
+    createSnipselCallback,
   } from '../lib/stores';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
@@ -1170,6 +1171,12 @@
     textareaRef?.focus();
     focusProxyRef?.blur();
   }
+
+  // Register callback for mobile keyboard support (called from App.svelte)
+  $effect(() => {
+    createSnipselCallback.set(createSnipselFromUserGesture);
+    return () => createSnipselCallback.set(null);
+  });
 
   $effect(() => {
     if ($newSnipselRequest > 0 && $currentCollection) {

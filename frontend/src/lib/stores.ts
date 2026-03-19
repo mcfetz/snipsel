@@ -41,6 +41,9 @@ export const searchScope = writable<'my' | 'shared' | 'all'>('all');
 export const notificationsStore = writable<import('./api').Notification[]>([]);
 export const recentCollectionsStore = writable<Array<{ id: string; title: string; icon: string }>>([]);
 
+// Callback for creating snipsel with focus (for mobile keyboard support)
+export const createSnipselCallback = writable<(() => Promise<void>) | null>(null);
+
 export function requestNewSnipsel() {
   newSnipselRequest.update((n) => n + 1);
 }

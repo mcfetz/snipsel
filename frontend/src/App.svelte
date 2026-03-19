@@ -11,22 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-  import {
-    collections,
-    currentCollection,
-    currentView,
-    getTodayDate,
-    isLoading,
-    collectionAnchor,
-    requestNewSnipsel,
-    searchError,
-    searchQuery,
-    searchResults,
-    notificationsStore,
-    searchType,
-    searchScope,
-    recentCollectionsStore,
-  } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselCallback, requestNewSnipsel } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -181,11 +166,13 @@
   }
 
   async function onNewSnipsel() {
-    // Set focus intent immediately within user gesture context
-    // This helps mobile browsers keep the keyboard open
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
+    // If collection is already open, use the callback directly for better mobile support
+    // This keeps focus within the user gesture context
+    if ($createSnipselCallback && $currentView.type === 'collection') {
+      $createSnipselCallback();
+      return;
     }
+    // Otherwise, open today and then create snipsel
     await openToday();
     requestNewSnipsel();
   }
