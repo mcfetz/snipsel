@@ -14,9 +14,10 @@
     attachment: Attachment;
     downloadUrl: string;
     thumbnailUrl?: string;
+    accentColor?: string;
   }
 
-  let { attachment, downloadUrl, thumbnailUrl }: Props = $props();
+  let { attachment, downloadUrl, thumbnailUrl, accentColor = '#64748b' }: Props = $props();
 
   function formatSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
@@ -51,8 +52,8 @@
   });
 </script>
 
-<div class="al-icon-wrapper group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
-  <div class="absolute inset-0 z-0 bg-gradient-to-br from-slate-500/5 to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
+<div class="al-icon-wrapper group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" style={`--accent: ${accentColor}`} in:scale={{ start: 0.95, duration: 150 }}>
+  <div class="absolute inset-0 z-0 opacity-0 transition-opacity group-hover:opacity-100" style={`background-color: ${accentColor}0d`}></div>
 
   <div class="relative flex items-center gap-4 p-4">
     {#if thumbnailUrl}

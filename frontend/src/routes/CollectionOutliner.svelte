@@ -2593,7 +2593,7 @@
                 {#if others.length > 0}
                   <div class="mt-3 space-y-2">
                     {#each others.slice(0, 3) as a}
-                      <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} />
+                      <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} accentColor={getHeaderColor()} />
                     {/each}
                     {#if others.length > 3}
                       <div class="text-[11px] text-slate-400">+{others.length - 3} more files</div>
@@ -2603,7 +2603,7 @@
               {:else if item.snipsel.attachments.length > 0 && item.snipsel.type === 'attachment'}
                 <div class="mt-3 space-y-2">
                   {#each item.snipsel.attachments.slice(0, 3) as a}
-                    <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} />
+                    <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} accentColor={getHeaderColor()} />
                   {/each}
                   {#if item.snipsel.attachments.length > 3}
                     <div class="text-[11px] text-slate-400">+{item.snipsel.attachments.length - 3} more files</div>
