@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly, fade } from 'svelte/transition';
   import Clock from '@animated-color-icons/lucide-svelte/Clock.svelte';
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import SettingsIcon from '@animated-color-icons/lucide-svelte/Settings.svelte';
@@ -575,7 +576,7 @@
           </button>
           
           {#if showRecentPopup}
-            <div class="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
+            <div class="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
               <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Recently visited</div>
               <div class="max-h-80 overflow-y-auto py-1">
                 {#if $recentCollectionsStore.length === 0}
