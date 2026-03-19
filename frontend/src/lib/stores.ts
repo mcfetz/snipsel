@@ -44,6 +44,9 @@ export const recentCollectionsStore = writable<Array<{ id: string; title: string
 // Callback for creating snipsel with focus (for mobile keyboard support)
 export const createSnipselCallback = writable<(() => Promise<void>) | null>(null);
 
+// Flag to create snipsel after collection loads (for nav bar + button)
+export const createSnipselOnLoad = writable(false);
+
 export function requestNewSnipsel() {
   newSnipselRequest.update((n) => n + 1);
 }

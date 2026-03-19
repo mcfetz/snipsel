@@ -11,7 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselCallback, requestNewSnipsel } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -169,10 +169,11 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
   async function onNewSnipsel() {
     // Focus proxy before any async operations (opens mobile keyboard)
     focusProxyNavRef?.focus();
+    // Set flag to create snipsel after collection loads
+    createSnipselOnLoad.set(true);
     try {
       await openToday();
-      // Signal to CollectionOutliner to create a new snipsel
-      requestNewSnipsel();
+      // CollectionOutliner will see the flag and create snipsel
     } finally {
       focusProxyNavRef?.blur();
     }

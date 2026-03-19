@@ -56,6 +56,7 @@
     pendingReference,
     sortedItems,
     createSnipselCallback,
+    createSnipselOnLoad,
   } from '../lib/stores';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
@@ -1176,6 +1177,17 @@
   $effect(() => {
     createSnipselCallback.set(createSnipselFromUserGesture);
     return () => createSnipselCallback.set(null);
+  });
+
+  // Handle create snipsel on load (from nav bar + button)
+  $effect(() => {
+    if ($createSnipselOnLoad && $currentCollection && collectionItems.length > 0) {
+      createSnipselOnLoad.set(false);
+      focusProxyRef?.focus();
+      createSnipsel().then(() => {
+        focusProxyRef?.blur();
+      });
+    }
   });
 
   $effect(() => {
