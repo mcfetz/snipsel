@@ -167,13 +167,15 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
   }
 
   async function onNewSnipsel() {
-    // Always open today's collection first, then create snipsel
-    // Focus proxy before async to keep mobile keyboard context
+    // Focus proxy before any async operations (opens mobile keyboard)
     focusProxyNavRef?.focus();
-    await openToday();
-    // Now the callback should be available since CollectionOutliner is mounted
-    $createSnipselCallback?.();
-    focusProxyNavRef?.blur();
+    try {
+      await openToday();
+      // Signal to CollectionOutliner to create a new snipsel
+      requestNewSnipsel();
+    } finally {
+      focusProxyNavRef?.blur();
+    }
   }
 
   async function openToday() {
