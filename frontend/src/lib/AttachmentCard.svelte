@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scale } from 'svelte/transition';
   import FileTextIcon from '@animated-color-icons/lucide-svelte/FileText.svelte';
   import FileCodeIcon from '@animated-color-icons/lucide-svelte/FileCode.svelte';
   import FileSpreadsheet from '@animated-color-icons/lucide-svelte/FileSpreadsheet.svelte';
@@ -50,7 +51,7 @@
   });
 </script>
 
-<div class="al-icon-wrapper group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900">
+<div class="al-icon-wrapper group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
   <div class="absolute inset-0 z-0 bg-gradient-to-br from-slate-500/5 to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
 
   <div class="relative flex items-center gap-4 p-4">

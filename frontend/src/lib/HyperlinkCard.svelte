@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scale, fade } from 'svelte/transition';
   import Globe from '@animated-color-icons/lucide-svelte/Globe.svelte';
   import ExternalLink from '@animated-color-icons/lucide-svelte/ExternalLink.svelte';
   import { onMount } from 'svelte';
@@ -42,7 +43,7 @@
 </script>
 
 {#if loading}
-  <div class="mt-4 flex animate-pulse items-center gap-4 rounded-2xl border border-slate-200 bg-white/50 p-4 dark:border-white/10 dark:bg-slate-900/50">
+  <div class="mt-4 flex animate-pulse items-center gap-4 rounded-2xl border border-slate-200 bg-white/50 p-4 dark:border-white/10 dark:bg-slate-900/50" in:fade={{ duration: 150 }}>
     <div class="h-14 w-14 flex-shrink-0 rounded-xl bg-slate-200 dark:bg-white/10"></div>
     <div class="flex-1 space-y-2">
       <div class="h-4 w-3/4 rounded bg-slate-200 dark:bg-white/10"></div>
@@ -50,7 +51,7 @@
     </div>
   </div>
 {:else if data}
-  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900">
+  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
 
     <div class="relative flex items-center gap-4 p-4">
@@ -98,7 +99,7 @@
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all hover:bg-slate-100 hover:text-blue-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-blue-400"
+        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 hover:text-blue-600 active:scale-90 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-blue-400"
         onclick={(e) => e.stopPropagation()}
         aria-label="Open link"
       >

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scale, fade } from 'svelte/transition';
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
   import Disc from '@animated-color-icons/lucide-svelte/Disc.svelte';
   import ExternalLink from '@animated-color-icons/lucide-svelte/ExternalLink.svelte';
@@ -85,7 +86,7 @@
 </script>
 
 {#if loading}
-  <div class="mt-4 flex animate-pulse items-center gap-4 rounded-2xl border border-slate-200 bg-white/50 p-4 dark:border-white/10 dark:bg-slate-900/50">
+  <div class="mt-4 flex animate-pulse items-center gap-4 rounded-2xl border border-slate-200 bg-white/50 p-4 dark:border-white/10 dark:bg-slate-900/50" in:fade={{ duration: 150 }}>
     <div class="h-20 w-20 flex-shrink-0 rounded-xl bg-slate-200 dark:bg-white/10"></div>
     <div class="flex-1 space-y-2">
       <div class="h-4 w-3/4 rounded bg-slate-200 dark:bg-white/10"></div>
@@ -95,7 +96,7 @@
 {:else if error || !data || data.error}
   <!-- Silently fail or minimal fallback -->
 {:else}
-  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900">
+  <div class="group relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900" in:scale={{ start: 0.95, duration: 150 }}>
     <!-- Glassmorphic background effect -->
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
     
