@@ -48,7 +48,7 @@
       await api.public.verifyPasscode(token, passcode);
       await loadData(); // Reload to get items
     } catch (err: any) {
-      passcodeError = err.error?.message || 'Ungültiger Passcode.';
+      passcodeError = err.error?.message || 'Invalid passcode.';
     } finally {
       verifyingPasscode = false;
     }
@@ -93,7 +93,7 @@
           onclick={handleVerifyPasscode} 
           disabled={verifyingPasscode || !passcode}
         >
-          {verifyingPasscode ? 'Prüfe...' : 'Entsperren'}
+          {verifyingPasscode ? 'Verifying...' : 'Unlock'}
         </button>
       </div>
       {#if passcodeError}

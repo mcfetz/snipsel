@@ -9,7 +9,7 @@
     onCancel: () => void;
   }
 
-  let { title, message, confirmLabel = 'Löschen', onConfirm, onCancel }: Props = $props();
+  let { title, message, confirmLabel = 'Delete', onConfirm, onCancel }: Props = $props();
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -61,7 +61,7 @@
           class="flex h-11 flex-1 items-center justify-center rounded-xl bg-slate-100 px-4 font-medium text-slate-600 transition-colors hover:bg-slate-200 focus:outline-none dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 sm:flex-initial sm:min-w-[100px]"
           onclick={onCancel}
         >
-          Abbrechen
+          Cancel
         </button>
       </div>
     </div>

@@ -124,7 +124,7 @@
 
   async function handleDelete(snipselId: string) {
     if (!canWrite) return;
-    if (!confirm('Snipsel wirklich löschen?')) return;
+    if (!confirm('Delete this snipsel?')) return;
     try {
       await api.public.deleteSnipsel(token, snipselId);
       if (onReload) onReload();
