@@ -5,22 +5,38 @@
 Snipsel is an open-source PWA for capturing ideas, notes, tasks, bookmarks, and media — all in one place. Enhanced with a **user-configurable AI assistant**, it helps you manage your knowledge without cloud lock-in. Runs on your own server in minutes.
 
 <p align="center">
-  <img src="docs/screenshot_collections.png" width="180" alt="Collections list" />
+  <img src="docs/IMG_9420.png" width="180" alt="calendar view" />
   &nbsp;
-  <img src="docs/screenshot_detail_light.png" width="180" alt="Collection detail (light)" />
+  <img src="docs/IMG_9421.png" width="180" alt="tasks view" />
   &nbsp;
-  <img src="docs/screenshot_detail_dark.png" width="180" alt="Dark mode" />
+  <img src="docs/IMG_9422.png" width="180" alt="collections list" />
   &nbsp;
-  <img src="docs/screenshot_todos.png" width="180" alt="Todos view" />
+  <img src="docs/IMG_9423.png" width="180" alt="tags and mentions view" />
 </p>
 <p align="center">
-  <img src="docs/screenshot_tags.png" width="180" alt="Tags page" />
+  <img src="docs/IMG_9424.png" width="180" alt="list recently viewed collections" />
   &nbsp;
-  <img src="docs/screenshot_mentions.png" width="180" alt="Mentions view" />
+  <img src="docs/IMG_9425.png" width="180" alt="notifications view" />
   &nbsp;
-  <img src="docs/screenshot_reminder.png" width="180" alt="Snipsel with reminder" />
+  <img src="docs/IMG_9426.png" width="180" alt="settings" />
   &nbsp;
-  <img src="docs/screenshot_media_cards.png" width="180" alt="YouTube & Deezer cards" />
+  <img src="docs/IMG_9427.png" width="180" alt="daily collection with mentions from another user" />
+</p>
+<p align="center">
+  <img src="docs/IMG_9428.png" width="180" alt="toolbar for editing a snipsel" />
+  &nbsp;
+  <img src="docs/IMG_9429.png" width="180" alt="ai assistent for manipulating a snipsel" />
+  &nbsp;
+  <img src="docs/IMG_9430.png" width="180" alt="snipsel settings page with metadata informations" />
+  &nbsp;
+  <img src="docs/IMG_9431.png" width="180" alt="snipsel with markdown formatted content" />
+</p>
+<p align="center">
+  <img src="docs/IMG_9432.png" width="180" alt="search results" />
+  &nbsp;
+  <img src="docs/IMG_9433.png" width="180" alt="collection share permissions" />
+  &nbsp;
+  <img src="docs/IMG_9434.png" width="180" alt="card views for images, file attachments, links, youtube links..." />
 </p>
 
 ---
