@@ -2487,29 +2487,31 @@
               onkeydown={(e) => e.key === 'Enter' && startEdit(item)}
             >
               {#if item.snipsel.content_markdown}
-                  {#if getDeezerLink(item.snipsel.content_markdown)}
-                    {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
-                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
-                  {/if}
-                  {#if getYouTubeLink(item.snipsel.content_markdown)}
-                    {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
-                    <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
-                  {/if}
-                  {#if getMapLink(item.snipsel.content_markdown)}
-                    {@const ml = getMapLink(item.snipsel.content_markdown)!}
-                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
-                  {/if}
-                  {#if getGenericLink(item.snipsel.content_markdown)}
-                    {@const gl = getGenericLink(item.snipsel.content_markdown)!}
-                    <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+                  {#if item.snipsel.card_view !== false}
+                    {#if getDeezerLink(item.snipsel.content_markdown)}
+                      {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
+                      <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
+                    {/if}
+                    {#if getYouTubeLink(item.snipsel.content_markdown)}
+                      {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
+                      <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
+                    {/if}
+                    {#if getMapLink(item.snipsel.content_markdown)}
+                      {@const ml = getMapLink(item.snipsel.content_markdown)!}
+                      <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
+                    {/if}
+                    {#if getGenericLink(item.snipsel.content_markdown)}
+                      {@const gl = getGenericLink(item.snipsel.content_markdown)!}
+                      <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+                    {/if}
                   {/if}
 
                   <div class="flex items-start gap-2">
-                    <div 
+                    <div
                       class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0"
                       style="--accent-light: {getToolboxBg()}"
                     >
-                      {@html renderWithWikiLinks(stripMediaLinks(item.snipsel.content_markdown), item.collection_refs)}
+                      {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown) : item.snipsel.content_markdown, item.collection_refs)}
                     </div>
 
                     {#if item.snipsel.created_by_id !== $currentUser?.id}
