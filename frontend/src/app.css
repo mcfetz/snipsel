@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "non.geist";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -34,6 +35,7 @@ body {
 
 body {
   margin: 0;
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
 }
 
 .prose h1,
