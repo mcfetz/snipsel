@@ -2215,6 +2215,8 @@
         <div
           id={`snipsel-${item.snipsel_id}`}
           class="group relative pr-10 {anchorHighlightId === item.snipsel_id ? 'ring-2 rounded-lg' : ''}"
+          in:fly={{ y: -5, duration: 150 }}
+          out:fade={{ duration: 100 }}
           style={
             anchorHighlightId === item.snipsel_id
               ? `padding-left: calc(3.25rem + ${(item.snipsel_id === $editingSnipselId ? editIndent : item.indent) * 1.25}rem); --tw-ring-color: ${getHeaderColor()}`
