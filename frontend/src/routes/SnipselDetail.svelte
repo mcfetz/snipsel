@@ -441,10 +441,12 @@
     </button>
 
     <div
-      class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80"
+      class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10"
       style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}
     >
-      <span class="text-xs uppercase tracking-wide" style={`color: ${getAccent()}`}>Snipsel Settings</span>
+      <span class="text-xs uppercase tracking-wide">Snipsel</span>
+      <span class="opacity-70">·</span>
+      <span class="font-semibold text-slate-800 dark:text-slate-200">Settings</span>
     </div>
   </div>
 
