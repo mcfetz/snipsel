@@ -2008,6 +2008,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             aria-label="Toggle done tasks"
             title={hideDoneTasks ? 'Show done tasks' : 'Hide done tasks'}
             onclick={toggleHideDoneTasks}
+            in:fly={{ y: -10, duration: 200 }}
+            out:fly={{ y: -10, duration: 150 }}
           >
             <div class="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
               <div

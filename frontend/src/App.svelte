@@ -331,6 +331,16 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
     return rgba(mixed, 0.96);
   }
 
+  function getNavPlusColor(): string {
+    if ($currentView.type === 'collection' && $currentCollection?.header_color) {
+      const color = $currentCollection.header_color.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+        return color;
+      }
+    }
+    return getAccent();
+  }
+
   let isFetchingNotifications = false;
   async function fetchNotifications() {
     if (isFetchingNotifications) return;
@@ -730,7 +740,7 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
 
             <button
               class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              style={`background-color: ${getAccent()}; color: white`}
+              style={`background-color: ${getNavPlusColor()}; color: white`}
               type="button"
               onclick={onNewSnipsel}
               aria-label="New snipsel (today)"
