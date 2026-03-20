@@ -153,9 +153,6 @@
   let aiModalSelectedIds = $state<string[]>([]);
   let aiModalSelectedAttachments = $state<string[]>([]);
 
-  let showTitlePill = $state(false);
-  let pillOffset = $state(0); // 0 to 1
-
   function offsetDate(dateStr: string, days: number): string {
     const d = new Date(dateStr + 'T12:00:00'); // noon to avoid DST issues
     d.setDate(d.getDate() + days);
@@ -546,7 +543,7 @@
     const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
     const header = hexToRgb(getHeaderColor());
     const mixed = header ? mixRgb(base, header, 0.14) : base;
-    return rgba(mixed, 0.96);
+    return rgba(mixed, 0.8);
   }
 
   function getHeaderGradient(): string {
@@ -1782,17 +1779,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   $effect(() => {
     const onScroll = () => {
       showScrollTop = window.scrollY > 300;
-      // Sticky pill logic: starts showing after header is scrolled past
-      // Header is approx 120px + logo header 60px = 180px
-      const threshold = 140;
-      const maxScroll = 240;
-      if (window.scrollY > threshold) {
-        showTitlePill = true;
-        pillOffset = Math.min(1, (window.scrollY - threshold) / (maxScroll - threshold));
-      } else {
-        showTitlePill = false;
-        pillOffset = 0;
-      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -1948,26 +1934,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     tabindex="-1"
     aria-hidden="true"
   />
-
-  <!-- Sticky Title Pill Wrapper (h-0 prevents displacement, sticky top-[1rem] keeps it at viewport top) -->
-  <div class="sticky top-[1rem] z-10 h-0 overflow-visible w-full flex justify-center pointer-events-none">
-    <div 
-      class="w-full flex justify-center transition-opacity duration-200"
-      style="opacity: {showTitlePill ? 1 : 0}; transform: translateY({pillOffset * 2.8}rem);"
-    >
-      <button 
-        class="pointer-events-auto flex h-[3.5rem] items-end justify-center gap-2 rounded-full border border-slate-200 bg-white/95 px-6 pb-2.5 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        onclick={scrollToTop}
-        type="button"
-        title="Scroll to top"
-      >
-        <span class="text-xl">{$currentCollection?.icon}</span>
-        <span class="max-w-[20rem] truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {$currentCollection?.title}
-        </span>
-      </button>
-    </div>
-  </div>
 
   <div class="relative">
     <div class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-slate-900">
@@ -2886,6 +2852,11 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 </div>
 
 {#if selectedIds.size > 0}
+  <!-- Progressive blur layer behind toolbox -->
+  <div class="fixed bottom-0 left-0 right-0 z-10 pointer-events-none" style="height: 120px;" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
+    <div class="absolute inset-0 backdrop-blur-lg" style="mask-image: linear-gradient(to top, black 0%, black 40%, transparent 100%); -webkit-mask-image: linear-gradient(to top, black 0%, black 40%, transparent 100%);"></div>
+  </div>
+  <!-- Toolbox -->
   <div class="fixed bottom-0 left-0 right-0 z-20 px-4 pb-4" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
     <div
       class="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-3 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur-xl dark:text-slate-100 dark:ring-white/10"
@@ -3144,7 +3115,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           closeTypeMenu();
           closeTemplateMenu();
         }}
-      >
+>
           <X label="" size={20} strokeWidth={2} />
       </button>
     </div>

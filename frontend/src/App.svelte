@@ -526,6 +526,10 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
 
 <div class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
   {#if $currentUser}
+    <!-- Progressive blur layer behind header -->
+    <div class="fixed top-0 left-0 right-0 z-[15] pointer-events-none" style="height: 120px;">
+      <div class="absolute inset-0 backdrop-blur-lg" style="mask-image: linear-gradient(to bottom, black 0%, black 40%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 0%, black 40%, transparent 100%);"></div>
+    </div>
     <header class="sticky top-4 z-20 mx-auto max-w-3xl px-4 pointer-events-none">
       <div class="pointer-events-auto flex items-center gap-3 rounded-full border border-slate-200 bg-white/80 px-3 py-2 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5">
         <button
@@ -692,9 +696,14 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
 
   {#if $currentUser}
     {#if $snipselsSelected === 0}
+      <!-- Progressive blur layer behind navbar -->
+      <div class="fixed bottom-0 left-0 right-0 z-[5] pointer-events-none" style="height: 120px;" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
+        <div class="absolute inset-0 backdrop-blur-lg" style="mask-image: linear-gradient(to top, black 0%, black 40%, transparent 100%); -webkit-mask-image: linear-gradient(to top, black 0%, black 40%, transparent 100%);"></div>
+      </div>
+      <!-- Navbar -->
       <nav class="pointer-events-none fixed bottom-0 left-0 right-0 z-10" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
         <div class="mx-auto max-w-3xl px-4 pt-2" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);">
-          <div class="pointer-events-auto mx-auto flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-slate-700 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 dark:ring-white/10">
+          <div class="pointer-events-auto mx-auto flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white/85 px-3 py-2 text-slate-700 shadow-lg ring-1 ring-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/85 dark:text-slate-200 dark:ring-white/10">
             <button
               class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'calendar'
                 ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
