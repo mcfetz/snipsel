@@ -211,11 +211,14 @@
     currentView.set({ type: 'loading' });
   }
 
-  async function saveDefaultHeaderColor() {
+  async function saveAppearanceSettings() {
     isBusy = true;
     try {
-      const v = defaultHeaderColor.trim() || null;
-      const res = await api.updateMe({ default_collection_header_color: v });
+      const res = await api.updateMe({
+        default_collection_header_color: defaultHeaderColor.trim() || null,
+        light_background_color: lightBackgroundColor.trim() || null,
+        dark_background_color: darkBackgroundColor.trim() || null,
+      });
       currentUser.set(res.user);
     } finally {
       isBusy = false;
@@ -328,20 +331,7 @@
         ai_api_key: aiApiKey.trim() || null,
       });
       currentUser.set(res.user);
-      aiApiKey = ''; 
-    } finally {
-      isBusy = false;
-    }
-  }
-
-  async function saveBackgroundColors() {
-    isBusy = true;
-    try {
-      const res = await api.updateMe({
-        light_background_color: lightBackgroundColor.trim() || null,
-        dark_background_color: darkBackgroundColor.trim() || null,
-      });
-      currentUser.set(res.user);
+      aiApiKey = '';
     } finally {
       isBusy = false;
     }
@@ -541,16 +531,16 @@
         <div class="mt-2 flex items-center gap-2">
           <div class="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
             <label class="relative block h-8 w-8 cursor-pointer">
-              <input 
-                id="accent-color-picker" 
-                class="h-full w-full cursor-pointer rounded border-0 p-0" 
-                type="color" 
-                value={defaultHeaderColor} 
+              <input
+                id="accent-color-picker"
+                class="h-full w-full cursor-pointer rounded border-0 p-0"
+                type="color"
+                value={defaultHeaderColor}
                 oninput={(e) => defaultHeaderColor = (e.target as HTMLInputElement).value}
               />
             </label>
-            <input 
-              class="min-w-0 flex-1 border-none bg-transparent text-sm font-mono text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-300" 
+            <input
+              class="min-w-0 flex-1 border-none bg-transparent text-sm font-mono text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-300"
               value={defaultHeaderColor}
               oninput={(e) => {
                 let v = (e.target as HTMLInputElement).value;
@@ -559,36 +549,27 @@
               }}
             />
           </div>
-          <button
-            class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-            style={`color: ${getAccent()}`}
-            type="button"
-            onclick={saveDefaultHeaderColor}
-            disabled={isBusy}
-          >
-            Save
-          </button>
         </div>
       </div>
 
       <div class="mt-6">
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Background colors</label>
-        <div class="mt-3 grid grid-cols-2 gap-4">
+        <div class="mt-3 space-y-3">
           <div>
             <label for="light-bg-color-picker" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Light mode</label>
             <div class="flex items-center gap-2">
               <div class="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
                 <label class="relative block h-8 w-8 cursor-pointer">
-                  <input 
-                    id="light-bg-color-picker" 
-                    class="h-full w-full cursor-pointer rounded border-0 p-0" 
-                    type="color" 
+                  <input
+                    id="light-bg-color-picker"
+                    class="h-full w-full cursor-pointer rounded border-0 p-0"
+                    type="color"
                     value={lightBackgroundColor || '#ffffff'}
                     oninput={(e) => lightBackgroundColor = (e.target as HTMLInputElement).value}
                   />
                 </label>
-                <input 
-                  class="min-w-0 flex-1 border-none bg-transparent text-sm font-mono text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-300" 
+                <input
+                  class="min-w-0 flex-1 border-none bg-transparent text-sm font-mono text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-300"
                   value={lightBackgroundColor || ''}
                   placeholder="#ffffff"
                   oninput={(e) => {
@@ -605,16 +586,16 @@
             <div class="flex items-center gap-2">
               <div class="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
                 <label class="relative block h-8 w-8 cursor-pointer">
-                  <input 
-                    id="dark-bg-color-picker" 
-                    class="h-full w-full cursor-pointer rounded border-0 p-0" 
-                    type="color" 
+                  <input
+                    id="dark-bg-color-picker"
+                    class="h-full w-full cursor-pointer rounded border-0 p-0"
+                    type="color"
                     value={darkBackgroundColor || '#0f172a'}
                     oninput={(e) => darkBackgroundColor = (e.target as HTMLInputElement).value}
                   />
                 </label>
-                <input 
-                  class="min-w-0 flex-1 border-none bg-transparent text-sm font-mono text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-300" 
+                <input
+                  class="min-w-0 flex-1 border-none bg-transparent text-sm font-mono text-slate-700 focus:outline-none focus:ring-0 dark:text-slate-300"
                   value={darkBackgroundColor || ''}
                   placeholder="#0f172a"
                   oninput={(e) => {
@@ -627,17 +608,18 @@
             </div>
           </div>
         </div>
-        <div class="mt-3 flex justify-end">
-          <button
-            class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-            style={`color: ${getAccent()}`}
-            type="button"
-            onclick={saveBackgroundColors}
-            disabled={isBusy}
-          >
-            Save Background Colors
-          </button>
-        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button
+          class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+          style={`color: ${getAccent()}`}
+          type="button"
+          onclick={saveAppearanceSettings}
+          disabled={isBusy}
+        >
+          Save Appearance
+        </button>
       </div>
     </div>
 
