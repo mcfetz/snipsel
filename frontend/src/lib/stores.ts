@@ -65,3 +65,6 @@ export function toLocalIsoDay(d: Date): string {
 export const sortedItems = derived(collectionItems, ($items) =>
   [...$items].sort((a, b) => a.position - b.position)
 );
+
+// Track if snipsels are selected in CollectionOutliner (for navbar/toolbox animation)
+export const snipselsSelected = writable(0);

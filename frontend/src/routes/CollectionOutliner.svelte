@@ -57,6 +57,7 @@
     sortedItems,
     createSnipselCallback,
     createSnipselOnLoad,
+    snipselsSelected,
   } from '../lib/stores';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
@@ -74,6 +75,17 @@
 
 
   let selectedIds = $state<Set<string>>(new Set());
+  let selectionPulse = $state(false);
+  let previousSelectionSize = $state(0);
+
+  $effect(() => {
+    const size = selectedIds.size;
+    if (size !== previousSelectionSize && size > 0) {
+      selectionPulse = true;
+      setTimeout(() => { selectionPulse = false; }, 400);
+    }
+    previousSelectionSize = size;
+  });
 
   // Prevent stale list fetches from overwriting optimistic mutations.
   let itemsLoadSeq = 0;
@@ -541,8 +553,9 @@
     const headerColor = getHeaderColor();
     const base = hexToRgb(headerColor);
     if (!base) return headerColor;
-    const lighter = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.3);
-    return `linear-gradient(135deg, ${headerColor} 0%, ${rgba(lighter, 1)} 100%)`;
+    const lighter = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.45);
+    const mid = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.2);
+    return `linear-gradient(135deg, ${headerColor} 0%, ${rgba(mid, 1)} 50%, ${rgba(lighter, 1)} 100%)`;
   }
 
   function openImageModal(id: string, filename: string) {
@@ -1228,6 +1241,11 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
   $effect(() => {
     loadShareCount();
+  });
+
+  $effect(() => {
+    snipselsSelected.set(selectedIds.size);
+    return () => snipselsSelected.set(0);
   });
 
   function deleteSelected() {
@@ -2390,57 +2408,51 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 </button>
               {/if}
 
-              <button
-                type="button"
-                aria-label={item.snipsel.task_done ? 'Mark task not done' : 'Mark task done'}
-                class="absolute top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800"
-                onclick={(e) => {
-                  e.stopPropagation();
-                  toggleTaskDone(item);
-                }}
-                style="left: calc(1.75rem + {item.indent * 1.25}rem); {item.snipsel.task_done
-                  ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
-                  : ''}"
-              >
-                {#if item.snipsel.task_done}
-                  <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
-                {/if}
-              </button>
+<button
+                  type="button"
+                  aria-label={item.snipsel.task_done ? 'Mark task not done' : 'Mark task done'}
+                  class="absolute top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    toggleTaskDone(item);
+                  }}
+                  style="left: calc(1.75rem + {item.indent * 1.25}rem); {item.snipsel.task_done
+                    ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
+                    : ''}"
+                >
+                  {#if item.snipsel.task_done}
+                    <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
+                  {/if}
+                </button>
 
-              <button
-                type="button"
-                aria-label="Select snipsel"
-                class="absolute right-1 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded border border-slate-200 bg-white text-base leading-none transition-opacity dark:border-white/10 dark:bg-slate-800 dark:text-white {selectedIds.has(
-                  item.snipsel_id
-                )
-                  ? 'opacity-100'
-                  : 'opacity-0 group-hover:opacity-100'}"
-                onclick={(e) => {
-                  e.stopPropagation();
-                  toggleSelection(item.snipsel_id);
-                }}
-              >
-                {#if selectedIds.has(item.snipsel_id)}
-                  ✓
-                {/if}
-              </button>
+                <button
+                  type="button"
+                  aria-label="Select snipsel"
+                  class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    toggleSelection(item.snipsel_id);
+                  }}
+                >
+                  <div
+                    class="w-1.5 h-full transition-all duration-150 ease-out origin-right {selectedIds.has(item.snipsel_id) ? '' : 'scale-x-0 group-hover:scale-x-100'} hover:scale-x-150 active:scale-x-75"
+                    style={selectedIds.has(item.snipsel_id) ? `background-color: ${getHeaderColor()}` : 'background-color: #94a3b8'}
+                  ></div>
+                </button>
             {:else}
               <button
                 type="button"
                 aria-label="Select snipsel"
-                class="absolute right-1 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded border border-slate-200 bg-white text-base leading-none transition-opacity dark:border-white/10 dark:bg-slate-800 dark:text-white {selectedIds.has(
-                  item.snipsel_id
-                )
-                  ? 'opacity-100'
-                  : 'opacity-0 group-hover:opacity-100'}"
+                class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
                 onclick={(e) => {
                   e.stopPropagation();
                   toggleSelection(item.snipsel_id);
                 }}
               >
-                {#if selectedIds.has(item.snipsel_id)}
-                  ✓
-                {/if}
+                <div
+                  class="w-1.5 h-full transition-all duration-150 ease-out origin-right hover:scale-x-150 active:scale-x-75"
+                  style={selectedIds.has(item.snipsel_id) ? `background-color: ${getHeaderColor()}` : 'background-color: #94a3b8'}
+                ></div>
               </button>
             {/if}
 
@@ -2874,11 +2886,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 </div>
 
 {#if selectedIds.size > 0}
-  <div class="fixed bottom-20 left-0 right-0 z-20 px-4 pb-4" in:fly={{ y: 30, duration: 200 }} out:fade={{ duration: 150 }}>
+  <div class="fixed bottom-0 left-0 right-0 z-20 px-4 pb-4" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
     <div
-      class="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-3 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:text-slate-100 dark:ring-white/10"
+      class="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-3 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur-xl dark:text-slate-100 dark:ring-white/10"
       style={`background-color: ${getToolboxBg()}`}
     >
+      <div class="flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-black/10 dark:bg-white/10">
+        <span class="text-sm font-bold transition-transform duration-150 {selectionPulse ? 'scale-125' : ''}" style="color: {getHeaderColor()}">{selectedIds.size}</span>
+      </div>
 
        <input
          bind:this={attachmentsInputRef}
@@ -3136,7 +3151,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   </div>
 {/if}
 
-{#if showScrollTop}
+{#if showScrollTop && selectedIds.size === 0}
   <div class="fixed bottom-32 left-0 right-0 z-10 flex justify-center pointer-events-none" in:fly={{ y: 20, duration: 200 }} out:fade={{ duration: 150 }}>
     <button 
       class="al-icon-wrapper pointer-events-auto grid h-12 w-12 place-items-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-lg ring-1 ring-black/5 backdrop-blur-md transition-all hover:-translate-y-1 hover:bg-white hover:shadow-xl dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900" 

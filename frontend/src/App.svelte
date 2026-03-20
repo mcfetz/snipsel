@@ -11,7 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -691,71 +691,73 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
   {/if}
 
   {#if $currentUser}
-    <nav class="pointer-events-none fixed bottom-0 left-0 right-0 z-10">
-      <div class="mx-auto max-w-3xl px-4 pt-2" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);">
-        <div class="pointer-events-auto mx-auto flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-slate-700 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 dark:ring-white/10">
-          <button
-            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'calendar'
-              ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-              : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-            type="button"
-            onclick={() => currentView.set({ type: 'calendar' })}
-            aria-label="Calendar"
-            title="Calendar"
-          >
-            <CalendarIcon label="" size={24} />
-          </button>
+    {#if $snipselsSelected === 0}
+      <nav class="pointer-events-none fixed bottom-0 left-0 right-0 z-10" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
+        <div class="mx-auto max-w-3xl px-4 pt-2" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);">
+          <div class="pointer-events-auto mx-auto flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-slate-700 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 dark:ring-white/10">
+            <button
+              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'calendar'
+                ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
+                : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
+              type="button"
+              onclick={() => currentView.set({ type: 'calendar' })}
+              aria-label="Calendar"
+              title="Calendar"
+            >
+              <CalendarIcon label="" size={24} />
+            </button>
 
-          <button
-            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'todos'
-              ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-              : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-            type="button"
-            onclick={() => currentView.set({ type: 'todos' })}
-            aria-label="Todos"
-            title="Todos"
-          >
-            <SquareCheck label="" size={24} />
-          </button>
+            <button
+              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'todos'
+                ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
+                : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
+              type="button"
+              onclick={() => currentView.set({ type: 'todos' })}
+              aria-label="Todos"
+              title="Todos"
+            >
+              <SquareCheck label="" size={24} />
+            </button>
 
-          <button
-            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg"
-            style={`background-color: ${getAccent()}; color: white`}
-            type="button"
-            onclick={onNewSnipsel}
-            aria-label="New snipsel (today)"
-            title="New snipsel (today)"
-          >
-            <PlusIcon label="" size={24} strokeWidth={2.5} />
-          </button>
+            <button
+              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              style={`background-color: ${getAccent()}; color: white`}
+              type="button"
+              onclick={onNewSnipsel}
+              aria-label="New snipsel (today)"
+              title="New snipsel (today)"
+            >
+              <PlusIcon label="" size={24} strokeWidth={2.5} />
+            </button>
 
-          <button
-            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'collections'
-              ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-              : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-            type="button"
-            onclick={openCollections}
-            aria-label="Collections"
-            title="Collections"
-          >
-            <List label="" size={24} />
-          </button>
+            <button
+              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'collections'
+                ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
+                : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
+              type="button"
+              onclick={openCollections}
+              aria-label="Collections"
+              title="Collections"
+            >
+              <List label="" size={24} />
+            </button>
 
-          <button
-            class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'tags_mentions'
-              ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-              : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-            type="button"
-            onclick={() => currentView.set({ type: 'tags_mentions' })}
-            aria-label="Tags and mentions"
-            title="Tags / Mentions"
-          >
-            <Hash label="" size={24} />
-          </button>
-          
+            <button
+              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'tags_mentions'
+                ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
+                : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
+              type="button"
+              onclick={() => currentView.set({ type: 'tags_mentions' })}
+              aria-label="Tags and mentions"
+              title="Tags / Mentions"
+            >
+              <Hash label="" size={24} />
+            </button>
+            
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    {/if}
     <!-- Hidden input for mobile keyboard focus -->
     <input
       bind:this={focusProxyNavRef}
