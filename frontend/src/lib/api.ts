@@ -22,6 +22,8 @@ export type User = {
   ai_llm_url?: string | null;
   ai_model_name?: string | null;
   ai_api_key_set?: boolean;
+  light_background_color?: string | null;
+  dark_background_color?: string | null;
 };
 
 export type UserStats = {

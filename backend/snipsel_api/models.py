@@ -80,6 +80,13 @@ class User(db.Model):
     ai_model_name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     ai_api_key: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
+    light_background_color: Mapped[Optional[str]] = mapped_column(
+        String(7), nullable=True
+    )
+    dark_background_color: Mapped[Optional[str]] = mapped_column(
+        String(7), nullable=True
+    )
+
 
 class Collection(db.Model):
     __tablename__ = "collections"

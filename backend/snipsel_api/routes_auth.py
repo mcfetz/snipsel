@@ -16,28 +16,41 @@ from webauthn import (
     verify_registration_response,
 )
 from webauthn.helpers import bytes_to_base64url, options_to_json
-from webauthn.helpers.structs import AuthenticatorSelectionCriteria, UserVerificationRequirement
+from webauthn.helpers.structs import (
+    AuthenticatorSelectionCriteria,
+    UserVerificationRequirement,
+)
 
 from flask import Blueprint, request, send_file, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from snipsel_api.auth_session import current_user, enforce_json, json_response, require_auth
+from snipsel_api.auth_session import (
+    current_user,
+    enforce_json,
+    json_response,
+    require_auth,
+)
 from snipsel_api.config import Settings
 from snipsel_api.emailer import send_password_reset_email
 from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
-from snipsel_api.models import Attachment, Collection, CollectionSnipsel, PasswordResetToken, Snipsel, User, UserPasskey
+from snipsel_api.models import (
+    Attachment,
+    Collection,
+    CollectionSnipsel,
+    PasswordResetToken,
+    Snipsel,
+    User,
+    UserPasskey,
+)
 
 auth_bp = Blueprint("auth", __name__)
-
 
 
 @auth_bp.get("/config")
 def auth_config():
     settings = Settings.from_env()
-    return json_response({
-        "registration_enabled": settings.registration_enabled
-    })
+    return json_response({"registration_enabled": settings.registration_enabled})
 
 
 @auth_bp.post("/register")
@@ -50,18 +63,30 @@ def register():
 
     settings = Settings.from_env()
     if not settings.registration_enabled:
-        raise api_error(403, "registration_disabled", "Registration is currently disabled")
+        raise api_error(
+            403, "registration_disabled", "Registration is currently disabled"
+        )
 
     if not username or not email or not password:
-        raise api_error(400, "invalid_input", "username, email and password are required")
+        raise api_error(
+            400, "invalid_input", "username, email and password are required"
+        )
 
-    existing = db.session.execute(
-        db.select(User).where((User.username == username) | (User.email == email))
-    ).scalars().first()
+    existing = (
+        db.session.execute(
+            db.select(User).where((User.username == username) | (User.email == email))
+        )
+        .scalars()
+        .first()
+    )
     if existing:
         raise api_error(409, "already_exists", "username or email already exists")
 
-    user = User(username=username, email=email, password_hash=generate_password_hash(password, method="pbkdf2:sha256"))
+    user = User(
+        username=username,
+        email=email,
+        password_hash=generate_password_hash(password, method="pbkdf2:sha256"),
+    )
     db.session.add(user)
     db.session.commit()
 
@@ -80,7 +105,11 @@ def login():
     if not username or not password:
         raise api_error(400, "invalid_input", "username and password are required")
 
-    user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
+    user = (
+        db.session.execute(db.select(User).where(User.username == username))
+        .scalars()
+        .first()
+    )
     if not user or not user.is_active or user.deleted_at is not None:
         raise api_error(401, "invalid_credentials", "Invalid credentials")
 
@@ -91,7 +120,11 @@ def login():
         session["pending_2fa_user_id"] = user.id
         return json_response({"status": "2fa_required"})
 
-    passkeys = db.session.execute(db.select(UserPasskey).where(UserPasskey.user_id == user.id)).scalars().all()
+    passkeys = (
+        db.session.execute(db.select(UserPasskey).where(UserPasskey.user_id == user.id))
+        .scalars()
+        .all()
+    )
     if passkeys:
         # If they have passkeys, we could force it, or offer it.
         # But usually OTP is the fallback.
@@ -152,7 +185,7 @@ def get_2fa_qr():
     user = current_user()
     if not user.otp_secret:
         raise api_error(400, "not_initiated", "2FA setup not initiated")
-    
+
     if user.otp_enabled:
         raise api_error(400, "already_enabled", "2FA is already enabled")
 
@@ -163,7 +196,7 @@ def get_2fa_qr():
     buf = io.BytesIO()
     img.save(buf)
     buf.seek(0)
-    
+
     return send_file(buf, mimetype="image/png")
 
 
@@ -202,6 +235,7 @@ def enable_2fa():
 @enforce_json
 def disable_2fa():
     import logging
+
     logger = logging.getLogger("snipsel_api.auth")
     user = current_user()
     data = request.get_json() or {}
@@ -209,14 +243,20 @@ def disable_2fa():
     password_confirm = str(raw_password).strip()
 
     first_char = password_confirm[0] if password_confirm else ""
-    logger.debug(f"Disable 2FA request for user {user.username}. Password length: {len(password_confirm)}, first char: {first_char}")
+    logger.debug(
+        f"Disable 2FA request for user {user.username}. Password length: {len(password_confirm)}, first char: {first_char}"
+    )
 
     if not password_confirm:
-        logger.warning(f"Disable 2FA failed: password_confirm missing for user {user.username}")
+        logger.warning(
+            f"Disable 2FA failed: password_confirm missing for user {user.username}"
+        )
         raise api_error(400, "invalid_input", "password_confirm is required")
 
     if not check_password_hash(user.password_hash, password_confirm):
-        logger.warning(f"Disable 2FA failed: password mismatch for user {user.username}")
+        logger.warning(
+            f"Disable 2FA failed: password mismatch for user {user.username}"
+        )
         raise api_error(401, "invalid_credentials", "Invalid account password")
 
     user.otp_enabled = False
@@ -263,12 +303,14 @@ def passkeys_register_complete():
     rp_id = settings.snipsel_domain or "localhost"
     origin = settings.snipsel_frontend_url or f"https://{rp_id}"
     if rp_id == "localhost":
-        origin = "http://localhost:5173" # Assuming Vite default
+        origin = "http://localhost:5173"  # Assuming Vite default
 
     try:
         verification = verify_registration_response(
             credential=data,
-            expected_challenge=webauthn.helpers.parse_registration_options_json(options_json).challenge,
+            expected_challenge=webauthn.helpers.parse_registration_options_json(
+                options_json
+            ).challenge,
             expected_origin=origin,
             expected_rp_id=rp_id,
         )
@@ -276,7 +318,7 @@ def passkeys_register_complete():
         raise api_error(400, "verification_failed", str(e))
 
     name = (data.get("name") or "New Passkey").strip()
-    
+
     passkey = UserPasskey(
         user_id=user.id,
         credential_id=bytes_to_base64url(verification.credential_id),
@@ -299,11 +341,19 @@ def passkeys_login_begin():
     if not username:
         raise api_error(400, "invalid_input", "username is required")
 
-    user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
+    user = (
+        db.session.execute(db.select(User).where(User.username == username))
+        .scalars()
+        .first()
+    )
     if not user or not user.is_active or user.deleted_at is not None:
         raise api_error(401, "invalid_credentials", "Invalid user")
 
-    passkeys = db.session.execute(db.select(UserPasskey).where(UserPasskey.user_id == user.id)).scalars().all()
+    passkeys = (
+        db.session.execute(db.select(UserPasskey).where(UserPasskey.user_id == user.id))
+        .scalars()
+        .all()
+    )
     if not passkeys:
         raise api_error(400, "no_passkeys", "No passkeys registered for this user")
 
@@ -313,7 +363,9 @@ def passkeys_login_begin():
     options = generate_authentication_options(
         rp_id=rp_id,
         allow_credentials=[
-            webauthn.helpers.structs.PublicKeyCredentialDescriptor(id=webauthn.helpers.base64url_to_bytes(p.credential_id))
+            webauthn.helpers.structs.PublicKeyCredentialDescriptor(
+                id=webauthn.helpers.base64url_to_bytes(p.credential_id)
+            )
             for p in passkeys
         ],
         user_verification=UserVerificationRequirement.PREFERRED,
@@ -345,20 +397,31 @@ def passkeys_login_complete():
         origin = "http://localhost:5173"
 
     credential_id = data.get("id")
-    passkey = db.session.execute(
-        db.select(UserPasskey).where(UserPasskey.credential_id == credential_id, UserPasskey.user_id == user.id)
-    ).scalars().first()
-    
+    passkey = (
+        db.session.execute(
+            db.select(UserPasskey).where(
+                UserPasskey.credential_id == credential_id,
+                UserPasskey.user_id == user.id,
+            )
+        )
+        .scalars()
+        .first()
+    )
+
     if not passkey:
         raise api_error(401, "invalid_credential", "Passkey not found for this user")
 
     try:
         verification = verify_authentication_response(
             credential=data,
-            expected_challenge=webauthn.helpers.parse_authentication_options_json(options_json).challenge,
+            expected_challenge=webauthn.helpers.parse_authentication_options_json(
+                options_json
+            ).challenge,
             expected_origin=origin,
             expected_rp_id=rp_id,
-            credential_public_key=webauthn.helpers.base64url_to_bytes(passkey.public_key),
+            credential_public_key=webauthn.helpers.base64url_to_bytes(
+                passkey.public_key
+            ),
             credential_current_sign_count=passkey.sign_count,
         )
     except Exception as e:
@@ -378,17 +441,23 @@ def passkeys_login_complete():
 @require_auth
 def list_passkeys():
     user = current_user()
-    passkeys = db.session.execute(db.select(UserPasskey).where(UserPasskey.user_id == user.id)).scalars().all()
-    return json_response({
-        "passkeys": [
-            {
-                "id": p.id,
-                "name": p.name,
-                "created_at": p.created_at.isoformat() + "Z",
-            }
-            for p in passkeys
-        ]
-    })
+    passkeys = (
+        db.session.execute(db.select(UserPasskey).where(UserPasskey.user_id == user.id))
+        .scalars()
+        .all()
+    )
+    return json_response(
+        {
+            "passkeys": [
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "created_at": p.created_at.isoformat() + "Z",
+                }
+                for p in passkeys
+            ]
+        }
+    )
 
 
 @auth_bp.delete("/passkeys/<id>")
@@ -422,46 +491,60 @@ def me():
 def me_stats():
     user = current_user()
 
-    collections_count = db.session.execute(
-        db.select(db.func.count(Collection.id)).where(
-            Collection.owner_user_id == user.id,
-            Collection.deleted_at.is_(None),
-        )
-    ).scalar() or 0
+    collections_count = (
+        db.session.execute(
+            db.select(db.func.count(Collection.id)).where(
+                Collection.owner_user_id == user.id,
+                Collection.deleted_at.is_(None),
+            )
+        ).scalar()
+        or 0
+    )
 
-    snipsels_count = db.session.execute(
-        db.select(db.func.count(Snipsel.id)).where(
-            Snipsel.owner_user_id == user.id,
-            Snipsel.deleted_at.is_(None),
-        )
-    ).scalar() or 0
+    snipsels_count = (
+        db.session.execute(
+            db.select(db.func.count(Snipsel.id)).where(
+                Snipsel.owner_user_id == user.id,
+                Snipsel.deleted_at.is_(None),
+            )
+        ).scalar()
+        or 0
+    )
 
-    completed_tasks_count = db.session.execute(
-        db.select(db.func.count(Snipsel.id)).where(
-            Snipsel.owner_user_id == user.id,
-            Snipsel.deleted_at.is_(None),
-            Snipsel.type == "task",
-            Snipsel.task_done == True,
-        )
-    ).scalar() or 0
+    completed_tasks_count = (
+        db.session.execute(
+            db.select(db.func.count(Snipsel.id)).where(
+                Snipsel.owner_user_id == user.id,
+                Snipsel.deleted_at.is_(None),
+                Snipsel.type == "task",
+                Snipsel.task_done == True,
+            )
+        ).scalar()
+        or 0
+    )
 
-    attachments_count = db.session.execute(
-        db.select(db.func.count(Attachment.id))
-        .join(Snipsel, Attachment.snipsel_id == Snipsel.id)
-        .where(
-            Snipsel.owner_user_id == user.id,
-            Snipsel.deleted_at.is_(None),
-        )
-    ).scalar() or 0
+    attachments_count = (
+        db.session.execute(
+            db.select(db.func.count(Attachment.id))
+            .join(Snipsel, Attachment.snipsel_id == Snipsel.id)
+            .where(
+                Snipsel.owner_user_id == user.id,
+                Snipsel.deleted_at.is_(None),
+            )
+        ).scalar()
+        or 0
+    )
 
-    return json_response({
-        "stats": {
-            "collections": collections_count,
-            "snipsels": snipsels_count,
-            "completed_tasks": completed_tasks_count,
-            "attachments": attachments_count,
+    return json_response(
+        {
+            "stats": {
+                "collections": collections_count,
+                "snipsels": snipsels_count,
+                "completed_tasks": completed_tasks_count,
+                "attachments": attachments_count,
+            }
         }
-    })
+    )
 
 
 @auth_bp.patch("/me")
@@ -473,8 +556,8 @@ def update_me():
 
     if "default_collection_header_color" in data:
         user.default_collection_header_color = (
-            (data.get("default_collection_header_color") or "").strip() or None
-        )
+            data.get("default_collection_header_color") or ""
+        ).strip() or None
 
     if "carry_over_open_tasks" in data:
         user.carry_over_open_tasks = bool(data.get("carry_over_open_tasks"))
@@ -489,14 +572,18 @@ def update_me():
         if tpl_id_raw is None:
             user.day_collection_template_id = None
         else:
-            tpl = db.session.execute(
-                db.select(Collection).where(
-                    Collection.id == tpl_id_raw,
-                    Collection.owner_user_id == user.id,
-                    Collection.deleted_at.is_(None),
-                    Collection.is_template == True,
+            tpl = (
+                db.session.execute(
+                    db.select(Collection).where(
+                        Collection.id == tpl_id_raw,
+                        Collection.owner_user_id == user.id,
+                        Collection.deleted_at.is_(None),
+                        Collection.is_template == True,
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if not tpl:
                 raise api_error(400, "invalid_input", "template not found")
             user.day_collection_template_id = tpl.id
@@ -508,28 +595,57 @@ def update_me():
     if "ai_api_key" in data:
         user.ai_api_key = (data.get("ai_api_key") or "").strip() or None
 
+    if "light_background_color" in data:
+        user.light_background_color = (
+            data.get("light_background_color") or ""
+        ).strip() or None
+    if "dark_background_color" in data:
+        user.dark_background_color = (
+            data.get("dark_background_color") or ""
+        ).strip() or None
+
     if "email" in data or "password" in data:
         current_password = data.get("current_password") or ""
-        if not current_password or not check_password_hash(user.password_hash, current_password):
-            raise api_error(401, "invalid_credentials", "Current password is required to change email or password")
+        if not current_password or not check_password_hash(
+            user.password_hash, current_password
+        ):
+            raise api_error(
+                401,
+                "invalid_credentials",
+                "Current password is required to change email or password",
+            )
 
         if "email" in data:
             new_email = (data.get("email") or "").strip()
             if not new_email:
                 raise api_error(400, "invalid_input", "Email cannot be empty")
             if new_email != user.email:
-                existing = db.session.execute(
-                    db.select(User).where(User.email == new_email, User.id != user.id, User.deleted_at.is_(None))
-                ).scalars().first()
+                existing = (
+                    db.session.execute(
+                        db.select(User).where(
+                            User.email == new_email,
+                            User.id != user.id,
+                            User.deleted_at.is_(None),
+                        )
+                    )
+                    .scalars()
+                    .first()
+                )
                 if existing:
                     raise api_error(409, "already_exists", "Email already in use")
                 user.email = new_email
 
         if "password" in data:
             new_password = data.get("password") or ""
-            if not new_password or len(new_password) < 4:  # Allowing 4+ for now, but user requested 8+ usually. I'll stick to 8 if I want to be safe, but let's see what register uses.
-                raise api_error(400, "invalid_input", "Password must be at least 4 characters long")
-            user.password_hash = generate_password_hash(new_password, method="pbkdf2:sha256")
+            if (
+                not new_password or len(new_password) < 4
+            ):  # Allowing 4+ for now, but user requested 8+ usually. I'll stick to 8 if I want to be safe, but let's see what register uses.
+                raise api_error(
+                    400, "invalid_input", "Password must be at least 4 characters long"
+                )
+            user.password_hash = generate_password_hash(
+                new_password, method="pbkdf2:sha256"
+            )
 
     user.modified_at = datetime.utcnow()
     db.session.commit()
@@ -544,7 +660,9 @@ def password_reset_request():
     if not email:
         raise api_error(400, "invalid_input", "email is required")
 
-    user = db.session.execute(db.select(User).where(User.email == email)).scalars().first()
+    user = (
+        db.session.execute(db.select(User).where(User.email == email)).scalars().first()
+    )
     if not user or user.deleted_at is not None or not user.is_active:
         return json_response({"ok": True})
 
@@ -552,7 +670,9 @@ def password_reset_request():
     token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
     expires_at = datetime.utcnow() + timedelta(hours=2)
 
-    prt = PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=expires_at)
+    prt = PasswordResetToken(
+        user_id=user.id, token_hash=token_hash, expires_at=expires_at
+    )
     db.session.add(prt)
     db.session.commit()
 
@@ -571,9 +691,15 @@ def password_reset_confirm():
         raise api_error(400, "invalid_input", "token and new_password are required")
 
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    prt = db.session.execute(
-        db.select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
-    ).scalars().first()
+    prt = (
+        db.session.execute(
+            db.select(PasswordResetToken).where(
+                PasswordResetToken.token_hash == token_hash
+            )
+        )
+        .scalars()
+        .first()
+    )
     if not prt or prt.used_at is not None or prt.expires_at < datetime.utcnow():
         raise api_error(400, "invalid_token", "Token is invalid or expired")
 
@@ -599,7 +725,9 @@ def set_passcode():
     password_confirm = data.get("password_confirm") or ""
 
     if not passcode or not password_confirm:
-        raise api_error(400, "invalid_input", "passcode and password_confirm are required")
+        raise api_error(
+            400, "invalid_input", "passcode and password_confirm are required"
+        )
 
     if not passcode.isdigit() or not (4 <= len(passcode) <= 12):
         raise api_error(400, "invalid_input", "passcode must be 4-12 digits")
@@ -632,7 +760,12 @@ def verify_passcode():
             session.clear()
             raise api_error(401, "force_logout", "Too many failed attempts")
         else:
-            raise api_error(401, "invalid_passcode", "Invalid passcode", details={"attempts_remaining": 5 - user.passcode_failed_attempts})
+            raise api_error(
+                401,
+                "invalid_passcode",
+                "Invalid passcode",
+                details={"attempts_remaining": 5 - user.passcode_failed_attempts},
+            )
 
     user.passcode_failed_attempts = 0
     session["passcode_verified_at"] = datetime.utcnow().isoformat()
@@ -642,10 +775,16 @@ def verify_passcode():
     unlocked_until = (datetime.utcnow() + timedelta(minutes=2)).isoformat() + "Z"
     return json_response({"ok": True, "unlocked_until": unlocked_until})
 
+
 def _user_json(user: User) -> dict:
-    passkeys_count = db.session.execute(
-        db.select(db.func.count(UserPasskey.id)).where(UserPasskey.user_id == user.id)
-    ).scalar() or 0
+    passkeys_count = (
+        db.session.execute(
+            db.select(db.func.count(UserPasskey.id)).where(
+                UserPasskey.user_id == user.id
+            )
+        ).scalar()
+        or 0
+    )
 
     return {
         "id": user.id,
@@ -662,5 +801,7 @@ def _user_json(user: User) -> dict:
         "ai_llm_url": user.ai_llm_url,
         "ai_model_name": user.ai_model_name,
         "ai_api_key_set": user.ai_api_key is not None,
+        "light_background_color": user.light_background_color,
+        "dark_background_color": user.dark_background_color,
         "created_at": user.created_at.isoformat() + "Z",
     }
