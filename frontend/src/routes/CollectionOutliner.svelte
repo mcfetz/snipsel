@@ -1081,12 +1081,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (!$currentCollection) return;
     if (!canWrite()) return;
     
-    // Get indent from last snipsel
+    // Get indent from last visible snipsel (not collapsed)
     let indent = 0;
-    const items = $sortedItems;
-    if (items.length > 0) {
-      const lastItem = items[items.length - 1];
-      indent = lastItem.indent ?? 0;
+    const visible = visibleItems($sortedItems);
+    if (visible.length > 0) {
+      const lastVisibleItem = visible[visible.length - 1];
+      indent = lastVisibleItem.indent ?? 0;
     }
     
     isLoading.set(true);
@@ -3070,7 +3070,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <ArrowRightLeft label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 disabled:opacity-50"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg transition-all duration-300 ease-out hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 disabled:opacity-40 disabled:scale-95"
         type="button"
         aria-label="Create collection"
         title="Create collection from snipsel"
@@ -3090,11 +3090,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <Plus label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg transition-all duration-300 ease-out hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 disabled:opacity-40 disabled:scale-95"
         type="button"
         aria-label="Info"
         title="Info"
         onclick={openDetailSelected}
+        disabled={selectedIds.size !== 1}
       >
           <Info label="" size={20} strokeWidth={2} />
       </button>
