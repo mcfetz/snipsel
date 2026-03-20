@@ -420,16 +420,19 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
     const theme = $currentUser?.theme || 'system';
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const isDark = theme === 'dark' || (theme === 'system' && mediaQuery.matches);
-    
+
     const lightColor = $currentUser?.light_background_color;
     const darkColor = $currentUser?.dark_background_color;
-    
+
     const bgColor = isDark ? darkColor : lightColor;
-    
-    if (bgColor && /^#[0-9a-fA-F]{6}$/.test(bgColor)) {
-      document.body.style.backgroundColor = bgColor;
-    } else {
-      document.body.style.backgroundColor = '';
+
+    const appContainer = document.querySelector('.app-container') as HTMLElement;
+    if (appContainer) {
+      if (bgColor && /^#[0-9a-fA-F]{6}$/.test(bgColor)) {
+        appContainer.style.backgroundColor = bgColor;
+      } else {
+        appContainer.style.backgroundColor = '';
+      }
     }
   });
 
@@ -552,7 +555,7 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
   });
 </script>
 
-<div class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
+<div class="app-container min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
   {#if $currentUser}
     <!-- Progressive blur layer behind header -->
     <div class="fixed top-0 left-0 right-0 z-[15] pointer-events-none" style="height: 120px;">
