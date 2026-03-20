@@ -6,7 +6,7 @@
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
   import { api, type Attachment, type Snipsel, type SnipselDetailResponse } from '../lib/api';
   import ImageModal from '../lib/ImageModal.svelte';
-  import { collectionAnchor, currentView, isLoading, searchError, searchQuery, searchResults } from '../lib/stores';
+  import { collectionAnchor, currentView, isLoading, searchError, searchQuery, searchResults, currentCollection } from '../lib/stores';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
   import DeezerCard from '../lib/DeezerCard.svelte';
@@ -90,6 +90,14 @@
   function getAccent(): string {
     const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
     return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
+  }
+
+  function getHeaderColor(): string {
+    const collectionColor = ($currentCollection?.header_color || '').trim();
+    if (collectionColor && /^#[0-9a-fA-F]{6}$/.test(collectionColor)) {
+      return collectionColor;
+    }
+    return getAccent();
   }
 
   function getAccentTint(): string {
@@ -485,7 +493,8 @@
             <span class="text-sm text-slate-600 dark:text-slate-400">Use card view</span>
             <button
               type="button"
-              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {snipsel?.card_view !== false ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'}"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 {snipsel?.card_view !== false ? '' : 'bg-slate-200 dark:bg-slate-700'}"
+              style={snipsel?.card_view !== false ? `background-color: ${getHeaderColor()}; --tw-ring-color: ${getHeaderColor()}40` : ''}
               onclick={toggleCardView}
               disabled={changingCardView || !hasWriteAccess}
               role="switch"

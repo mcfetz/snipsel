@@ -2957,22 +2957,23 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                  <SquareCheck label="" size={16} strokeWidth={2} />
                  Task
                </button>
+</div>
+             <div class="border-t border-slate-100 px-3 py-2 dark:border-white/5">
+               <label class="flex items-center justify-between cursor-pointer">
+                 <span class="text-sm text-slate-600 dark:text-slate-400">Card view</span>
+                 <button
+                   type="button"
+                   class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {getSelectedCardView() ? '' : 'bg-slate-200 dark:bg-slate-700'}"
+                   style={getSelectedCardView() ? `background-color: ${getHeaderColor()}` : ''}
+                   onclick={toggleCardViewSelected}
+                   role="switch"
+                   aria-checked={getSelectedCardView()}
+                   aria-label="Toggle card view"
+                 >
+                   <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {getSelectedCardView() ? 'translate-x-5' : 'translate-x-0'}"></span>
+                 </button>
+               </label>
              </div>
-            <div class="border-t border-slate-100 px-3 py-2 dark:border-white/5">
-              <label class="flex items-center justify-between cursor-pointer">
-                <span class="text-sm text-slate-600 dark:text-slate-400">Card view</span>
-                <button
-                  type="button"
-                  class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {getSelectedCardView() ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'}"
-                  onclick={toggleCardViewSelected}
-                  role="switch"
-                  aria-checked={getSelectedCardView()}
-                  aria-label="Toggle card view"
-                >
-                  <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {getSelectedCardView() ? 'translate-x-5' : 'translate-x-0'}"></span>
-                </button>
-              </label>
-            </div>
             <div class="border-t border-slate-100 p-1 dark:border-white/5">
               <button
                 class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5"
