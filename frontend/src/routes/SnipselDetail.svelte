@@ -444,9 +444,7 @@
       class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80"
       style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}
     >
-      <span class="text-xs uppercase tracking-wide" style={`color: ${getAccent()}`}>Snipsel</span>
-      <span class="opacity-70">·</span>
-      <span class="font-semibold">{snipselId}</span>
+      <span class="text-xs uppercase tracking-wide" style={`color: ${getAccent()}`}>Snipsel Settings</span>
     </div>
   </div>
 
@@ -609,7 +607,6 @@
               type="datetime-local"
               class="flex-1 rounded-md border border-slate-200 bg-white/50 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-white/10 dark:bg-slate-900/50"
               bind:value={reminderAt}
-              onchange={updateReminders}
             />
             {#if reminderAt}
               <button
@@ -620,6 +617,15 @@
                 Clear
               </button>
             {/if}
+            <button
+              type="button"
+              class="rounded-md px-3 py-2 text-xs font-medium text-white shadow-sm transition-opacity hover:opacity-90"
+              style={`background-color: ${getAccent()}`}
+              onclick={updateReminders}
+              disabled={updatingReminders}
+            >
+              {updatingReminders ? 'Saving...' : 'Save'}
+            </button>
           </div>
         </div>
         <div>
