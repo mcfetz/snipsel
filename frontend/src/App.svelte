@@ -415,6 +415,24 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
     return () => mediaQuery.removeEventListener('change', updateTheme);
   });
 
+  // Background Color Effect
+  $effect(() => {
+    const theme = $currentUser?.theme || 'system';
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const isDark = theme === 'dark' || (theme === 'system' && mediaQuery.matches);
+    
+    const lightColor = $currentUser?.light_background_color;
+    const darkColor = $currentUser?.dark_background_color;
+    
+    const bgColor = isDark ? darkColor : lightColor;
+    
+    if (bgColor && /^#[0-9a-fA-F]{6}$/.test(bgColor)) {
+      document.body.style.backgroundColor = bgColor;
+    } else {
+      document.body.style.backgroundColor = '';
+    }
+  });
+
   // Search Effect
   let searchDebounce: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
