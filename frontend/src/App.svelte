@@ -544,10 +544,10 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
       <div class="pointer-events-auto flex items-center gap-3 rounded-full border border-slate-200 bg-white/80 px-3 py-2 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5">
         <button
           class="flex items-center gap-2 pl-2 pr-1 font-bold text-lg text-slate-800 transition-colors dark:text-slate-200 group"
-          style="--logo-hover: {getAccent()}"
+          style="--logo-hover: {getNavPlusColor()}"
           type="button"
           onclick={openToday}
-          onmouseenter={(e) => (e.currentTarget as HTMLButtonElement).style.color = getAccent()}
+          onmouseenter={(e) => (e.currentTarget as HTMLButtonElement).style.color = getNavPlusColor()}
           onmouseleave={(e) => (e.currentTarget as HTMLButtonElement).style.color = ''}
         >
           <img src="/logo.svg" alt="snipsel logo" class="h-6 w-6 dark:brightness-110 dark:invert transition-transform duration-200 group-hover:scale-110" />
@@ -632,7 +632,7 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
         >
           {#if $notificationsStore.filter(n => !n.is_read).length > 0}
             <span class="al-icon-wrapper absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900"
-                  style="background-color: {getAccent()}"
+                  style="background-color: {getNavPlusColor()}"
             >
               {$notificationsStore.filter(n => !n.is_read).length}
             </span>
