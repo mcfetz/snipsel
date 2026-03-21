@@ -55,7 +55,7 @@ def get_snipsels_by_bounds():
         ).where(
             Snipsel.deleted_at.is_(None),
             Collection.deleted_at.is_(None),
-            CollectionShare.user_id == user.id,
+            CollectionShare.shared_with_user_id == user.id,
             Snipsel.geo_lat.isnot(None),
             Snipsel.geo_lng.isnot(None),
             Snipsel.geo_lat >= sw_lat,
