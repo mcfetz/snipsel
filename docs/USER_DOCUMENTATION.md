@@ -524,10 +524,10 @@ These shortcuts work when you're not editing a snipsel (not focused in an input 
 ### Selected Snipsels (when snipsels are selected)
 | Shortcut | Action |
 |----------|--------|
-| **Shift + ↑** | Move selected snipsels up |
-| **Shift + ↓** | Move selected snipsels down |
-| **Shift + ←** | Outdent selected snipsels |
-| **Shift + →** | Indent selected snipsels |
+| **Ctrl+Shift + ↑** | Move selected snipsels up |
+| **Ctrl+Shift + ↓** | Move selected snipsels down |
+| **Ctrl+Shift + ←** | Outdent selected snipsels |
+| **Ctrl+Shift + →** | Indent selected snipsels |
 
 ### Editing
 - **Enter** after last snipsel: Create new snipsel
