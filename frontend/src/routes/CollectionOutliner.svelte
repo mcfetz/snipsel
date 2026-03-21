@@ -77,6 +77,7 @@
   let selectedIds = $state<Set<string>>(new Set());
   let selectionPulse = $state(false);
   let previousSelectionSize = $state(0);
+  let lastSelectedId = $state<string | null>(null);
 
   $effect(() => {
     const size = selectedIds.size;
@@ -593,8 +594,39 @@
     return childIds;
   }
 
-  function toggleSelection(id: string) {
+  function toggleSelection(id: string, shiftKey: boolean = false) {
     const next = new Set(selectedIds);
+
+    // Shift-click: select range between last selected and current
+    if (shiftKey && lastSelectedId && lastSelectedId !== id) {
+      const allIds = $sortedItems.map(i => i.snipsel_id);
+      const lastIdx = allIds.indexOf(lastSelectedId);
+      const currentIdx = allIds.indexOf(id);
+
+      if (lastIdx !== -1 && currentIdx !== -1) {
+        const start = Math.min(lastIdx, currentIdx);
+        const end = Math.max(lastIdx, currentIdx);
+
+        for (let i = start; i <= end; i++) {
+          const itemId = allIds[i];
+          next.add(itemId);
+
+          // Also add collapsed children for this item
+          const item = $sortedItems[i];
+          const hasCollapsedChildren = item && hasChildren(item, $sortedItems) && !expandedSnipsels.has(itemId);
+          if (hasCollapsedChildren) {
+            const childIds = getChildIds(itemId, $sortedItems);
+            for (const childId of childIds) {
+              next.add(childId);
+            }
+          }
+        }
+
+        selectedIds = next;
+        return;
+      }
+    }
+
     const isSelecting = !next.has(id);
 
     // Get child ids in case we need them
@@ -609,12 +641,21 @@
       for (const childId of childIds) {
         next.add(childId);
       }
+
+      lastSelectedId = id;
     } else {
       next.delete(id);
 
       // When deselecting, also deselect all children that were auto-selected
       for (const childId of childIds) {
         next.delete(childId);
+      }
+
+      // Update lastSelectedId if we're deselecting it
+      if (lastSelectedId === id) {
+        // Find another selected item to use as lastSelectedId
+        const remainingIds = Array.from(next);
+        lastSelectedId = remainingIds.length > 0 ? remainingIds[remainingIds.length - 1] : null;
       }
     }
 
@@ -623,6 +664,7 @@
 
   function clearSelection() {
     selectedIds = new Set();
+    lastSelectedId = null;
     showDeleteModal = false;
   }
 
@@ -1630,6 +1672,21 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     () => void adjustIndentSelected(-1)
   );
 
+  function createRangeLongPress(itemId: string) {
+    return longPress(
+      () => {
+        // Long press: select range between lastSelectedId and this item
+        if (lastSelectedId && lastSelectedId !== itemId) {
+          toggleSelection(itemId, true);
+        }
+      },
+      () => {
+        // Short press: normal toggle
+        toggleSelection(itemId, false);
+      }
+    );
+  }
+
   async function moveSelected(dir: -1 | 1) {
     if (!$currentCollection) return;
     if (!canWrite()) return;
@@ -2432,14 +2489,17 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {/if}
                 </button>
 
+                {@const rangeLongPress = createRangeLongPress(item.snipsel_id)}
                 <button
                   type="button"
                   aria-label="Select snipsel"
                   class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    toggleSelection(item.snipsel_id);
-                  }}
+                  onclick={rangeLongPress.onclick}
+                  onpointerdown={rangeLongPress.onpointerdown}
+                  onpointerup={rangeLongPress.onpointerup}
+                  onpointercancel={rangeLongPress.onpointercancel}
+                  onpointerleave={rangeLongPress.onpointerleave}
+                  oncontextmenu={rangeLongPress.oncontextmenu}
                 >
                   <div
                     class="w-1.5 h-full transition-all duration-150 ease-out origin-right {selectedIds.has(item.snipsel_id) ? '' : 'scale-x-0 group-hover:scale-x-100'} hover:scale-x-150 active:scale-x-75"
@@ -2447,14 +2507,17 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   ></div>
                 </button>
             {:else}
+              {@const rangeLongPress = createRangeLongPress(item.snipsel_id)}
               <button
                 type="button"
                 aria-label="Select snipsel"
                 class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-                onclick={(e) => {
-                  e.stopPropagation();
-                  toggleSelection(item.snipsel_id);
-                }}
+                onclick={rangeLongPress.onclick}
+                onpointerdown={rangeLongPress.onpointerdown}
+                onpointerup={rangeLongPress.onpointerup}
+                onpointercancel={rangeLongPress.onpointercancel}
+                onpointerleave={rangeLongPress.onpointerleave}
+                oncontextmenu={rangeLongPress.oncontextmenu}
               >
                 <div
                   class="w-1.5 h-full transition-all duration-150 ease-out origin-right hover:scale-x-150 active:scale-x-75"
