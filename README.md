@@ -58,6 +58,11 @@ Organize everything in **collections** — from grocery lists to project notes. 
 - 🖼️ **Image** — attach and view photos
 - 📁 **File attachment** — store any file
 
+**Smart Selection Features:**
+- **Multi-Select** — Click the selection bar on the right to select multiple snipsels
+- **Range Selection** — Hold Shift (desktop) or long-press (mobile) to select all snipsels between two items
+- **Auto-Select Children** — Selecting a parent snipsel with collapsed children automatically selects all nested items
+
 ### 🤖 AI Assistant (Vision-ready)
 Process your notes with a built-in AI assistant. Configure your own OpenAI-compatible endpoint (OpenAI, Groq, Ollama) and use it to summarize, translate, or transform snipsels with custom prompts. Supports **vision models** for image analysis and text extraction from attachments.
 
@@ -76,6 +81,9 @@ A built-in **daily collection** auto-created for each day. Open tasks from the p
 - Custom accent color per collection
 - Cover images for collections
 - Installable as a PWA on any device
+
+### 🗺️ Geo Location
+Capture and view snipsels with geographic coordinates. See your notes on an interactive map in the Tags/Mentions view, filter by location, and track where your ideas were born. Perfect for travel journals, field notes, or location-based task management.
 
 ### 📥 Import from Twos
 Coming from [Twos](https://www.twosapp.com/)? Snipsel can import all your lists, tasks, photos, and reminders with a single click — including recurrence rules.

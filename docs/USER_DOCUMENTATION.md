@@ -18,6 +18,8 @@ Snipsel is a personal knowledge management application that helps you organize n
 - **Reminders** - Set date-based alerts for individual snipsels
 - **AI Assistant** - Process and generate content using a configurable LLM proxy
 - **Sticky Navigation** - Keep track of your location with the sticky collection title tab
+- **Geo Location** - Capture and view snipsels with geographic coordinates on an interactive map
+- **Smart Multi-Select** - Range selection and auto-select collapsed children for efficient bulk operations
 
 ---
 
@@ -355,6 +357,80 @@ The calendar shows your daily collections organized by date.
 
 ---
 
+## Geo Location
+
+Snipsel can capture and display geographic coordinates for your snipsels, allowing you to see where your notes, tasks, and ideas were created.
+
+### Capturing Location
+
+When creating a new snipsel, Snipsel automatically captures your device's GPS location (if permission is granted). This works on both mobile and desktop browsers.
+
+**Privacy Note:** Location data is only stored if you grant permission. You can always deny location access and snipsels will be created without coordinates.
+
+### Viewing Snipsels on the Map
+
+Access the **Geo** view from the Tags/Mentions page (look for the map icon):
+
+1. **Map View** — See all your geo-tagged snipsels plotted on an interactive map
+2. **List Below Map** — A scrollable list shows all snipsels with their coordinates
+3. **Click to Navigate** — Click any marker or list item to jump to that snipsel's collection
+
+### Use Cases
+
+- **Travel Journal** — Track where you've been and what you noted
+- **Field Work** — Document site visits with location data
+- **Photography** — Remember where you took specific photos
+- **Real Estate** — Track property visits and notes
+- **Delivery/Service Tasks** — Log where tasks were completed
+
+---
+
+## Multi-Select & Bulk Operations
+
+Snipsel provides powerful selection tools for working with multiple snipsels at once.
+
+### Basic Selection
+
+1. **Hover to Reveal** — Move your mouse to the right edge of any snipsel to reveal the selection bar
+2. **Click to Select** — Click the selection bar to toggle selection of that snipsel
+3. **Visual Feedback** — Selected snipsels are highlighted with a colored background
+
+### Range Selection
+
+Quickly select multiple consecutive snipsels:
+
+**Desktop:**
+1. Select the first snipsel
+2. Hold **Shift** and click the last snipsel you want to select
+3. All snipsels between (inclusive) are selected
+
+**Mobile:**
+1. Select the first snipsel
+2. **Long-press** the selection bar of the last snipsel you want to select
+3. All snipsels between (inclusive) are selected
+
+### Auto-Select Collapsed Children
+
+When working with nested/indented snipsels:
+
+- **Selecting a Parent** — If a parent snipsel has collapsed children, selecting it automatically selects all its children too
+- **Deselecting a Parent** — Deselecting a parent also deselects all its children
+- **Works with Range Selection** — Range selection also respects collapsed children and selects them automatically
+
+### Bulk Operations
+
+Once you have multiple snipsels selected, use the **Toolbox** that appears at the bottom:
+
+- **Move Up/Down** — Reorder selected snipsels (short press = move one step, long press = move to top/bottom)
+- **Indent/Outdent** — Change nesting level (long press on Outdent = remove all indentation)
+- **Change Type** — Convert between text, task, image, and attachment types
+- **Copy/Move/Link** — Copy or move snipsels to another collection, or create internal links
+- **Delete** — Remove all selected snipsels at once
+- **AI Assistant** — Process selected snipsels with the AI assistant
+- **Add Attachments** — Upload files to all selected snipsels simultaneously
+
+---
+
 ## Security & Authentication
 
 Snipsel provides modern security features to keep your account safe. These can be configured in your **Settings**.
@@ -432,10 +508,14 @@ Per-collection settings (accessed via collection menu):
 
 ## Keyboard Shortcuts
 
+### Editing
 - **Enter** after last snipsel: Create new snipsel
 - **Tab**: Increase indent (now visible immediately)
 - **Shift+Tab**: Decrease indent (now visible immediately)
 - **Ctrl+Enter**: Save current snipsel and create a new one below with the same indentation and type.
+
+### Selection
+- **Shift + Click** (on selection bar): Select range of snipsels between last selected and clicked item
 
 ---
 
