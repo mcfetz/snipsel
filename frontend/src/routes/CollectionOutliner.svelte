@@ -1672,19 +1672,29 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     () => void adjustIndentSelected(-1)
   );
 
-  function createRangeLongPress(itemId: string) {
-    return longPress(
-      () => {
-        // Long press: select range between lastSelectedId and this item
-        if (lastSelectedId && lastSelectedId !== itemId) {
-          toggleSelection(itemId, true);
-        }
-      },
-      () => {
-        // Short press: normal toggle
-        toggleSelection(itemId, false);
-      }
-    );
+  // Track shift key state globally for pointer events
+  let shiftKeyPressed = $state(false);
+
+  function handleSelectPointerDown(e: PointerEvent, itemId: string) {
+    shiftKeyPressed = e.shiftKey;
+  }
+
+  function handleSelectShortPress(itemId: string) {
+    if (shiftKeyPressed && lastSelectedId && lastSelectedId !== itemId) {
+      // Shift+click: select range
+      toggleSelection(itemId, true);
+    } else {
+      // Normal click: toggle this item
+      toggleSelection(itemId, false);
+    }
+    shiftKeyPressed = false;
+  }
+
+  function handleSelectLongPress(itemId: string) {
+    if (lastSelectedId && lastSelectedId !== itemId) {
+      // Long press: select range between lastSelectedId and this item
+      toggleSelection(itemId, true);
+    }
   }
 
   async function moveSelected(dir: -1 | 1) {
@@ -2489,19 +2499,18 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {/if}
                 </button>
 
-                {@const rangeLongPress = createRangeLongPress(item.snipsel_id)}
+                {@const rangeLongPress = longPress(
+                  () => handleSelectLongPress(item.snipsel_id),
+                  () => handleSelectShortPress(item.snipsel_id)
+                )}
                 <button
                   type="button"
                   aria-label="Select snipsel"
                   class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-                  onclick={(e) => {
-                    if (e.shiftKey) {
-                      toggleSelection(item.snipsel_id, true);
-                    } else {
-                      rangeLongPress.onclick(e);
-                    }
+                  onpointerdown={(e) => {
+                    handleSelectPointerDown(e, item.snipsel_id);
+                    rangeLongPress.onpointerdown(e);
                   }}
-                  onpointerdown={rangeLongPress.onpointerdown}
                   onpointerup={rangeLongPress.onpointerup}
                   onpointercancel={rangeLongPress.onpointercancel}
                   onpointerleave={rangeLongPress.onpointerleave}
@@ -2513,19 +2522,18 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   ></div>
                 </button>
             {:else}
-              {@const rangeLongPress = createRangeLongPress(item.snipsel_id)}
+              {@const rangeLongPress = longPress(
+                () => handleSelectLongPress(item.snipsel_id),
+                () => handleSelectShortPress(item.snipsel_id)
+              )}
               <button
                 type="button"
                 aria-label="Select snipsel"
                 class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-                onclick={(e) => {
-                  if (e.shiftKey) {
-                    toggleSelection(item.snipsel_id, true);
-                  } else {
-                    rangeLongPress.onclick(e);
-                  }
+                onpointerdown={(e) => {
+                  handleSelectPointerDown(e, item.snipsel_id);
+                  rangeLongPress.onpointerdown(e);
                 }}
-                onpointerdown={rangeLongPress.onpointerdown}
                 onpointerup={rangeLongPress.onpointerup}
                 onpointercancel={rangeLongPress.onpointercancel}
                 onpointerleave={rangeLongPress.onpointerleave}
