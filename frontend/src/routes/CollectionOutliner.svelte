@@ -69,6 +69,7 @@
     moveSnipselsRequest,
     infoSnipselsRequest,
     uploadAttachmentRequest,
+    newSnipselInCurrentCollectionRequest,
   } from '../lib/stores';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
@@ -1431,6 +1432,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (requestCount > 0 && selectedIds.size > 0) {
       triggerAttachmentUpload();
       uploadAttachmentRequest.set(0);
+    }
+  });
+
+  $effect(() => {
+    const requestCount = newSnipselInCurrentCollectionRequest ? $newSnipselInCurrentCollectionRequest : 0;
+    if (requestCount > 0) {
+      createSnipselFromUserGesture();
+      newSnipselInCurrentCollectionRequest.set(0);
     }
   });
 

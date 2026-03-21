@@ -11,7 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest, newSnipselInCurrentCollectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -592,10 +592,15 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
         e.preventDefault();
         currentView.set({ type: 'tags_mentions' });
       }
-      // Cmd/Ctrl + Shift + Enter -> New snipsel
-      else if (isMetaOrCtrl && e.shiftKey && e.key === 'Enter') {
+      // Cmd/Ctrl + Shift + N -> New snipsel in Today's collection
+      else if (isMetaOrCtrl && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
         e.preventDefault();
         onNewSnipsel();
+      }
+      // Cmd/Ctrl + Shift + Enter -> New snipsel in current collection
+      else if (isMetaOrCtrl && e.shiftKey && e.key === 'Enter') {
+        e.preventDefault();
+        newSnipselInCurrentCollectionRequest.update((n) => n + 1);
       }
       // Escape -> Deselect
       else if (e.key === 'Escape') {

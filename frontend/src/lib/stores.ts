@@ -80,3 +80,4 @@ export const copySnipselsRequest = writable(0);
 export const moveSnipselsRequest = writable(0);
 export const infoSnipselsRequest = writable(0);
 export const uploadAttachmentRequest = writable(0);
+export const newSnipselInCurrentCollectionRequest = writable(0);

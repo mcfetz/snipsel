@@ -517,7 +517,8 @@ These shortcuts work when you're not editing a snipsel (not focused in an input 
 | **Cmd/Ctrl + Shift + 2** | Open Tasks page |
 | **Cmd/Ctrl + Shift + 3** | Open Collections list |
 | **Cmd/Ctrl + Shift + 4** | Open Tags/Mentions page |
-| **Cmd/Ctrl + Shift + Enter** | Create new snipsel in today's collection |
+| **Cmd/Ctrl + Shift + N** | Create new snipsel in today's collection (like navbar + button) |
+| **Cmd/Ctrl + Shift + Enter** | Create new snipsel in current collection (like "Add new snipsel" button) |
 | **Cmd/Ctrl + Shift + S** | Focus search field |
 | **Escape** | Deselect all selected snipsels |
 
