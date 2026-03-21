@@ -25,7 +25,9 @@
   "dependencies": {
     "@animated-color-icons/lucide-svelte": "^1.0.0",
     "@simplewebauthn/browser": "^13.2.2",
+    "@types/leaflet": "^1.9.21",
     "idb": "^8.0.3",
+    "leaflet": "^1.9.4",
     "markdown-it": "^14.1.0",
     "non.geist": "^2.0.1",
     "workbox-cacheable-response": "^7.4.0",
