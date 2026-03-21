@@ -316,7 +316,7 @@
       >
         <span class="flex items-center justify-center gap-2">
           <MapPin label="" size={18} />
-          <span>Locations</span>
+          <span>Geo</span>
         </span>
       </button>
     </div>
