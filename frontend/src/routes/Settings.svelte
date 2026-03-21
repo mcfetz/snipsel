@@ -341,8 +341,12 @@
   }
 
   async function fetchModels() {
-    if (!aiLlmUrl.trim() || !aiApiKey.trim()) {
-      modelsError = 'Please enter both LLM URL and API key first';
+    if (!aiLlmUrl.trim()) {
+      modelsError = 'Please enter LLM URL first';
+      return;
+    }
+    if (!aiApiKey.trim() && !$currentUser?.ai_api_key_set) {
+      modelsError = 'Please enter API key first';
       return;
     }
     isLoadingModels = true;
@@ -753,7 +757,7 @@
               <button
                 type="button"
                 onclick={fetchModels}
-                disabled={isLoadingModels || !aiLlmUrl.trim() || !aiApiKey.trim()}
+                disabled={isLoadingModels}
                 class="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 {isLoadingModels ? 'Loading...' : 'Refresh'}
