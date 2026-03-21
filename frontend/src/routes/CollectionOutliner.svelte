@@ -1376,6 +1376,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const requestCount = deleteSelectionRequest ? $deleteSelectionRequest : 0;
     if (requestCount > 0 && selectedIds.size > 0) {
       deleteSelected();
+      deleteSelectionRequest.set(0);
     }
   });
 
