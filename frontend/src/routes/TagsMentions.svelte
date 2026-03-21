@@ -269,13 +269,6 @@
       loadList();
     }
   });
-
-  $effect(() => {
-    if (mode === 'locations' && map) {
-      scope;
-      loadSnipselsInBounds();
-    }
-  });
 </script>
 
 <div class="space-y-4">
@@ -352,7 +345,11 @@
         style={scope === 'my' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         onclick={() => {
           scope = 'my';
-          loadList();
+          if (mode === 'locations') {
+            loadSnipselsInBounds();
+          } else {
+            loadList();
+          }
         }}
       >
         My
@@ -367,7 +364,11 @@
         style={scope === 'shared' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         onclick={() => {
           scope = 'shared';
-          loadList();
+          if (mode === 'locations') {
+            loadSnipselsInBounds();
+          } else {
+            loadList();
+          }
         }}
       >
         Shared
