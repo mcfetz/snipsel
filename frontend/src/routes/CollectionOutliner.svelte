@@ -1382,6 +1382,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const requestCount = aiAssistantRequest ? $aiAssistantRequest : 0;
     if (requestCount > 0 && selectedIds.size > 0) {
       openAiModal();
+      aiAssistantRequest.set(0);
     }
   });
 
@@ -1397,6 +1398,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const requestCount = toggleCardViewRequest ? $toggleCardViewRequest : 0;
     if (requestCount > 0 && selectedIds.size > 0) {
       toggleCardViewSelected();
+      toggleCardViewRequest.set(0);
     }
   });
 
@@ -1404,6 +1406,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const requestCount = copySnipselsRequest ? $copySnipselsRequest : 0;
     if (requestCount > 0 && selectedIds.size > 0) {
       copySelected();
+      copySnipselsRequest.set(0);
     }
   });
 
@@ -1411,6 +1414,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const requestCount = moveSnipselsRequest ? $moveSnipselsRequest : 0;
     if (requestCount > 0 && selectedIds.size > 0) {
       moveSelectedToAnotherCollection();
+      moveSnipselsRequest.set(0);
     }
   });
 
@@ -1418,6 +1422,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const requestCount = infoSnipselsRequest ? $infoSnipselsRequest : 0;
     if (requestCount > 0 && selectedIds.size > 0) {
       openInfoModal();
+      infoSnipselsRequest.set(0);
     }
   });
 
@@ -1425,6 +1430,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const requestCount = uploadAttachmentRequest ? $uploadAttachmentRequest : 0;
     if (requestCount > 0 && selectedIds.size > 0) {
       triggerAttachmentUpload();
+      uploadAttachmentRequest.set(0);
     }
   });
 
