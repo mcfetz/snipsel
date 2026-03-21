@@ -380,7 +380,7 @@
           No locations found in this area. Try zooming out or panning the map.
         </div>
       {:else}
-        <div class="space-y-3" in:slide={{ duration: 300 }} out:fade={{ duration: 200 }}>
+        <div class="space-y-3" in:slide={{ duration: 500 }} out:fade={{ duration: 200 }}>
           <div class="flex items-center justify-between px-1">
             <div class="text-xs font-medium uppercase tracking-wider text-slate-500">
               Locations on map
@@ -396,7 +396,7 @@
                 type="button"
                 class="w-full rounded-xl border border-slate-200 bg-white/80 p-3 text-left shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10"
                 onclick={() => openSnipsel(snipsel)}
-                in:slide={{ duration: 200, delay: 50 }}
+                in:slide={{ duration: 400, delay: 50 }}
               >
                 <div class="flex items-start gap-3">
                   <span class="text-2xl">{snipsel.collection.icon}</span>
