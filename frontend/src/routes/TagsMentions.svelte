@@ -379,8 +379,39 @@
           No locations found in this area. Try zooming out or panning the map.
         </div>
       {:else}
-        <div class="text-sm text-slate-500">
-          Showing {geoSnipsels.length} location{geoSnipsels.length === 1 ? '' : 's'}
+        <div class="space-y-3">
+          <div class="flex items-center justify-between px-1">
+            <div class="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Locations on map
+            </div>
+            <div class="text-xs text-slate-400">
+              {geoSnipsels.length} found
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            {#each geoSnipsels as snipsel (snipsel.id)}
+              <button
+                type="button"
+                class="w-full rounded-xl border border-slate-200 bg-white/80 p-3 text-left shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10"
+                onclick={() => openSnipsel(snipsel)}
+              >
+                <div class="flex items-start gap-3">
+                  <span class="text-2xl">{snipsel.collection.icon}</span>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-medium text-slate-900 truncate dark:text-slate-100">
+                      {snipsel.excerpt || '(No content)'}
+                    </div>
+                    <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                      <span>{snipsel.collection.title}</span>
+                      <span>•</span>
+                      <span>{new Date(snipsel.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            {/each}
+          </div>
         </div>
       {/if}
     </div>
