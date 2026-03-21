@@ -1328,8 +1328,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   });
 
   $effect(() => {
-    void $clearSelectionRequest;
-    if ($clearSelectionRequest > 0) {
+    const requestCount = clearSelectionRequest ? $clearSelectionRequest : 0;
+    if (requestCount > 0) {
       clearSelection();
     }
   });
