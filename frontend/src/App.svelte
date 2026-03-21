@@ -11,7 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -599,7 +599,15 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
       }
       // Escape -> Deselect
       else if (e.key === 'Escape') {
-        snipselsSelected.set(0);
+        clearSelectionRequest.update((n) => n + 1);
+      }
+      // Ctrl/Cmd + S -> Focus search
+      else if (isMetaOrCtrl && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+        }
       }
     }
 

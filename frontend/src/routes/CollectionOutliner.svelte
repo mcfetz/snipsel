@@ -58,6 +58,7 @@
     createSnipselCallback,
     createSnipselOnLoad,
     snipselsSelected,
+    clearSelectionRequest,
   } from '../lib/stores';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
@@ -1324,6 +1325,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   $effect(() => {
     snipselsSelected.set(selectedIds.size);
     return () => snipselsSelected.set(0);
+  });
+
+  $effect(() => {
+    void $clearSelectionRequest;
+    if ($clearSelectionRequest > 0) {
+      clearSelection();
+    }
   });
 
   function deleteSelected() {

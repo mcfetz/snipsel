@@ -68,3 +68,6 @@ export const sortedItems = derived(collectionItems, ($items) =>
 
 // Track if snipsels are selected in CollectionOutliner (for navbar/toolbox animation)
 export const snipselsSelected = writable(0);
+
+// Request to clear selection in CollectionOutliner (triggered by Escape key)
+export const clearSelectionRequest = writable(0);
