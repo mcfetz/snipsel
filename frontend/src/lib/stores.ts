@@ -70,5 +70,6 @@ export const sortedItems = derived(collectionItems, ($items) =>
 export const snipselsSelected = writable(0);
 
 export const clearSelectionRequest = writable(0);
+export const deleteSelectionRequest = writable(0);
 export const moveSelectionRequest = writable<{ direction: 'up' | 'down' } | null>(null);
 export const indentSelectionRequest = writable<{ direction: 'left' | 'right' } | null>(null);

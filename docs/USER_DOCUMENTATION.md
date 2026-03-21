@@ -528,6 +528,7 @@ These shortcuts work when you're not editing a snipsel (not focused in an input 
 | **Ctrl+Shift + ↓** | Move selected snipsels down |
 | **Ctrl+Shift + ←** | Outdent selected snipsels |
 | **Ctrl+Shift + →** | Indent selected snipsels |
+| **Delete / Backspace** | Delete selected snipsels |
 
 ### Editing
 - **Enter** after last snipsel: Create new snipsel

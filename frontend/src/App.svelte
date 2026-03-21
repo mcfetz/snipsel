@@ -11,7 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, moveSelectionRequest, indentSelectionRequest } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -600,6 +600,11 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
       // Escape -> Deselect
       else if (e.key === 'Escape') {
         clearSelectionRequest.update((n) => n + 1);
+      }
+      // Delete key -> Delete selected snipsels
+      else if ($snipselsSelected > 0 && (e.key === 'Delete' || e.key === 'Backspace')) {
+        e.preventDefault();
+        deleteSelectionRequest.update((n) => n + 1);
       }
       // Cmd/Ctrl + Shift + S -> Focus search
       else if (isMetaOrCtrl && e.shiftKey && (e.key === 's' || e.key === 'S')) {

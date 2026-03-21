@@ -59,6 +59,7 @@
     createSnipselOnLoad,
     snipselsSelected,
     clearSelectionRequest,
+    deleteSelectionRequest,
     moveSelectionRequest,
     indentSelectionRequest,
   } from '../lib/stores';
@@ -1357,6 +1358,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         adjustIndentSelected(1);
       }
       indentSelectionRequest.set(null);
+    }
+  });
+
+  $effect(() => {
+    const requestCount = deleteSelectionRequest ? $deleteSelectionRequest : 0;
+    if (requestCount > 0 && selectedIds.size > 0) {
+      deleteSelected();
     }
   });
 
