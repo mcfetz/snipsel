@@ -178,9 +178,20 @@
     markers.forEach((marker) => marker.remove());
     markers = [];
 
+    // Create custom SVG icon
+    const customIcon = L.divIcon({
+      className: 'custom-map-marker',
+      html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${getAccent()}" width="32" height="32" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      </svg>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    });
+
     // Add new markers
     geoSnipsels.forEach((snipsel) => {
-      const marker = L.marker([snipsel.lat, snipsel.lng])
+      const marker = L.marker([snipsel.lat, snipsel.lng], { icon: customIcon })
         .addTo(map!)
         .bindPopup(createPopupContent(snipsel));
 
@@ -442,3 +453,10 @@
     </div>
   {/if}
 </div>
+
+<style>
+  :global(.custom-map-marker) {
+    background: transparent !important;
+    border: none !important;
+  }
+</style>
