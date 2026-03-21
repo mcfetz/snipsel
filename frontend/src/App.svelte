@@ -609,8 +609,8 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
           searchInput.focus();
         }
       }
-      // Ctrl + Arrow keys for selected snipsels (only when snipsels are selected)
-      else if ($snipselsSelected > 0 && e.ctrlKey) {
+      // Shift + Arrow keys for selected snipsels (only when snipsels are selected)
+      else if ($snipselsSelected > 0 && e.shiftKey) {
         if (e.key === 'ArrowUp') {
           e.preventDefault();
           moveSelectionRequest.set({ direction: 'up' });
