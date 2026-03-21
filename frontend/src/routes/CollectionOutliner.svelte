@@ -3000,7 +3000,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
        />
 
       <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 select-none dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Move up"
         title="Move up"
@@ -3015,7 +3015,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <ChevronUp label="" size={20} strokeWidth={2} />
       </button>
       <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 select-none dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Move down"
         title="Move down"
@@ -3031,7 +3031,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       </button>
 
       <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 select-none dark:bg-white/5 dark:hover:bg-white/10"
         type="button"
         aria-label="Outdent"
         title="Outdent"
