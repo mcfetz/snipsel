@@ -160,6 +160,7 @@
         ne_lng: ne.lng,
         sw_lat: sw.lat,
         sw_lng: sw.lng,
+        scope,
       });
 
       geoSnipsels = res.snipsels;
@@ -266,6 +267,13 @@
   $effect(() => {
     if (mode !== 'locations') {
       loadList();
+    }
+  });
+
+  $effect(() => {
+    if (mode === 'locations' && map) {
+      scope;
+      loadSnipselsInBounds();
     }
   });
 </script>

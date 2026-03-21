@@ -8,6 +8,7 @@ from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
 from snipsel_api.models import (
     Collection,
+    CollectionShare,
     CollectionSnipsel,
     Snipsel,
 )
@@ -40,13 +41,30 @@ def get_snipsels_by_bounds():
     if not (-180 <= ne_lng <= 180 and -180 <= sw_lng <= 180):
         raise api_error(400, "invalid_input", "Longitude must be between -180 and 180")
 
-    # Query snipsels within bounds that belong to the user
-    # Join with CollectionSnipsel to get collection info for navigation
+    scope = request.args.get("scope", "my")
+
     query = (
         db.select(Snipsel, Collection)
         .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
         .join(Collection, Collection.id == CollectionSnipsel.collection_id)
-        .where(
+    )
+
+    if scope == "shared":
+        query = query.join(
+            CollectionShare, CollectionShare.collection_id == Collection.id
+        ).where(
+            Snipsel.deleted_at.is_(None),
+            Collection.deleted_at.is_(None),
+            CollectionShare.user_id == user.id,
+            Snipsel.geo_lat.isnot(None),
+            Snipsel.geo_lng.isnot(None),
+            Snipsel.geo_lat >= sw_lat,
+            Snipsel.geo_lat <= ne_lat,
+            Snipsel.geo_lng >= sw_lng,
+            Snipsel.geo_lng <= ne_lng,
+        )
+    else:
+        query = query.where(
             Snipsel.deleted_at.is_(None),
             Collection.deleted_at.is_(None),
             Snipsel.owner_user_id == user.id,
@@ -58,8 +76,8 @@ def get_snipsels_by_bounds():
             Snipsel.geo_lng >= sw_lng,
             Snipsel.geo_lng <= ne_lng,
         )
-        .order_by(Snipsel.created_at.desc())
-    )
+
+    query = query.order_by(Snipsel.created_at.desc())
 
     results = db.session.execute(query).all()
 

@@ -976,12 +976,14 @@ export const api = {
       ne_lng: number;
       sw_lat: number;
       sw_lng: number;
+      scope?: 'my' | 'shared';
     }) => {
       const sp = new URLSearchParams();
       sp.set('ne_lat', bounds.ne_lat.toString());
       sp.set('ne_lng', bounds.ne_lng.toString());
       sp.set('sw_lat', bounds.sw_lat.toString());
       sp.set('sw_lng', bounds.sw_lng.toString());
+      if (bounds.scope) sp.set('scope', bounds.scope);
       return requestJson<{
         snipsels: Array<{
           id: string;
