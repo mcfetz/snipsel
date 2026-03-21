@@ -64,7 +64,7 @@
   let loadingList = $state(false);
 
   // Map related state
-  let mapContainer: HTMLDivElement;
+  let mapContainer = $state<HTMLDivElement>()
   let map: L.Map | null = null;
   let markers: L.Marker[] = [];
   let geoSnipsels = $state<Array<{
