@@ -517,7 +517,7 @@ These shortcuts work when you're not editing a snipsel (not focused in an input 
 | **Cmd/Ctrl + Shift + 2** | Open Tasks page |
 | **Cmd/Ctrl + Shift + 3** | Open Collections list |
 | **Cmd/Ctrl + Shift + 4** | Open Tags/Mentions page |
-| **Cmd/Ctrl + Shift + N** | Create new snipsel in today's collection |
+| **Cmd/Ctrl + Shift + Enter** | Create new snipsel in today's collection |
 | **Cmd/Ctrl + Shift + S** | Focus search field |
 | **Escape** | Deselect all selected snipsels |
 
@@ -530,8 +530,7 @@ These shortcuts work when you're not editing a snipsel (not focused in an input 
 | **Ctrl+Shift + →** | Indent selected snipsels |
 | **Delete / Backspace** | Delete selected snipsels |
 | **Ctrl+Shift + A** | Open AI Assistant for selected snipsels |
-| **Ctrl+Shift + T** | Change selected snipsels to Task type |
-| **Ctrl+Shift + N** | Change selected snipsels to Note type |
+| **Ctrl+Shift + T** | Toggle type between Task and Note for selected snipsels |
 | **Ctrl+Shift + V** | Toggle card view for selected snipsels |
 | **Ctrl+Shift + C** | Copy selected snipsels to another collection |
 | **Ctrl+Shift + M** | Move selected snipsels to another collection |

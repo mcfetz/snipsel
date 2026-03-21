@@ -11,7 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, changeTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -592,8 +592,8 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
         e.preventDefault();
         currentView.set({ type: 'tags_mentions' });
       }
-      // Cmd/Ctrl + Shift + N -> New snipsel
-      else if (isMetaOrCtrl && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
+      // Cmd/Ctrl + Shift + Enter -> New snipsel
+      else if (isMetaOrCtrl && e.shiftKey && e.key === 'Enter') {
         e.preventDefault();
         onNewSnipsel();
       }
@@ -633,10 +633,7 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
           aiAssistantRequest.update((n) => n + 1);
         } else if (e.key === 't' || e.key === 'T') {
           e.preventDefault();
-          changeTypeRequest.set('task');
-        } else if (e.key === 'n' || e.key === 'N') {
-          e.preventDefault();
-          changeTypeRequest.set('text');
+          toggleTypeRequest.update((n) => n + 1);
         } else if (e.key === 'v' || e.key === 'V') {
           e.preventDefault();
           toggleCardViewRequest.update((n) => n + 1);

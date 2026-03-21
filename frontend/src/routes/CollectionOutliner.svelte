@@ -63,7 +63,7 @@
     moveSelectionRequest,
     indentSelectionRequest,
     aiAssistantRequest,
-    changeTypeRequest,
+    toggleTypeRequest,
     toggleCardViewRequest,
     copySnipselsRequest,
     moveSnipselsRequest,
@@ -1387,10 +1387,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   });
 
   $effect(() => {
-    const request = $changeTypeRequest;
-    if (request && selectedIds.size > 0) {
-      changeTypeSelected(request);
-      changeTypeRequest.set(null);
+    const requestCount = toggleTypeRequest ? $toggleTypeRequest : 0;
+    if (requestCount > 0 && selectedIds.size > 0) {
+      toggleTypeSelected();
+      toggleTypeRequest.set(0);
     }
   });
 
@@ -1445,8 +1445,16 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     showDeleteModal = false;
   }
 
-  async function changeTypeSelected(type: 'task' | 'text') {
-    await setTypeSelected(type);
+  async function toggleTypeSelected() {
+    if (!canWrite()) return;
+    if (selectedIds.size === 0) return;
+
+    const firstId = Array.from(selectedIds)[0];
+    const firstItem = $collectionItems.find(item => item.snipsel_id === firstId);
+    const currentType = firstItem?.snipsel.type;
+    const newType = currentType === 'task' ? 'text' : 'task';
+
+    await setTypeSelected(newType);
   }
 
   function copySelected() {
