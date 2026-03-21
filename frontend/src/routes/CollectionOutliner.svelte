@@ -62,6 +62,13 @@
     deleteSelectionRequest,
     moveSelectionRequest,
     indentSelectionRequest,
+    aiAssistantRequest,
+    changeTypeRequest,
+    toggleCardViewRequest,
+    copySnipselsRequest,
+    moveSnipselsRequest,
+    infoSnipselsRequest,
+    uploadAttachmentRequest,
   } from '../lib/stores';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
@@ -157,6 +164,9 @@
   let aiModalContext = $state('');
   let aiModalSelectedIds = $state<string[]>([]);
   let aiModalSelectedAttachments = $state<string[]>([]);
+
+  let showInfoModalFlag = $state(false);
+  let infoModalItem: CollectionItem | null = $state(null);
 
   function offsetDate(dateStr: string, days: number): string {
     const d = new Date(dateStr + 'T12:00:00'); // noon to avoid DST issues
@@ -1368,6 +1378,56 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     }
   });
 
+  $effect(() => {
+    const requestCount = aiAssistantRequest ? $aiAssistantRequest : 0;
+    if (requestCount > 0 && selectedIds.size > 0) {
+      openAiModal();
+    }
+  });
+
+  $effect(() => {
+    const request = $changeTypeRequest;
+    if (request && selectedIds.size > 0) {
+      changeTypeSelected(request);
+      changeTypeRequest.set(null);
+    }
+  });
+
+  $effect(() => {
+    const requestCount = toggleCardViewRequest ? $toggleCardViewRequest : 0;
+    if (requestCount > 0 && selectedIds.size > 0) {
+      toggleCardViewSelected();
+    }
+  });
+
+  $effect(() => {
+    const requestCount = copySnipselsRequest ? $copySnipselsRequest : 0;
+    if (requestCount > 0 && selectedIds.size > 0) {
+      copySelected();
+    }
+  });
+
+  $effect(() => {
+    const requestCount = moveSnipselsRequest ? $moveSnipselsRequest : 0;
+    if (requestCount > 0 && selectedIds.size > 0) {
+      moveSelectedToAnotherCollection();
+    }
+  });
+
+  $effect(() => {
+    const requestCount = infoSnipselsRequest ? $infoSnipselsRequest : 0;
+    if (requestCount > 0 && selectedIds.size > 0) {
+      openInfoModal();
+    }
+  });
+
+  $effect(() => {
+    const requestCount = uploadAttachmentRequest ? $uploadAttachmentRequest : 0;
+    if (requestCount > 0 && selectedIds.size > 0) {
+      triggerAttachmentUpload();
+    }
+  });
+
   function deleteSelected() {
     if (!$currentCollection) return;
     if (!canWrite()) return;
@@ -1377,6 +1437,34 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
   function cancelDeleteSelected() {
     showDeleteModal = false;
+  }
+
+  async function changeTypeSelected(type: 'task' | 'text') {
+    await setTypeSelected(type);
+  }
+
+  function copySelected() {
+    openCollectionModal('copy');
+  }
+
+  function moveSelectedToAnotherCollection() {
+    openCollectionModal('move');
+  }
+
+  function openInfoModal() {
+    if (selectedIds.size === 0) return;
+    const firstId = Array.from(selectedIds)[0];
+    const firstItem = $collectionItems.find(item => item.snipsel_id === firstId);
+    if (firstItem) {
+      infoModalItem = firstItem;
+      showInfoModalFlag = true;
+    }
+  }
+
+  function triggerAttachmentUpload() {
+    if (selectedIds.size === 0) return;
+    if (!canWrite()) return;
+    attachmentsInputRef?.click();
   }
 
   async function confirmDeleteSelected() {
@@ -3356,4 +3444,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   onInsert={handleAiInsert}
   onReplace={handleAiReplace}
 />
+{/if}
+
+{#if showInfoModalFlag && infoModalItem}
+  <InfoModal
+    title="Snipsel Info"
+    message={`ID: ${infoModalItem.snipsel_id}\nType: ${infoModalItem.snipsel.type}\nCreated: ${new Date(infoModalItem.snipsel.created_at).toLocaleString()}`}
+    onClose={() => { showInfoModalFlag = false; infoModalItem = null; }}
+  />
 {/if}

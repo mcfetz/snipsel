@@ -11,7 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, changeTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -614,7 +614,7 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
           searchInput.focus();
         }
       }
-      // Ctrl+Shift + Arrow keys for selected snipsels (only when snipsels are selected)
+      // Shortcuts for selected snipsels (only when snipsels are selected)
       else if ($snipselsSelected > 0 && e.ctrlKey && e.shiftKey) {
         if (e.key === 'ArrowUp') {
           e.preventDefault();
@@ -628,6 +628,30 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
         } else if (e.key === 'ArrowRight') {
           e.preventDefault();
           indentSelectionRequest.set({ direction: 'right' });
+        } else if (e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          aiAssistantRequest.update((n) => n + 1);
+        } else if (e.key === 't' || e.key === 'T') {
+          e.preventDefault();
+          changeTypeRequest.set('task');
+        } else if (e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
+          changeTypeRequest.set('text');
+        } else if (e.key === 'v' || e.key === 'V') {
+          e.preventDefault();
+          toggleCardViewRequest.update((n) => n + 1);
+        } else if (e.key === 'c' || e.key === 'C') {
+          e.preventDefault();
+          copySnipselsRequest.update((n) => n + 1);
+        } else if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          moveSnipselsRequest.update((n) => n + 1);
+        } else if (e.key === 'i' || e.key === 'I') {
+          e.preventDefault();
+          infoSnipselsRequest.update((n) => n + 1);
+        } else if (e.key === 'u' || e.key === 'U') {
+          e.preventDefault();
+          uploadAttachmentRequest.update((n) => n + 1);
         }
       }
     }

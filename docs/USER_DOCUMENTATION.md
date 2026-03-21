@@ -529,6 +529,14 @@ These shortcuts work when you're not editing a snipsel (not focused in an input 
 | **Ctrl+Shift + ←** | Outdent selected snipsels |
 | **Ctrl+Shift + →** | Indent selected snipsels |
 | **Delete / Backspace** | Delete selected snipsels |
+| **Ctrl+Shift + A** | Open AI Assistant for selected snipsels |
+| **Ctrl+Shift + T** | Change selected snipsels to Task type |
+| **Ctrl+Shift + N** | Change selected snipsels to Note type |
+| **Ctrl+Shift + V** | Toggle card view for selected snipsels |
+| **Ctrl+Shift + C** | Copy selected snipsels to another collection |
+| **Ctrl+Shift + M** | Move selected snipsels to another collection |
+| **Ctrl+Shift + I** | Show info for selected snipsels |
+| **Ctrl+Shift + U** | Upload attachment to selected snipsels |
 
 ### Editing
 - **Enter** after last snipsel: Create new snipsel
