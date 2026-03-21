@@ -508,6 +508,18 @@ Per-collection settings (accessed via collection menu):
 
 ## Keyboard Shortcuts
 
+### Navigation (Global)
+These shortcuts work when you're not editing a snipsel (not focused in an input field):
+
+| Shortcut | Action |
+|----------|--------|
+| **Cmd/Ctrl + 1** | Open Calendar page |
+| **Cmd/Ctrl + 2** | Open Tasks page |
+| **Cmd/Ctrl + 3** | Open Collections list |
+| **Cmd/Ctrl + 4** | Open Tags/Mentions page |
+| **Cmd/Ctrl + N** | Create new snipsel in today's collection |
+| **Escape** | Deselect all selected snipsels |
+
 ### Editing
 - **Enter** after last snipsel: Create new snipsel
 - **Tab**: Increase indent (now visible immediately)
