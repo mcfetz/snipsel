@@ -2494,7 +2494,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   type="button"
                   aria-label="Select snipsel"
                   class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-                  onclick={rangeLongPress.onclick}
+                  onclick={(e) => {
+                    if (e.shiftKey) {
+                      toggleSelection(item.snipsel_id, true);
+                    } else {
+                      rangeLongPress.onclick(e);
+                    }
+                  }}
                   onpointerdown={rangeLongPress.onpointerdown}
                   onpointerup={rangeLongPress.onpointerup}
                   onpointercancel={rangeLongPress.onpointercancel}
@@ -2512,7 +2518,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 type="button"
                 aria-label="Select snipsel"
                 class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-                onclick={rangeLongPress.onclick}
+                onclick={(e) => {
+                  if (e.shiftKey) {
+                    toggleSelection(item.snipsel_id, true);
+                  } else {
+                    rangeLongPress.onclick(e);
+                  }
+                }}
                 onpointerdown={rangeLongPress.onpointerdown}
                 onpointerup={rangeLongPress.onpointerup}
                 onpointercancel={rangeLongPress.onpointercancel}
