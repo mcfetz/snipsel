@@ -358,6 +358,8 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(input),
       }),
+    getModels: () =>
+      requestJson<{ models: Array<{ id: string; name: string }> }>('/api/ai/models'),
   },
 
   collections: {

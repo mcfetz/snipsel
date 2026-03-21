@@ -62,6 +62,9 @@
   let aiApiKey = $state('');
   let lightBackgroundColor = $state('');
   let darkBackgroundColor = $state('');
+  let availableModels = $state<Array<{ id: string; name: string }>>([]);
+  let isLoadingModels = $state(false);
+  let modelsError = $state('');
 
 
   async function startOtpSetup() {
@@ -334,6 +337,27 @@
       aiApiKey = '';
     } finally {
       isBusy = false;
+    }
+  }
+
+  async function fetchModels() {
+    if (!aiLlmUrl.trim() || !aiApiKey.trim()) {
+      modelsError = 'Please enter both LLM URL and API key first';
+      return;
+    }
+    isLoadingModels = true;
+    modelsError = '';
+    try {
+      const res = await api.ai.getModels();
+      availableModels = res.models;
+      if (availableModels.length === 0) {
+        modelsError = 'No models found';
+      }
+    } catch (e: any) {
+      modelsError = e.error?.message || 'Failed to fetch models';
+      availableModels = [];
+    } finally {
+      isLoadingModels = false;
     }
   }
 
@@ -724,14 +748,40 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label for="ai-model" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Model Name</label>
-            <input
-              id="ai-model"
-              type="text"
-              class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none dark:border-white/10 dark:bg-slate-800"
-              bind:value={aiModelName}
-              placeholder="gpt-3.5-turbo"
-            />
+            <div class="flex items-center justify-between">
+              <label for="ai-model" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Model Name</label>
+              <button
+                type="button"
+                onclick={fetchModels}
+                disabled={isLoadingModels || !aiLlmUrl.trim() || !aiApiKey.trim()}
+                class="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                {isLoadingModels ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+            {#if availableModels.length > 0}
+              <select
+                id="ai-model"
+                class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none dark:border-white/10 dark:bg-slate-800"
+                bind:value={aiModelName}
+              >
+                <option value="">Select a model...</option>
+                {#each availableModels as model}
+                  <option value={model.id}>{model.name}</option>
+                {/each}
+              </select>
+            {:else}
+              <input
+                id="ai-model"
+                type="text"
+                class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none dark:border-white/10 dark:bg-slate-800"
+                bind:value={aiModelName}
+                placeholder="gpt-3.5-turbo"
+              />
+            {/if}
+            {#if modelsError}
+              <div class="mt-1 text-xs text-red-500">{modelsError}</div>
+            {/if}
           </div>
           <div>
             <label for="ai-key" class="block text-sm font-medium text-slate-700 dark:text-slate-300">API Key {($currentUser?.ai_api_key_set) ? '(Set)' : ''}</label>

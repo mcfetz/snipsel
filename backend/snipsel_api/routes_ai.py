@@ -156,3 +156,56 @@ def generate():
         raise api_error(502, "external_error", f"Failed to connect to LLM: {str(e)}")
     except Exception as e:
         raise api_error(500, "internal_error", str(e))
+
+
+@ai_bp.get("/models")
+@require_auth
+def get_models():
+    user = current_user()
+    if not user.ai_llm_url or not user.ai_api_key:
+        raise api_error(
+            400, "ai_not_configured", "AI settings are not fully configured"
+        )
+
+    # Derive the models endpoint from the chat completions URL
+    # OpenAI compatible APIs usually have /v1/chat/completions and /v1/models
+    models_url = user.ai_llm_url.replace("/chat/completions", "/models")
+
+    try:
+        req = urllib_request.Request(
+            models_url,
+            headers={
+                "Authorization": f"Bearer {user.ai_api_key}",
+            },
+            method="GET",
+        )
+        with urllib_request.urlopen(req, timeout=10) as response:
+            res_data = json.loads(response.read().decode("utf-8"))
+            # OpenAI format: { "data": [{ "id": "model-name", ... }, ...] }
+            models = []
+            if "data" in res_data and isinstance(res_data["data"], list):
+                for model in res_data["data"]:
+                    if "id" in model:
+                        models.append(
+                            {
+                                "id": model["id"],
+                                "name": model.get("name", model["id"]),
+                            }
+                        )
+            return json_response({"models": models})
+
+    except HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            error_json = json.loads(error_body)
+            return json_response(
+                {"error": f"LLM Error: {e.code}", "details": error_json}, status=e.code
+            )
+        except:
+            return json_response(
+                {"error": f"LLM Error: {e.code}", "details": error_body}, status=e.code
+            )
+    except URLError as e:
+        raise api_error(502, "external_error", f"Failed to connect to LLM: {str(e)}")
+    except Exception as e:
+        raise api_error(500, "internal_error", str(e))
