@@ -553,6 +553,59 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
     }
     lastCollectionId = nextId;
   });
+
+  // Keyboard shortcuts
+  $effect(() => {
+    if (!$currentUser) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      // Ignore if in an input or editable element
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.getAttribute('role') === 'textbox'
+      ) {
+        return;
+      }
+
+      const isMetaOrCtrl = e.metaKey || e.ctrlKey;
+
+      // Cmd/Ctrl + 1 -> Calendar
+      if (isMetaOrCtrl && e.key === '1') {
+        e.preventDefault();
+        currentView.set({ type: 'calendar' });
+      }
+      // Cmd/Ctrl + 2 -> Todos
+      else if (isMetaOrCtrl && e.key === '2') {
+        e.preventDefault();
+        currentView.set({ type: 'todos' });
+      }
+      // Cmd/Ctrl + 3 -> Collections
+      else if (isMetaOrCtrl && e.key === '3') {
+        e.preventDefault();
+        openCollections();
+      }
+      // Cmd/Ctrl + 4 -> Tags/Mentions
+      else if (isMetaOrCtrl && e.key === '4') {
+        e.preventDefault();
+        currentView.set({ type: 'tags_mentions' });
+      }
+      // Cmd/Ctrl + N -> New snipsel
+      else if (isMetaOrCtrl && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        onNewSnipsel();
+      }
+      // Escape -> Deselect
+      else if (e.key === 'Escape') {
+        snipselsSelected.set(0);
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
 </script>
 
 <div class="app-container min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
