@@ -518,7 +518,16 @@ These shortcuts work when you're not editing a snipsel (not focused in an input 
 | **Cmd/Ctrl + 3** | Open Collections list |
 | **Cmd/Ctrl + 4** | Open Tags/Mentions page |
 | **Cmd/Ctrl + N** | Create new snipsel in today's collection |
+| **Cmd/Ctrl + S** | Focus search field |
 | **Escape** | Deselect all selected snipsels |
+
+### Selected Snipsels (when snipsels are selected)
+| Shortcut | Action |
+|----------|--------|
+| **Ctrl + ↑** | Move selected snipsels up |
+| **Ctrl + ↓** | Move selected snipsels down |
+| **Ctrl + ←** | Outdent selected snipsels |
+| **Ctrl + →** | Indent selected snipsels |
 
 ### Editing
 - **Enter** after last snipsel: Create new snipsel

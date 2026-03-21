@@ -11,7 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, moveSelectionRequest, indentSelectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -607,6 +607,22 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
         const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
         if (searchInput) {
           searchInput.focus();
+        }
+      }
+      // Ctrl + Arrow keys for selected snipsels (only when snipsels are selected)
+      else if ($snipselsSelected > 0 && e.ctrlKey) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          moveSelectionRequest.set({ direction: 'up' });
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          moveSelectionRequest.set({ direction: 'down' });
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          indentSelectionRequest.set({ direction: 'left' });
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          indentSelectionRequest.set({ direction: 'right' });
         }
       }
     }

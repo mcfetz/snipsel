@@ -59,6 +59,8 @@
     createSnipselOnLoad,
     snipselsSelected,
     clearSelectionRequest,
+    moveSelectionRequest,
+    indentSelectionRequest,
   } from '../lib/stores';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
@@ -1331,6 +1333,30 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const requestCount = clearSelectionRequest ? $clearSelectionRequest : 0;
     if (requestCount > 0) {
       clearSelection();
+    }
+  });
+
+  $effect(() => {
+    const request = $moveSelectionRequest;
+    if (request && selectedIds.size > 0) {
+      if (request.direction === 'up') {
+        moveSelected(-1);
+      } else if (request.direction === 'down') {
+        moveSelected(1);
+      }
+      moveSelectionRequest.set(null);
+    }
+  });
+
+  $effect(() => {
+    const request = $indentSelectionRequest;
+    if (request && selectedIds.size > 0) {
+      if (request.direction === 'left') {
+        adjustIndentSelected(-1);
+      } else if (request.direction === 'right') {
+        adjustIndentSelected(1);
+      }
+      indentSelectionRequest.set(null);
     }
   });
 
