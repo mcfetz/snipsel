@@ -575,10 +575,49 @@
     showTypeMenu = false;
   }
 
+  function getChildIds(parentId: string, allItems: CollectionItem[]): string[] {
+    const idx = allItems.findIndex((i) => i.snipsel_id === parentId);
+    if (idx < 0 || idx === allItems.length - 1) return [];
+
+    const parentIndent = allItems[idx].indent;
+    const childIds: string[] = [];
+
+    for (let i = idx + 1; i < allItems.length; i++) {
+      if (allItems[i].indent > parentIndent) {
+        childIds.push(allItems[i].snipsel_id);
+      } else {
+        break;
+      }
+    }
+
+    return childIds;
+  }
+
   function toggleSelection(id: string) {
     const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    const isSelecting = !next.has(id);
+
+    // Get child ids in case we need them
+    const item = $sortedItems.find((i) => i.snipsel_id === id);
+    const hasCollapsedChildren = item && hasChildren(item, $sortedItems) && !expandedSnipsels.has(id);
+    const childIds = hasCollapsedChildren ? getChildIds(id, $sortedItems) : [];
+
+    if (isSelecting) {
+      next.add(id);
+
+      // If this item has children and they are collapsed, select all children too
+      for (const childId of childIds) {
+        next.add(childId);
+      }
+    } else {
+      next.delete(id);
+
+      // When deselecting, also deselect all children that were auto-selected
+      for (const childId of childIds) {
+        next.delete(childId);
+      }
+    }
+
     selectedIds = next;
   }
 
