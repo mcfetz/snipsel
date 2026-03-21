@@ -2506,7 +2506,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 <button
                   type="button"
                   aria-label="Select snipsel"
-                  class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
+                  class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity select-none {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
                   onpointerdown={(e) => {
                     handleSelectPointerDown(e, item.snipsel_id);
                     rangeLongPress.onpointerdown(e);
@@ -2529,7 +2529,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               <button
                 type="button"
                 aria-label="Select snipsel"
-                class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
+                class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity select-none {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
                 onpointerdown={(e) => {
                   handleSelectPointerDown(e, item.snipsel_id);
                   rangeLongPress.onpointerdown(e);
