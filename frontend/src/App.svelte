@@ -572,28 +572,28 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
 
       const isMetaOrCtrl = e.metaKey || e.ctrlKey;
 
-      // Cmd/Ctrl + 1 -> Calendar
-      if (isMetaOrCtrl && e.key === '1') {
+      // Cmd/Ctrl + Shift + 1 -> Calendar
+      if (isMetaOrCtrl && e.shiftKey && e.key === '1') {
         e.preventDefault();
         currentView.set({ type: 'calendar' });
       }
-      // Cmd/Ctrl + 2 -> Todos
-      else if (isMetaOrCtrl && e.key === '2') {
+      // Cmd/Ctrl + Shift + 2 -> Todos
+      else if (isMetaOrCtrl && e.shiftKey && e.key === '2') {
         e.preventDefault();
         currentView.set({ type: 'todos' });
       }
-      // Cmd/Ctrl + 3 -> Collections
-      else if (isMetaOrCtrl && e.key === '3') {
+      // Cmd/Ctrl + Shift + 3 -> Collections
+      else if (isMetaOrCtrl && e.shiftKey && e.key === '3') {
         e.preventDefault();
         openCollections();
       }
-      // Cmd/Ctrl + 4 -> Tags/Mentions
-      else if (isMetaOrCtrl && e.key === '4') {
+      // Cmd/Ctrl + Shift + 4 -> Tags/Mentions
+      else if (isMetaOrCtrl && e.shiftKey && e.key === '4') {
         e.preventDefault();
         currentView.set({ type: 'tags_mentions' });
       }
-      // Cmd/Ctrl + N -> New snipsel
-      else if (isMetaOrCtrl && (e.key === 'n' || e.key === 'N')) {
+      // Cmd/Ctrl + Shift + N -> New snipsel
+      else if (isMetaOrCtrl && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
         e.preventDefault();
         onNewSnipsel();
       }
@@ -601,8 +601,8 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
       else if (e.key === 'Escape') {
         clearSelectionRequest.update((n) => n + 1);
       }
-      // Ctrl/Cmd + S -> Focus search
-      else if (isMetaOrCtrl && (e.key === 's' || e.key === 'S')) {
+      // Cmd/Ctrl + Shift + S -> Focus search
+      else if (isMetaOrCtrl && e.shiftKey && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
         if (searchInput) {

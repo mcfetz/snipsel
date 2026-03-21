@@ -513,12 +513,12 @@ These shortcuts work when you're not editing a snipsel (not focused in an input 
 
 | Shortcut | Action |
 |----------|--------|
-| **Cmd/Ctrl + 1** | Open Calendar page |
-| **Cmd/Ctrl + 2** | Open Tasks page |
-| **Cmd/Ctrl + 3** | Open Collections list |
-| **Cmd/Ctrl + 4** | Open Tags/Mentions page |
-| **Cmd/Ctrl + N** | Create new snipsel in today's collection |
-| **Cmd/Ctrl + S** | Focus search field |
+| **Cmd/Ctrl + Shift + 1** | Open Calendar page |
+| **Cmd/Ctrl + Shift + 2** | Open Tasks page |
+| **Cmd/Ctrl + Shift + 3** | Open Collections list |
+| **Cmd/Ctrl + Shift + 4** | Open Tags/Mentions page |
+| **Cmd/Ctrl + Shift + N** | Create new snipsel in today's collection |
+| **Cmd/Ctrl + Shift + S** | Focus search field |
 | **Escape** | Deselect all selected snipsels |
 
 ### Selected Snipsels (when snipsels are selected)
