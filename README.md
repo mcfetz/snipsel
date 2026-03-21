@@ -62,6 +62,7 @@ Organize everything in **collections** — from grocery lists to project notes. 
 - **Multi-Select** — Click the selection bar on the right to select multiple snipsels
 - **Range Selection** — Hold Shift (desktop) or long-press (mobile) to select all snipsels between two items
 - **Auto-Select Children** — Selecting a parent snipsel with collapsed children automatically selects all nested items
+- **Keyboard Shortcuts** — Extensive keyboard shortcuts for navigation, editing, and bulk operations (see User Documentation)
 
 ### 🤖 AI Assistant (Vision-ready)
 Process your notes with a built-in AI assistant. Configure your own OpenAI-compatible endpoint (OpenAI, Groq, Ollama) and use it to summarize, translate, or transform snipsels with custom prompts. Supports **vision models** for image analysis and text extraction from attachments.
