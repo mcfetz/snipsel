@@ -23,6 +23,7 @@ from snipsel_api.routes_proxy import proxy_bp
 from snipsel_api.routes_reactions import bp as reactions_bp
 from snipsel_api.routes_public import public_bp
 from snipsel_api.routes_ai import ai_bp
+from snipsel_api.routes_geo import geo_bp
 
 
 def create_app() -> Flask:
@@ -32,10 +33,12 @@ def create_app() -> Flask:
     # snipsel_api.* loggers emit DEBUG by default so carry-over details,
     # errors, and other diagnostic messages are visible in the server output.
     _handler = logging.StreamHandler()
-    _handler.setFormatter(logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    ))
+    _handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    )
     _pkg_logger = logging.getLogger("snipsel_api")
     if not _pkg_logger.handlers:
         _pkg_logger.addHandler(_handler)
@@ -77,10 +80,15 @@ def create_app() -> Flask:
     app.register_blueprint(reactions_bp, url_prefix="/api")
     app.register_blueprint(public_bp, url_prefix="/api/public")
     app.register_blueprint(ai_bp, url_prefix="/api/ai")
+    app.register_blueprint(geo_bp, url_prefix="/api/geo")
     app.register_blueprint(errors_bp)
 
     from snipsel_api import models
-    from snipsel_api.commands import cleanup, db_init, process_reminders_command as process_reminders
+    from snipsel_api.commands import (
+        cleanup,
+        db_init,
+        process_reminders_command as process_reminders,
+    )
     from snipsel_api.push_service import init_push_listeners
 
     # Initialize push listeners
@@ -94,13 +102,14 @@ def create_app() -> Flask:
     with app.app_context():
         try:
             from snipsel_api.models import User
+
             if not db.session.get(User, "public"):
                 public_user = User(
                     id="public",
                     username="public",
                     email="public@snipsel.local",
                     password_hash="disabled",
-                    is_active=True
+                    is_active=True,
                 )
                 db.session.add(public_user)
                 db.session.commit()
@@ -117,12 +126,15 @@ def create_app() -> Flask:
 
     frontend_dir = os.environ.get("SNIPSEL_FRONTEND_DIR")
     if frontend_dir and Path(frontend_dir).is_dir():
+
         @app.route("/", defaults={"path": ""})
         @app.route("/<path:path>")
         def serve_frontend(path: str):
             if path.startswith("api/"):
-                return {"error": {"code": "not_found", "message": "API endpoint not found"}}, 404
-            
+                return {
+                    "error": {"code": "not_found", "message": "API endpoint not found"}
+                }, 404
+
             fp = Path(str(frontend_dir)) / path
             if path and fp.is_file():
                 return send_from_directory(str(frontend_dir), path)

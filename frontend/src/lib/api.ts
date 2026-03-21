@@ -970,6 +970,63 @@ export const api = {
     return requestJson<SearchResponse>(`/api/search${qs ? `?${qs}` : ''}`);
   },
 
+  geo: {
+    getSnipselsByBounds: (bounds: {
+      ne_lat: number;
+      ne_lng: number;
+      sw_lat: number;
+      sw_lng: number;
+    }) => {
+      const sp = new URLSearchParams();
+      sp.set('ne_lat', bounds.ne_lat.toString());
+      sp.set('ne_lng', bounds.ne_lng.toString());
+      sp.set('sw_lat', bounds.sw_lat.toString());
+      sp.set('sw_lng', bounds.sw_lng.toString());
+      return requestJson<{
+        snipsels: Array<{
+          id: string;
+          lat: number;
+          lng: number;
+          excerpt: string;
+          type: string;
+          task_done: boolean;
+          collection: {
+            id: string;
+            title: string;
+            icon: string;
+            header_color: string | null;
+          };
+          created_at: string;
+        }>;
+        bounds: {
+          ne: { lat: number; lng: number };
+          sw: { lat: number; lng: number };
+        };
+        count: number;
+      }>(`/api/geo/snipsels?${sp.toString()}`);
+    },
+    getAllSnipselsWithGeo: () => {
+      return requestJson<{
+        snipsels: Array<{
+          id: string;
+          lat: number;
+          lng: number;
+          excerpt: string;
+          type: string;
+          task_done: boolean;
+          collection: {
+            id: string;
+            title: string;
+            icon: string;
+            header_color: string | null;
+          };
+          created_at: string;
+        }>;
+        count: number;
+      }>('/api/geo/snipsels/all');
+    },
+  },
+
   tags: {
     list: (scope?: 'my' | 'shared' | 'all', q?: string) => {
       const sp = new URLSearchParams();
