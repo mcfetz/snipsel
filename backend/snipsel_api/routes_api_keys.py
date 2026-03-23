@@ -231,46 +231,40 @@ def quick_add_snipsel():
         raise api_error(401, "unauthorized", "Invalid API key")
 
     # Handle both JSON and multipart/form-data
-    has_file = False
-    uploaded_file = None
+    uploaded_files = []
 
     if request.content_type and "multipart/form-data" in request.content_type:
-        # Form data: get fields from form
         content = request.form.get("content", "").strip()
         title = request.form.get("title", "").strip()
         item_type = request.form.get("type", "note").strip().lower()
         tags_str = request.form.get("tags", "")
         tags = [t.strip() for t in tags_str.split(",") if t.strip()] if tags_str else []
 
-        if "file" in request.files:
-            uploaded_file = request.files["file"]
-            if uploaded_file and uploaded_file.filename:
-                has_file = True
+        uploaded_files = request.files.getlist("file")
+        uploaded_files = [f for f in uploaded_files if f and f.filename]
     else:
-        # JSON data
         data = request.get_json() or {}
         content = data.get("content", "").strip()
         title = data.get("title", "").strip()
         item_type = data.get("type", "note").strip().lower()
         tags = data.get("tags", [])
 
-    if not content and not has_file:
+    has_files = len(uploaded_files) > 0
+
+    if not content and not has_files:
         raise api_error(400, "invalid_input", "Content or file required")
 
     if item_type not in ("note", "task"):
         raise api_error(400, "invalid_input", "type must be 'note' or 'task'")
 
-    # Get or create today's collection
     collection = _get_or_create_day_collection(user.id)
 
-    # Determine snipsel type (note -> text, task -> task)
     snipsel_type = "task" if item_type == "task" else "text"
-    if has_file:
+    if has_files:
         snipsel_type = "attachment"
     elif title and not content:
         content = title
 
-    # Create the snipsel
     snipsel = Snipsel(
         owner_user_id=user.id,
         type=snipsel_type,
@@ -282,52 +276,54 @@ def quick_add_snipsel():
     db.session.add(snipsel)
     db.session.flush()
 
-    # Handle file upload if present
-    attachment_info = None
-    if has_file and uploaded_file:
+    attachments_info = []
+    if has_files:
         upload_dir = Path(current_app.config.get("SNIPSEL_UPLOAD_DIR", "./uploads"))
         upload_dir.mkdir(parents=True, exist_ok=True)
 
-        att_id = str(uuid.uuid4())
-        safe_name = os.path.basename(uploaded_file.filename)
-        storage_path = upload_dir / f"{att_id}_{safe_name}"
+        for uploaded_file in uploaded_files:
+            att_id = str(uuid.uuid4())
+            safe_name = os.path.basename(uploaded_file.filename)
+            storage_path = upload_dir / f"{att_id}_{safe_name}"
 
-        uploaded_file.save(storage_path)
-        size = storage_path.stat().st_size
-        mime_type = uploaded_file.mimetype
+            uploaded_file.save(storage_path)
+            size = storage_path.stat().st_size
+            mime_type = uploaded_file.mimetype
 
-        thumbnail_path: Path | None = None
-        if mime_type:
-            if mime_type.startswith("image/"):
-                thumbnail_path = upload_dir / f"{att_id}_thumb.jpg"
-                _write_thumbnail(storage_path, thumbnail_path)
-                snipsel.type = "image"
-            elif mime_type.startswith("video/"):
-                thumbnail_path = upload_dir / f"{att_id}_video_thumb.jpg"
-                if _write_video_thumbnail(storage_path, thumbnail_path):
-                    pass
-                else:
-                    thumbnail_path = None
+            thumbnail_path: Path | None = None
+            if mime_type:
+                if mime_type.startswith("image/"):
+                    thumbnail_path = upload_dir / f"{att_id}_thumb.jpg"
+                    _write_thumbnail(storage_path, thumbnail_path)
+                    snipsel.type = "image"
+                elif mime_type.startswith("video/"):
+                    thumbnail_path = upload_dir / f"{att_id}_video_thumb.jpg"
+                    if _write_video_thumbnail(storage_path, thumbnail_path):
+                        pass
+                    else:
+                        thumbnail_path = None
 
-        att = Attachment(
-            id=att_id,
-            snipsel_id=snipsel.id,
-            filename=safe_name,
-            mime_type=mime_type,
-            size_bytes=size,
-            storage_path=str(storage_path),
-            thumbnail_path=str(thumbnail_path) if thumbnail_path else None,
-            created_by_id=user.id,
-        )
-        db.session.add(att)
+            att = Attachment(
+                id=att_id,
+                snipsel_id=snipsel.id,
+                filename=safe_name,
+                mime_type=mime_type,
+                size_bytes=size,
+                storage_path=str(storage_path),
+                thumbnail_path=str(thumbnail_path) if thumbnail_path else None,
+                created_by_id=user.id,
+            )
+            db.session.add(att)
 
-        attachment_info = {
-            "id": att.id,
-            "filename": att.filename,
-            "mime_type": att.mime_type,
-            "size_bytes": att.size_bytes,
-            "has_thumbnail": att.thumbnail_path is not None,
-        }
+            attachments_info.append(
+                {
+                    "id": att.id,
+                    "filename": att.filename,
+                    "mime_type": att.mime_type,
+                    "size_bytes": att.size_bytes,
+                    "has_thumbnail": att.thumbnail_path is not None,
+                }
+            )
 
     # Add to today's collection
     max_pos = (
@@ -397,8 +393,9 @@ def quick_add_snipsel():
         },
     }
 
-    if attachment_info:
-        result["attachment"] = attachment_info
+    if attachments_info:
+        result["attachments"] = attachments_info
+        result["attachment_count"] = len(attachments_info)
 
     return json_response(result, status=201)
 

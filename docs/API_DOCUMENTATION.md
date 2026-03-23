@@ -212,14 +212,14 @@ External integrations (iOS Shortcuts, browser extensions) can add snipsels via A
   -F "file=@/path/to/screenshot.png" \
   -F "tags=work,meeting"
 
-# Upload multiple files (each creates a separate snipsel)
- for file in *.jpg; do
-   curl -X POST https://yourdomain.com/api/quick_add \
-     -H "X-API-Key: snipsel_your_key_here" \
-     -F "content=Photo from vacation" \
-     -F "file=@$file" \
-     -F "tags=vacation"
- done
+# Upload multiple files at once (all in one snipsel)
+ curl -X POST https://yourdomain.com/api/quick_add \
+  -H "X-API-Key: snipsel_your_key_here" \
+  -F "content=Vacation photos" \
+  -F "file=@photo1.jpg" \
+  -F "file=@photo2.jpg" \
+  -F "file=@photo3.jpg" \
+  -F "tags=vacation"
 ```
 
 **File Upload Notes:**
