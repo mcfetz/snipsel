@@ -11,6 +11,15 @@ from pathlib import Path
 from flask import Blueprint, current_app, request
 from PIL import Image
 
+# Try to import HEIF support for Apple images
+try:
+    from pillow_heif import register_heif_opener
+
+    register_heif_opener()
+    HEIF_SUPPORT = True
+except ImportError:
+    HEIF_SUPPORT = False
+
 from snipsel_api.auth_session import (
     current_user,
     json_response,
@@ -292,7 +301,14 @@ def quick_add_snipsel():
 
             thumbnail_path: Path | None = None
             if mime_type:
-                if mime_type.startswith("image/"):
+                is_image = mime_type.startswith("image/") or mime_type in (
+                    "image/heic",
+                    "image/heif",
+                )
+                if not is_image and safe_name.lower().endswith((".heic", ".heif")):
+                    is_image = True
+
+                if is_image:
                     thumbnail_path = upload_dir / f"{att_id}_thumb.jpg"
                     _write_thumbnail(storage_path, thumbnail_path)
                     snipsel.type = "image"

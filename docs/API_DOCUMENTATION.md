@@ -226,8 +226,9 @@ External integrations (iOS Shortcuts, browser extensions) can add snipsels via A
 - Use `multipart/form-data` instead of JSON when uploading files
 - The `file` field contains the uploaded file
 - Images automatically get thumbnails generated
-- Supported types: images (JPEG, PNG, GIF, WebP), videos (with FFmpeg), and any other file type
+- Supported types: images (JPEG, PNG, GIF, WebP, **HEIC/HEIF**), videos (with FFmpeg), and any other file type
 - Maximum file size is configured by `SNIPSEL_MAX_UPLOAD_BYTES` (default: 10MB)
+- **HEIC Support**: Apple iPhone photos in HEIC format are fully supported with thumbnail generation
 
 ---
 
