@@ -204,16 +204,30 @@ External integrations (iOS Shortcuts, browser extensions) can add snipsels via A
     "tags": ["shopping", "home"]
   }'
 
-# With image
+# Upload file (multipart/form-data)
  curl -X POST https://yourdomain.com/api/quick_add \
-  -H "Content-Type: application/json" \
   -H "X-API-Key: snipsel_your_key_here" \
-  -d '{
-    "content": "Photo from vacation",
-    "image_url": "https://example.com/photo.jpg",
-    "tags": ["vacation"]
-  }'
+  -F "content=Screenshot from meeting" \
+  -F "type=note" \
+  -F "file=@/path/to/screenshot.png" \
+  -F "tags=work,meeting"
+
+# Upload multiple files (each creates a separate snipsel)
+ for file in *.jpg; do
+   curl -X POST https://yourdomain.com/api/quick_add \
+     -H "X-API-Key: snipsel_your_key_here" \
+     -F "content=Photo from vacation" \
+     -F "file=@$file" \
+     -F "tags=vacation"
+ done
 ```
+
+**File Upload Notes:**
+- Use `multipart/form-data` instead of JSON when uploading files
+- The `file` field contains the uploaded file
+- Images automatically get thumbnails generated
+- Supported types: images (JPEG, PNG, GIF, WebP), videos (with FFmpeg), and any other file type
+- Maximum file size is configured by `SNIPSEL_MAX_UPLOAD_BYTES` (default: 10MB)
 
 ---
 

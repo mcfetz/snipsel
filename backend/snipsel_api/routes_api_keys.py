@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import secrets
+import subprocess
 import uuid
 from datetime import datetime
+from pathlib import Path
 
-from flask import Blueprint, request
+from flask import Blueprint, current_app, request
+from PIL import Image
 
 from snipsel_api.auth_session import (
     current_user,
@@ -22,6 +26,7 @@ from snipsel_api.models import (
     Snipsel,
     Tag,
     SnipselTag,
+    Attachment,
 )
 
 api_keys_bp = Blueprint("api_keys", __name__)
@@ -213,6 +218,7 @@ def quick_add_snipsel():
 
     This endpoint is designed for external integrations like iOS Shortcuts
     or browser extensions that need to add content without full OAuth flow.
+    Supports both JSON and multipart/form-data (for file uploads).
     """
     # Get API key from header (try different variants)
     api_key = request.headers.get("X-API-Key") or request.headers.get("x-api-key")
@@ -224,16 +230,32 @@ def quick_add_snipsel():
     if not user:
         raise api_error(401, "unauthorized", "Invalid API key")
 
-    data = request.get_json() or {}
+    # Handle both JSON and multipart/form-data
+    has_file = False
+    uploaded_file = None
 
-    content = data.get("content", "").strip()
-    image_url = data.get("image_url", "").strip()
-    title = data.get("title", "").strip()
-    tags = data.get("tags", [])
-    item_type = data.get("type", "note").strip().lower()
+    if request.content_type and "multipart/form-data" in request.content_type:
+        # Form data: get fields from form
+        content = request.form.get("content", "").strip()
+        title = request.form.get("title", "").strip()
+        item_type = request.form.get("type", "note").strip().lower()
+        tags_str = request.form.get("tags", "")
+        tags = [t.strip() for t in tags_str.split(",") if t.strip()] if tags_str else []
 
-    if not content and not image_url:
-        raise api_error(400, "invalid_input", "Content or image_url required")
+        if "file" in request.files:
+            uploaded_file = request.files["file"]
+            if uploaded_file and uploaded_file.filename:
+                has_file = True
+    else:
+        # JSON data
+        data = request.get_json() or {}
+        content = data.get("content", "").strip()
+        title = data.get("title", "").strip()
+        item_type = data.get("type", "note").strip().lower()
+        tags = data.get("tags", [])
+
+    if not content and not has_file:
+        raise api_error(400, "invalid_input", "Content or file required")
 
     if item_type not in ("note", "task"):
         raise api_error(400, "invalid_input", "type must be 'note' or 'task'")
@@ -243,8 +265,8 @@ def quick_add_snipsel():
 
     # Determine snipsel type (note -> text, task -> task)
     snipsel_type = "task" if item_type == "task" else "text"
-    if image_url:
-        snipsel_type = "image"
+    if has_file:
+        snipsel_type = "attachment"
     elif title and not content:
         content = title
 
@@ -259,6 +281,53 @@ def quick_add_snipsel():
     )
     db.session.add(snipsel)
     db.session.flush()
+
+    # Handle file upload if present
+    attachment_info = None
+    if has_file and uploaded_file:
+        upload_dir = Path(current_app.config.get("SNIPSEL_UPLOAD_DIR", "./uploads"))
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        att_id = str(uuid.uuid4())
+        safe_name = os.path.basename(uploaded_file.filename)
+        storage_path = upload_dir / f"{att_id}_{safe_name}"
+
+        uploaded_file.save(storage_path)
+        size = storage_path.stat().st_size
+        mime_type = uploaded_file.mimetype
+
+        thumbnail_path: Path | None = None
+        if mime_type:
+            if mime_type.startswith("image/"):
+                thumbnail_path = upload_dir / f"{att_id}_thumb.jpg"
+                _write_thumbnail(storage_path, thumbnail_path)
+                snipsel.type = "image"
+            elif mime_type.startswith("video/"):
+                thumbnail_path = upload_dir / f"{att_id}_video_thumb.jpg"
+                if _write_video_thumbnail(storage_path, thumbnail_path):
+                    pass
+                else:
+                    thumbnail_path = None
+
+        att = Attachment(
+            id=att_id,
+            snipsel_id=snipsel.id,
+            filename=safe_name,
+            mime_type=mime_type,
+            size_bytes=size,
+            storage_path=str(storage_path),
+            thumbnail_path=str(thumbnail_path) if thumbnail_path else None,
+            created_by_id=user.id,
+        )
+        db.session.add(att)
+
+        attachment_info = {
+            "id": att.id,
+            "filename": att.filename,
+            "mime_type": att.mime_type,
+            "size_bytes": att.size_bytes,
+            "has_thumbnail": att.thumbnail_path is not None,
+        }
 
     # Add to today's collection
     max_pos = (
@@ -313,20 +382,77 @@ def quick_add_snipsel():
 
     db.session.commit()
 
-    return json_response(
-        {
-            "snipsel": {
-                "id": snipsel.id,
-                "type": snipsel.type,
-                "content": snipsel.content_markdown,
-                "created_at": snipsel.created_at.isoformat()
-                if snipsel.created_at
-                else None,
-            },
-            "collection": {
-                "id": collection.id,
-                "title": collection.title,
-            },
+    result = {
+        "snipsel": {
+            "id": snipsel.id,
+            "type": snipsel.type,
+            "content": snipsel.content_markdown,
+            "created_at": snipsel.created_at.isoformat()
+            if snipsel.created_at
+            else None,
         },
-        status=201,
-    )
+        "collection": {
+            "id": collection.id,
+            "title": collection.title,
+        },
+    }
+
+    if attachment_info:
+        result["attachment"] = attachment_info
+
+    return json_response(result, status=201)
+
+
+def _write_thumbnail(src: Path, dst: Path) -> None:
+    if Image is None:
+        return
+    with Image.open(src) as im:
+        try:
+            exif = im.getexif()
+            if exif:
+                orientation = exif.get(0x0112)
+                if orientation == 3:
+                    im = im.rotate(180, expand=True)
+                elif orientation == 6:
+                    im = im.rotate(270, expand=True)
+                elif orientation == 8:
+                    im = im.rotate(90, expand=True)
+        except Exception:
+            pass
+        im.thumbnail((512, 512))
+        im = im.convert("RGB")
+        im.save(dst, format="JPEG", quality=80)
+
+
+def _write_video_thumbnail(src: Path, dst: Path) -> bool:
+    try:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(src),
+            "-ss",
+            "00:00:01",
+            "-vframes",
+            "1",
+            "-f",
+            "image2",
+            "-vcodec",
+            "mjpeg",
+            str(dst),
+        ]
+        result = subprocess.run(cmd, capture_output=True, check=False)
+        if result.returncode == 0:
+            if dst.exists():
+                _write_thumbnail(dst, dst)
+            return True
+        else:
+            cmd[cmd.index("-ss") + 1] = "00:00:00"
+            result = subprocess.run(cmd, capture_output=True, check=False)
+            if result.returncode == 0:
+                if dst.exists():
+                    _write_thumbnail(dst, dst)
+                return True
+    except Exception as e:
+        print(f"Error generating video thumbnail: {e}")
+    return False
