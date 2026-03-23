@@ -1623,15 +1623,15 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
   async function createCollectionFromSnipsel() {
     if (!$currentCollection || !canWrite() || selectedIds.size !== 1) return;
-    
+
     const baseId = Array.from(selectedIds)[0];
     const items = $sortedItems;
     const baseIdx = items.findIndex(i => i.snipsel_id === baseId);
     if (baseIdx === -1) return;
-    
+
     const baseItem = items[baseIdx];
     const baseIndent = baseItem.indent;
-    
+
     // Find children
     const children: CollectionItem[] = [];
     for (let i = baseIdx + 1; i < items.length; i++) {
@@ -1641,30 +1641,45 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         break;
       }
     }
-    
+
     isLoading.set(true);
     try {
       // 1. Create new collection
       const title = baseItem.snipsel.content_markdown?.split('\n')[0].trim() || 'New Collection';
       const createRes = await api.collections.create({ title });
       const newCol = createRes.collection;
-      
+
       // 2. Move children and normalize indent
       // Calculate min indent of children to bring it to 0
       const minChildIndent = children.length > 0 ? Math.min(...children.map(c => c.indent)) : 0;
       const indentOffset = minChildIndent;
-      
+
       for (const child of children) {
         await api.snipsels.reference(newCol.id, child.snipsel_id, Math.max(0, child.indent - indentOffset));
         await api.snipsels.delete($currentCollection.id, child.snipsel_id);
       }
-      
+
       // 3. Update original snipsel with wiki link
-      await api.snipsels.update(baseId, { 
-        content_markdown: `[[${newCol.title}]]` 
+      await api.snipsels.update(baseId, {
+        content_markdown: `[[${newCol.title}]]`
       });
-      
-      // 4. Refresh
+
+      // 4. Inherit sharing options from current collection
+      try {
+        const sharesRes = await api.collections.listShares($currentCollection.id);
+        const shares = sharesRes.shares;
+        for (const share of shares) {
+          await api.collections.createShare(newCol.id, {
+            shared_with_user_id: share.shared_with_user_id,
+            permission: share.permission
+          });
+        }
+      } catch (shareErr) {
+        console.error('Failed to inherit sharing options:', shareErr);
+        // Don't fail the whole operation if sharing inheritance fails
+      }
+
+      // 5. Refresh
       clearSelection();
       await loadItems();
     } catch (err) {
