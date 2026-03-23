@@ -143,6 +143,80 @@ Collections organize snipsels. They can be daily lists (`type: day`) or custom l
 
 ---
 
+## Quick Add (API Key)
+
+External integrations (iOS Shortcuts, browser extensions) can add snipsels via API key without full OAuth flow. Create an API key in **Settings → API Keys** first.
+
+### Quick Add Snipsel
+- **URL**: `/quick_add`
+- **Method**: `POST`
+- **Headers**:
+  - `X-API-Key`: Your API key (e.g., `snipsel_abc123...`)
+  - `Content-Type: application/json`
+- **Body**:
+  ```json
+  {
+    "content": "Meeting notes from standup",
+    "type": "note",
+    "title": "Standup",
+    "tags": ["work", "meeting"]
+  }
+  ```
+- **Parameters**:
+  - `content` (string, optional): The snipsel content (markdown supported)
+  - `type` (string, optional): `"note"` (default) or `"task"`
+  - `title` (string, optional): Alternative to content if only title provided
+  - `image_url` (string, optional): URL to an image to attach
+  - `tags` (array of strings, optional): Tags to apply (e.g., `["work", "important"]`)
+- **Response**:
+  ```json
+  {
+    "snipsel": {
+      "id": "uuid",
+      "type": "text",
+      "content": "Meeting notes from standup",
+      "created_at": "2024-03-23T14:30:00"
+    },
+    "collection": {
+      "id": "uuid",
+      "title": "Monday, March 23"
+    }
+  }
+  ```
+- **Behavior**: Creates the snipsel in today's daily collection. Creates the collection if it doesn't exist.
+
+### Curl Examples
+
+```bash
+# Simple note
+ curl -X POST https://yourdomain.com/api/quick_add \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: snipsel_your_key_here" \
+  -d '{"content": "Idea for project"}'
+
+# Task with tags
+ curl -X POST https://yourdomain.com/api/quick_add \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: snipsel_your_key_here" \
+  -d '{
+    "content": "Buy groceries",
+    "type": "task",
+    "tags": ["shopping", "home"]
+  }'
+
+# With image
+ curl -X POST https://yourdomain.com/api/quick_add \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: snipsel_your_key_here" \
+  -d '{
+    "content": "Photo from vacation",
+    "image_url": "https://example.com/photo.jpg",
+    "tags": ["vacation"]
+  }'
+```
+
+---
+
 ## Proxy
 
 - **GET /proxy/deezer**: Resolve Deezer links/metadata. Query: `url` or `type`+`id`.

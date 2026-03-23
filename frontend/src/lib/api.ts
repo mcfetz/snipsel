@@ -39,6 +39,13 @@ export type UserPasskey = {
   created_at: string;
 };
 
+export type ApiKey = {
+  id: string;
+  name: string;
+  created_at: string;
+  last_used_at: string | null;
+};
+
 export type Collection = {
   id: string;
   title: string;
@@ -1128,6 +1135,18 @@ export const api = {
       }),
     deleteSnipsel: (token: string, snipselId: string) =>
       requestJson<{ ok: true }>(`/api/public/collections/${token}/snipsels/${snipselId}`, {
+        method: 'DELETE',
+      }),
+  },
+  apiKeys: {
+    list: () => requestJson<{ api_keys: ApiKey[] }>('/api/api_keys'),
+    create: (name: string) =>
+      requestJson<{ api_key: ApiKey & { key: string } }>('/api/api_keys', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      }),
+    delete: (id: string) =>
+      requestJson<{ ok: true }>(`/api/api_keys/${id}`, {
         method: 'DELETE',
       }),
   },

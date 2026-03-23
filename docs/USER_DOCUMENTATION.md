@@ -431,9 +431,58 @@ Once you have multiple snipsels selected, use the **Toolbox** that appears at th
 
 ---
 
-## Security & Authentication
+## Quick Add via API
 
-Snipsel provides modern security features to keep your account safe. These can be configured in your **Settings**.
+Snipsel provides a **Quick Add API** for external integrations like iOS Shortcuts, browser extensions, or automation tools. This allows you to quickly add notes and tasks without opening the app.
+
+### Creating an API Key
+
+Before using the Quick Add API, you need to create an API key:
+
+1. Open **Settings**
+2. Scroll down to the **API Keys** section
+3. Click **Create Key**
+4. Enter a name (e.g., "iOS Shortcuts" or "Chrome Extension")
+5. Click **Create**
+6. **Important**: Copy the displayed API key immediately — it will only be shown once!
+7. Click **Done**
+
+You can create multiple keys for different integrations and delete them at any time.
+
+### Using the API
+
+The Quick Add API is a simple POST endpoint:
+
+**Endpoint**: `POST /api/quick_add`
+**Header**: `X-API-Key: snipsel_your_key_here`
+**Content-Type**: `application/json`
+
+**Request Body**:
+- `content` (string): The note or task content
+- `type` (string, optional): `"note"` (default) or `"task"`
+- `title` (string, optional): Optional title (used if content is empty)
+- `image_url` (string, optional): URL to an image
+- `tags` (array, optional): Tags to apply (e.g., `["work", "important"]`)
+
+**Response**: Returns the created snipsel and the daily collection it was added to.
+
+### iOS Shortcuts Example
+
+Create a Shortcut in the iOS Shortcuts app:
+
+1. Add action: **Ask for Input** (Text, prompt "Enter your note")
+2. Add action: **Get Contents of URL**
+   - URL: `https://yourdomain.com/api/quick_add`
+   - Method: POST
+   - Headers: `X-API-Key` = `snipsel_your_key`
+   - Request Body (JSON):
+     ```json
+     {
+       "content": "Shortcut Input",
+       "type": "note"
+     }
+     ```
+3. (Optional) Add "Share Sheet
 
 ### Two-Factor Authentication (2FA)
 

@@ -580,3 +580,24 @@ class UserPasskey(db.Model):
     )
 
     user = relationship("User")
+
+
+class UserApiKey(db.Model):
+    __tablename__ = "user_api_keys"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+
+    name: Mapped[str] = mapped_column(String(128), nullable=False, default="API Key")
+    key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, nullable=False
+    )
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    user = relationship("User")

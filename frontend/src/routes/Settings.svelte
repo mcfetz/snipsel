@@ -10,7 +10,7 @@
   import Upload from '@animated-color-icons/lucide-svelte/Upload.svelte';
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
   import ChevronRight from '@animated-color-icons/lucide-svelte/ChevronRight.svelte';
-  import { api, type Collection, type UserStats } from '../lib/api';
+  import { api, type Collection, type UserStats, type ApiKey } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { collectionAnchor, currentView } from '../lib/stores';
   import {
@@ -65,6 +65,14 @@
   let availableModels = $state<Array<{ id: string; name: string }>>([]);
   let isLoadingModels = $state(false);
   let modelsError = $state('');
+
+  // API Keys
+  let apiKeys = $state<ApiKey[]>([]);
+  let isApiKeyAddActive = $state(false);
+  let newApiKeyName = $state('');
+  let newApiKeyValue = $state('');
+  let apiKeyError = $state('');
+  let showCopiedKey = $state(false);
 
 
   async function startOtpSetup() {
@@ -163,6 +171,49 @@
     } finally {
       isBusy = false;
     }
+  }
+
+  async function loadApiKeys() {
+    try {
+      const res = await api.apiKeys.list();
+      apiKeys = res.api_keys;
+    } catch (err) {
+      console.error('Failed to load API keys', err);
+    }
+  }
+
+  async function createApiKey() {
+    if (!newApiKeyName) return;
+    isBusy = true;
+    apiKeyError = '';
+    try {
+      const res = await api.apiKeys.create(newApiKeyName);
+      newApiKeyValue = res.api_key.key;
+      await loadApiKeys();
+    } catch (e: any) {
+      apiKeyError = e.error?.message || 'Failed to create API key';
+    } finally {
+      isBusy = false;
+    }
+  }
+
+  async function deleteApiKey(id: string) {
+    if (!confirm('Are you sure you want to delete this API key? This action cannot be undone.')) return;
+    isBusy = true;
+    try {
+      await api.apiKeys.delete(id);
+      await loadApiKeys();
+    } catch (e: any) {
+      alert(e.error?.message || 'Failed to delete API key');
+    } finally {
+      isBusy = false;
+    }
+  }
+
+  function copyApiKey() {
+    navigator.clipboard.writeText(newApiKeyValue);
+    showCopiedKey = true;
+    setTimeout(() => showCopiedKey = false, 2000);
   }
 
   function clampByte(n: number): number {
@@ -397,6 +448,10 @@
 
   $effect(() => {
     loadPasskeys();
+  });
+
+  $effect(() => {
+    loadApiKeys();
   });
 
   $effect(() => {
@@ -1091,6 +1146,131 @@
                   disabled={isBusy}
                 >
                   Remove
+                </button>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <!-- API Keys -->
+      <div class="border-t border-slate-100 pt-4 dark:border-white/5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <div class="text-sm font-medium text-slate-900 dark:text-slate-100">API Keys</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              Create API keys for integrations like iOS Shortcuts or browser extensions.
+            </div>
+          </div>
+          <button
+            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
+            style={`color: ${getAccent()}`}
+            type="button"
+            onclick={() => { isApiKeyAddActive = true; apiKeyError = ''; newApiKeyName = ''; newApiKeyValue = ''; }}
+            disabled={isBusy}
+          >
+            Create Key
+          </button>
+        </div>
+
+        {#if isApiKeyAddActive}
+          <div class="mt-4 space-y-4 rounded-xl bg-slate-50 p-4 dark:bg-white/5">
+            {#if newApiKeyValue}
+              <!-- Show newly created key -->
+              <div class="space-y-3">
+                <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 dark:bg-amber-950/20 dark:border-amber-900/30">
+                  <div class="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">
+                    Copy your API key now!
+                  </div>
+                  <div class="text-xs text-amber-700 dark:text-amber-400 mb-2">
+                    This is the only time you will see this key. Store it securely.
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <code class="flex-1 bg-white dark:bg-slate-900 px-2 py-1.5 rounded text-xs font-mono break-all">
+                      {newApiKeyValue}
+                    </code>
+                    <button
+                      class="shrink-0 rounded-lg bg-amber-100 dark:bg-amber-900/30 px-3 py-1.5 text-xs font-medium text-amber-800 dark:text-amber-300"
+                      type="button"
+                      onclick={copyApiKey}
+                    >
+                      {showCopiedKey ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  type="button"
+                  onclick={() => { isApiKeyAddActive = false; newApiKeyValue = ''; }}
+                >
+                  Done
+                </button>
+              </div>
+            {:else}
+              <!-- Create new key form -->
+              <div>
+                <label for="api-key-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Key Name</label>
+                <input
+                  id="api-key-name"
+                  type="text"
+                  class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none dark:border-white/10 dark:bg-slate-800"
+                  bind:value={newApiKeyName}
+                  placeholder="e.g. iOS Shortcuts, Chrome Extension"
+                />
+              </div>
+
+              {#if apiKeyError}
+                <div class="text-xs font-medium text-red-600 dark:text-red-400">{apiKeyError}</div>
+              {/if}
+
+              <div class="flex gap-2">
+                <button
+                  class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                  style={`background-color: ${getAccent()}`}
+                  type="button"
+                  onclick={createApiKey}
+                  disabled={isBusy || !newApiKeyName}
+                >
+                  Create
+                </button>
+                <button
+                  class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  type="button"
+                  onclick={() => { isApiKeyAddActive = false; newApiKeyName = ''; }}
+                  disabled={isBusy}
+                >
+                  Cancel
+                </button>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        {#if apiKeys.length > 0}
+          <div class="mt-4 space-y-2">
+            {#each apiKeys as key (key.id)}
+              <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-white/50 px-3 py-2 dark:border-white/5 dark:bg-slate-900/50">
+                <div class="flex items-center gap-2 min-w-0">
+                  <Key label="" size={16} className="text-slate-400 shrink-0" />
+                  <div class="min-w-0 flex-1">
+                    <span class="text-sm font-medium block truncate">{key.name}</span>
+                    <span class="text-xs text-slate-400">
+                      Created {new Date(key.created_at).toLocaleDateString()}
+                      {#if key.last_used_at}
+                        · Last used {new Date(key.last_used_at).toLocaleDateString()}
+                      {:else}
+                        · Never used
+                      {/if}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  class="text-xs font-medium text-red-500 hover:text-red-600 shrink-0 ml-2"
+                  type="button"
+                  onclick={() => deleteApiKey(key.id)}
+                  disabled={isBusy}
+                >
+                  Delete
                 </button>
               </div>
             {/each}
