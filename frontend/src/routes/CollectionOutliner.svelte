@@ -2253,7 +2253,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         {#if $currentCollection?.list_for_day}
           <button
             type="button"
-            class="day-nav day-nav-prev {navVisible ? 'nav-visible' : ''}"
+            class="day-nav day-nav-prev"
+            class:nav-active={navVisible}
             title="go to previous day"
             onclick={() => navigateDayCollection(-1)}
             disabled={swipeNavigating}
@@ -2266,7 +2267,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
           <button
             type="button"
-            class="day-nav day-nav-next {navVisible ? 'nav-visible' : ''}"
+            class="day-nav day-nav-next"
+            class:nav-active={navVisible}
             title="go to next day"
             onclick={() => navigateDayCollection(1)}
             disabled={swipeNavigating}
@@ -3566,13 +3568,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   }
 
   .day-nav:hover,
-  .day-nav.nav-visible {
+  .day-nav.nav-active {
     opacity: 1;
     background: rgba(255, 255, 255, 0.15);
   }
 
   .day-nav:active,
-  .day-nav.nav-visible:active {
+  .day-nav.nav-active:active {
     background: rgba(255, 255, 255, 0.25);
   }
 
@@ -3593,13 +3595,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   }
 
   .day-nav:hover svg,
-  .day-nav.nav-visible svg {
+  .day-nav.nav-active svg {
     transform: scale(1.2);
     filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
   }
 
   .day-nav:active svg,
-  .day-nav.nav-visible:active svg {
+  .day-nav.nav-active:active svg {
     transform: scale(0.95);
   }
 
@@ -3613,7 +3615,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   }
 
   .day-nav:hover,
-  .day-nav.nav-visible {
+  .day-nav.nav-active {
     animation: glow-pulse 2s ease-in-out infinite;
   }
 
@@ -3623,10 +3625,25 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   }
 
   .day-nav:disabled:hover,
-  .day-nav:disabled.nav-visible {
+  .day-nav:disabled.nav-active {
     animation: none;
     background: transparent;
     opacity: 0.3;
+  }
+
+  @media (hover: none) {
+    .day-nav {
+      opacity: 0.15;
+    }
+    .day-nav.nav-active {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.15);
+      animation: glow-pulse 2s ease-in-out infinite;
+    }
+    .day-nav.nav-active svg {
+      transform: scale(1.2);
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
+    }
   }
 
   .swipe-container {
