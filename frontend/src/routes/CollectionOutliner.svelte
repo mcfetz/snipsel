@@ -2217,10 +2217,38 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         style="background: {$currentCollection?.header_image_url ? getHeaderColor() : getHeaderGradient()}"
       >
         {#if $currentCollection?.header_image_url}
-          <div 
+          <div
             class="absolute inset-0 bg-cover"
             style="background-image: url('{$currentCollection.header_image_url}{ $currentCollection.header_image_url.startsWith('/api/attachments/') ? '/thumbnail' : '' }'); background-position: {$currentCollection.header_image_x_position || '50%'} {$currentCollection.header_image_position || '50%'}; transform: scale({$currentCollection.header_image_zoom || 1.0}) translate({(50 - (parseFloat($currentCollection.header_image_x_position || '50') || 50)) * (1 - 1 / ($currentCollection.header_image_zoom || 1.0))}%, {(50 - (parseFloat($currentCollection.header_image_position || '50') || 50)) * (1 - 1 / ($currentCollection.header_image_zoom || 1.0))}%)"
           ></div>
+        {/if}
+
+        {#if $currentCollection?.list_for_day}
+          <button
+            type="button"
+            class="day-nav day-nav-prev"
+            title="go to previous day"
+            onclick={() => navigateDayCollection(-1)}
+            disabled={swipeNavigating}
+            aria-label="go to previous day"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            class="day-nav day-nav-next"
+            title="go to next day"
+            onclick={() => navigateDayCollection(1)}
+            disabled={swipeNavigating}
+            aria-label="go to next day"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+          </button>
         {/if}
       </div>
 
@@ -3492,3 +3520,78 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     onClose={() => { showInfoModalFlag = false; infoModalItem = null; }}
   />
 {/if}
+
+<style>
+  .day-nav {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+    z-index: 10;
+  }
+
+  .day-nav:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .day-nav:active {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .day-nav-prev {
+    left: 0;
+    border-radius: 0.75rem 0 0 0;
+  }
+
+  .day-nav-next {
+    right: 0;
+    border-radius: 0 0.75rem 0 0;
+  }
+
+  .day-nav svg {
+    color: white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: transform 0.2s ease, filter 0.3s ease;
+  }
+
+  .day-nav:hover svg {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
+  }
+
+  .day-nav:active svg {
+    transform: scale(0.95);
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.3), 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), 0 0 30px rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  .day-nav:hover {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  .day-nav:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+  }
+
+  .day-nav:disabled:hover {
+    animation: none;
+    background: transparent;
+  }
+</style>
