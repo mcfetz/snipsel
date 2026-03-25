@@ -153,6 +153,10 @@
   let swipeNavigating = $state(false);
   let swipeAnimation: 'left' | 'right' | null = $state(null);
   let swipeEnterAnimation: 'left' | 'right' | null = $state(null);
+  
+  // Header nav visibility state (for mobile - hides after 3s)
+  let navVisible = $state(false);
+  let navHideTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Pull-to-reload state
   const PULL_THRESHOLD = 70; // px to trigger reload
@@ -184,6 +188,14 @@
     const col = $currentCollection;
     if (!col?.list_for_day || swipeNavigating) return;
     swipeNavigating = true;
+    
+    // Show nav buttons and start hide timer (for mobile)
+    navVisible = true;
+    if (navHideTimeout) clearTimeout(navHideTimeout);
+    navHideTimeout = setTimeout(() => {
+      navVisible = false;
+    }, 3000);
+    
     // Start swipe animation: direction -1 (previous) = animate right, direction 1 (next) = animate left
     swipeAnimation = direction === -1 ? 'right' : 'left';
     try {
@@ -2241,7 +2253,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         {#if $currentCollection?.list_for_day}
           <button
             type="button"
-            class="day-nav day-nav-prev"
+            class="day-nav day-nav-prev {navVisible ? 'nav-visible' : ''}"
             title="go to previous day"
             onclick={() => navigateDayCollection(-1)}
             disabled={swipeNavigating}
@@ -2254,7 +2266,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
           <button
             type="button"
-            class="day-nav day-nav-next"
+            class="day-nav day-nav-next {navVisible ? 'nav-visible' : ''}"
             title="go to next day"
             onclick={() => navigateDayCollection(1)}
             disabled={swipeNavigating}
@@ -3553,12 +3565,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     z-index: 10;
   }
 
-  .day-nav:hover {
+  .day-nav:hover,
+  .day-nav.nav-visible {
     opacity: 1;
     background: rgba(255, 255, 255, 0.15);
   }
 
-  .day-nav:active {
+  .day-nav:active,
+  .day-nav.nav-visible:active {
     background: rgba(255, 255, 255, 0.25);
   }
 
@@ -3578,12 +3592,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     transition: transform 0.2s ease, filter 0.3s ease;
   }
 
-  .day-nav:hover svg {
+  .day-nav:hover svg,
+  .day-nav.nav-visible svg {
     transform: scale(1.2);
     filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
   }
 
-  .day-nav:active svg {
+  .day-nav:active svg,
+  .day-nav.nav-visible:active svg {
     transform: scale(0.95);
   }
 
@@ -3596,7 +3612,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     }
   }
 
-  .day-nav:hover {
+  .day-nav:hover,
+  .day-nav.nav-visible {
     animation: glow-pulse 2s ease-in-out infinite;
   }
 
@@ -3605,9 +3622,11 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     opacity: 0.3;
   }
 
-  .day-nav:disabled:hover {
+  .day-nav:disabled:hover,
+  .day-nav:disabled.nav-visible {
     animation: none;
     background: transparent;
+    opacity: 0.3;
   }
 
   .swipe-container {
