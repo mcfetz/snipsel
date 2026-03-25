@@ -2032,6 +2032,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       anchorHighlightId = null;
       selectedIds = new Set();
       editingSnipselId.set(null);
+      
+      // Reset nav visibility on collection change
+      navVisible = false;
+      if (navHideTimeout) {
+        clearTimeout(navHideTimeout);
+        navHideTimeout = null;
+      }
 
       loadItems();
       loadIncomingMentions();
@@ -3635,12 +3642,25 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     .day-nav {
       opacity: 0.15;
     }
-    .day-nav.nav-active {
+    .day-nav:hover,
+    .day-nav:active,
+    .day-nav:focus {
+      opacity: 0.15;
+      background: transparent;
+      animation: none;
+    }
+    .day-nav.nav-active,
+    .day-nav.nav-active:hover,
+    .day-nav.nav-active:active,
+    .day-nav.nav-active:focus {
       opacity: 1;
       background: rgba(255, 255, 255, 0.15);
       animation: glow-pulse 2s ease-in-out infinite;
     }
-    .day-nav.nav-active svg {
+    .day-nav.nav-active svg,
+    .day-nav.nav-active:hover svg,
+    .day-nav.nav-active:active svg,
+    .day-nav.nav-active:focus svg {
       transform: scale(1.2);
       filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
     }
