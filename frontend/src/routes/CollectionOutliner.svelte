@@ -3640,12 +3640,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
   @media (hover: none) {
     .day-nav {
-      opacity: 0.15;
+      opacity: 0.4;
     }
     .day-nav:hover,
     .day-nav:active,
     .day-nav:focus {
-      opacity: 0.15;
+      opacity: 0.4;
       background: transparent;
       animation: none;
     }
