@@ -151,6 +151,8 @@
   let swipeTouchStartX = $state(0);
   let swipeTouchStartY = $state(0);
   let swipeNavigating = $state(false);
+  let swipeAnimation: 'left' | 'right' | null = $state(null);
+  let swipeEnterAnimation: 'left' | 'right' | null = $state(null);
 
   // Pull-to-reload state
   const PULL_THRESHOLD = 70; // px to trigger reload
@@ -182,13 +184,26 @@
     const col = $currentCollection;
     if (!col?.list_for_day || swipeNavigating) return;
     swipeNavigating = true;
+    // Start swipe animation: direction -1 (previous) = animate right, direction 1 (next) = animate left
+    swipeAnimation = direction === -1 ? 'right' : 'left';
     try {
       const targetDate = offsetDate(col.list_for_day, direction);
       const res = await api.collections.today(targetDate);
       currentCollection.set(res.collection);
       currentView.set({ type: 'collection', id: res.collection.id });
+      // Set enter animation (opposite direction to exit)
+      swipeEnterAnimation = direction === -1 ? 'right' : 'left';
+      // Reset animations after transition
+      setTimeout(() => {
+        swipeAnimation = null;
+      }, 300);
+      setTimeout(() => {
+        swipeEnterAnimation = null;
+      }, 350);
     } catch (err) {
       console.error('Failed to navigate day collection:', err);
+      swipeAnimation = null;
+      swipeEnterAnimation = null;
     } finally {
       swipeNavigating = false;
     }
@@ -2177,7 +2192,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 </script>
 
 
-<div class="space-y-3"
+<div class="space-y-3 swipe-container {swipeAnimation ? `swipe-${swipeAnimation}` : ''} {swipeEnterAnimation ? `swipe-enter-${swipeEnterAnimation}` : ''}"
   role="none"
   ontouchstart={handleSwipeTouchStart}
   ontouchmove={handleSwipeTouchMove}
@@ -3593,5 +3608,69 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   .day-nav:disabled:hover {
     animation: none;
     background: transparent;
+  }
+
+  .swipe-container {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  }
+
+  .swipe-left {
+    animation: swipeOutLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .swipe-right {
+    animation: swipeOutRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes swipeOutLeft {
+    0% {
+      transform: translateX(0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(-100%) rotate(-5deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes swipeOutRight {
+    0% {
+      transform: translateX(0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(100%) rotate(5deg);
+      opacity: 0;
+    }
+  }
+
+  .swipe-enter-left {
+    animation: swipeInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .swipe-enter-right {
+    animation: swipeInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes swipeInLeft {
+    0% {
+      transform: translateX(100%) rotate(5deg);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes swipeInRight {
+    0% {
+      transform: translateX(-100%) rotate(-5deg);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0) rotate(0deg);
+      opacity: 1;
+    }
   }
 </style>
