@@ -102,7 +102,7 @@
           class="max-h-[85vh] max-w-[85vw] rounded-lg object-contain shadow-2xl"
           src={currentBlobUrl}
           alt={currentAttachment?.filename ?? ''}
-          in:fly={{ x: direction === 'right' ? 50 : -50, duration: 250 }}
+          in:fly={{ x: direction === 'right' ? 40 : -40, duration: 350, opacity: 0, easing: (t) => 1 - Math.pow(1 - t, 3) }}
         />
       {:else if error}
         <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
