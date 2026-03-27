@@ -98,15 +98,7 @@
     onkeydown={handleKeydown}
   >
     <div class="relative max-h-full max-w-full" in:scale={{ start: 0.9, duration: 150 }} out:fade={{ duration: 100 }}>
-      {#if loading && !blobUrls.has(currentAttachment.id)}
-        <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
-          <div class="text-sm text-white/70">Loading...</div>
-        </div>
-      {:else if error}
-        <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
-          <div class="text-sm text-red-400">{error}</div>
-        </div>
-      {:else if blobUrls.has(currentAttachment.id)}
+      {#if blobUrls.has(currentAttachment.id)}
         {#key currentIndex}
           <img
             class="max-h-[85vh] max-w-[85vw] rounded-lg object-contain shadow-2xl"
@@ -116,8 +108,15 @@
             out:fly={{ x: direction === 'right' ? -100 : 100, duration: 300, opacity: 0.8 }}
           />
         {/key}
+      {:else if error}
+        <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
+          <div class="text-sm text-red-400">{error}</div>
+        </div>
+      {:else}
+        <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
+          <div class="text-sm text-white/70">Loading...</div>
+        </div>
       {/if}
-
 
       {#if attachments.length > 1}
         <button
@@ -142,12 +141,10 @@
           <ChevronRight label="" size={32} strokeWidth={2} />
         </button>
 
-
         <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
           {currentIndex + 1} / {attachments.length}
         </div>
       {/if}
-
 
       {#if blobUrls.has(currentAttachment.id)}
         <div class="absolute right-2 top-2 flex items-center overflow-hidden rounded-full bg-white/90 shadow-lg backdrop-blur-sm">
