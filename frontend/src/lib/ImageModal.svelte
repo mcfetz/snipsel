@@ -19,16 +19,19 @@
 
   let { attachments, currentIndex, onClose, onNavigate }: Props = $props();
 
-  let blobUrls = $state<Map<string, string>>(new Map());
+  let blobUrlCache = $state<Record<string, string>>({});
+  let currentBlobUrl = $state<string | null>(null);
   let loading = $state(false);
   let error = $state<string | null>(null);
   let direction = $state<'left' | 'right'>('right');
 
   const currentAttachment = $derived(attachments[currentIndex]);
-  const currentBlobUrl = $derived(currentAttachment ? blobUrls.get(currentAttachment.id) : null);
 
   async function loadImage(id: string) {
-    if (blobUrls.has(id)) return;
+    if (blobUrlCache[id]) {
+      currentBlobUrl = blobUrlCache[id];
+      return;
+    }
     
     loading = true;
     error = null;
@@ -39,8 +42,8 @@
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      blobUrls.set(id, url);
-      blobUrls = blobUrls;
+      blobUrlCache[id] = url;
+      currentBlobUrl = url;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load image';
     } finally {
@@ -53,7 +56,6 @@
     if (newIndex >= 0 && newIndex < attachments.length) {
       direction = delta > 0 ? 'right' : 'left';
       onNavigate(newIndex);
-      loadImage(attachments[newIndex].id);
     }
   }
 
@@ -76,11 +78,8 @@
   }
 
   $effect(() => {
-    if (attachments.length > 0 && currentIndex >= 0) {
-      const attachment = attachments[currentIndex];
-      if (attachment) {
-        loadImage(attachment.id);
-      }
+    if (currentAttachment) {
+      loadImage(currentAttachment.id);
     }
   });
 </script>
@@ -103,7 +102,7 @@
           <img
             class="max-h-[85vh] max-w-[85vw] rounded-lg object-contain shadow-2xl"
             src={currentBlobUrl}
-            alt={currentAttachment.filename}
+            alt={currentAttachment?.filename ?? ''}
             in:fly={{ x: direction === 'right' ? 100 : -100, duration: 300, opacity: 0.8 }}
             out:fly={{ x: direction === 'right' ? -100 : 100, duration: 300, opacity: 0.8 }}
           />
@@ -151,7 +150,7 @@
           <a
             class="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white"
             href={currentBlobUrl}
-            download={currentAttachment.filename}
+            download={currentAttachment?.filename ?? ''}
             aria-label="Download image"
           >
             <Download label="" size={20} strokeWidth={2} />
