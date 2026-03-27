@@ -213,6 +213,12 @@
     setTimeout(() => showCopiedKey = false, 2000);
   }
 
+  const DEFAULT_ACCENT = '#4f46e5';
+  function getAccent(): string {
+    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
+    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
+  }
+
   async function logout() {
     await api.logout();
     currentUser.set(null);
@@ -524,7 +530,8 @@
               {/if}
             </div>
             <span
-              class="text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100"
+              class="text-2xl font-bold tabular-nums"
+              style={`color: ${getAccent()}`}
             >
               {stat.value !== undefined ? stat.value.toLocaleString() : '–'}
             </span>
