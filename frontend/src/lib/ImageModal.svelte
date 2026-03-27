@@ -75,13 +75,10 @@
   }
 
   $effect(() => {
-    if (currentAttachment) {
-      loadImage(currentAttachment.id);
+    const attachment = attachments[currentIndex];
+    if (attachment) {
+      loadImage(attachment.id);
     }
-    return () => {
-      blobUrls.forEach(url => URL.revokeObjectURL(url));
-      blobUrls.clear();
-    };
   });
 </script>
 
