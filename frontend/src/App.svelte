@@ -341,6 +341,20 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
     return getAccent();
   }
 
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
+  function getNavPlusIconColor(): string {
+    const bgColor = getNavPlusColor();
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
+
   let isFetchingNotifications = false;
   async function fetchNotifications() {
     if (isFetchingNotifications) return;
@@ -869,7 +883,7 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
 
             <button
               class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              style={`background-color: ${getNavPlusColor()}; color: white`}
+              style={`background-color: ${getNavPlusColor()}; color: ${getNavPlusIconColor()}`}
               type="button"
               onclick={onNewSnipsel}
               aria-label="New snipsel (today)"
