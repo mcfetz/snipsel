@@ -27,6 +27,17 @@
 
   const currentAttachment = $derived(attachments[currentIndex]);
 
+  function preloadAdjacentImages() {
+    const prevIndex = currentIndex - 1;
+    const nextIndex = currentIndex + 1;
+    if (prevIndex >= 0 && !blobUrlCache[attachments[prevIndex].id]) {
+      loadImage(attachments[prevIndex].id);
+    }
+    if (nextIndex < attachments.length && !blobUrlCache[attachments[nextIndex].id]) {
+      loadImage(attachments[nextIndex].id);
+    }
+  }
+
   async function loadImage(id: string) {
     if (blobUrlCache[id]) {
       currentBlobUrl = blobUrlCache[id];
@@ -79,7 +90,9 @@
 
   $effect(() => {
     if (currentAttachment) {
-      loadImage(currentAttachment.id);
+      loadImage(currentAttachment.id).then(() => {
+        preloadAdjacentImages();
+      });
     }
   });
 </script>
