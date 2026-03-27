@@ -158,18 +158,18 @@
       {/if}
 
       {#if currentBlobUrl}
-        <div class="absolute right-2 top-2 flex items-center overflow-hidden rounded-full bg-white/90 shadow-lg backdrop-blur-sm">
+        <div class="modal-controls absolute right-2 top-2 flex items-center overflow-hidden rounded-full bg-white/40 shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white/90 hover:scale-105">
           <a
-            class="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white"
+            class="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white/50"
             href={currentBlobUrl}
             download={currentAttachment?.filename ?? ''}
             aria-label="Download image"
           >
             <Download label="" size={20} strokeWidth={2} />
           </a>
-          <div class="h-5 w-px bg-slate-200"></div>
+          <div class="h-5 w-px bg-slate-300/50"></div>
           <button
-            class="al-icon-wrapper flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white"
+            class="al-icon-wrapper flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white/50"
             type="button"
             aria-label="Close"
             onclick={onClose}
@@ -216,6 +216,14 @@
 
   .nav-arrow-right {
     right: -64px;
+  }
+
+  .modal-controls {
+    opacity: 0.7;
+  }
+
+  .modal-controls:hover {
+    opacity: 1;
   }
 
   @media (max-width: 768px) {
