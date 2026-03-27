@@ -25,6 +25,7 @@
   let direction = $state<'left' | 'right'>('right');
 
   const currentAttachment = $derived(attachments[currentIndex]);
+  const currentBlobUrl = $derived(currentAttachment ? blobUrls.get(currentAttachment.id) : null);
 
   async function loadImage(id: string) {
     if (blobUrls.has(id)) return;
@@ -97,11 +98,11 @@
     onkeydown={handleKeydown}
   >
     <div class="relative max-h-full max-w-full" in:scale={{ start: 0.9, duration: 150 }} out:fade={{ duration: 100 }}>
-      {#if blobUrls.has(currentAttachment.id)}
+      {#if currentBlobUrl}
         {#key currentIndex}
           <img
             class="max-h-[85vh] max-w-[85vw] rounded-lg object-contain shadow-2xl"
-            src={blobUrls.get(currentAttachment.id)}
+            src={currentBlobUrl}
             alt={currentAttachment.filename}
             in:fly={{ x: direction === 'right' ? 100 : -100, duration: 300, opacity: 0.8 }}
             out:fly={{ x: direction === 'right' ? -100 : 100, duration: 300, opacity: 0.8 }}
@@ -145,11 +146,11 @@
         </div>
       {/if}
 
-      {#if blobUrls.has(currentAttachment.id)}
+      {#if currentBlobUrl}
         <div class="absolute right-2 top-2 flex items-center overflow-hidden rounded-full bg-white/90 shadow-lg backdrop-blur-sm">
           <a
             class="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white"
-            href={blobUrls.get(currentAttachment.id)}
+            href={currentBlobUrl}
             download={currentAttachment.filename}
             aria-label="Download image"
           >
