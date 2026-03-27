@@ -20,9 +20,6 @@
   } from '../lib/pushManager';
   import { startRegistration } from '@simplewebauthn/browser';
 
-  const DEFAULT_ACCENT = '#4f46e5';
-  type Rgb = { r: number; g: number; b: number };
-
   let defaultHeaderColor = $state('');
   let templateCollections = $state<Collection[]>([]);
   let dayTemplateId = $state<string>('');
@@ -216,48 +213,6 @@
     setTimeout(() => showCopiedKey = false, 2000);
   }
 
-  function clampByte(n: number): number {
-    return Math.max(0, Math.min(255, Math.round(n)));
-  }
-
-  function hexToRgb(hex: string): Rgb | null {
-    const h = hex.trim();
-    const m = /^#([0-9a-fA-F]{6})$/.exec(h);
-    if (!m) return null;
-    const v = m[1];
-    return {
-      r: parseInt(v.slice(0, 2), 16),
-      g: parseInt(v.slice(2, 4), 16),
-      b: parseInt(v.slice(4, 6), 16),
-    };
-  }
-
-  function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
-    const tt = Math.max(0, Math.min(1, t));
-    return {
-      r: clampByte(a.r + (b.r - a.r) * tt),
-      g: clampByte(a.g + (b.g - a.g) * tt),
-      b: clampByte(a.b + (b.b - a.b) * tt),
-    };
-  }
-
-  function rgba(c: Rgb, alpha: number): string {
-    const a = Math.max(0, Math.min(1, alpha));
-    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
-  }
-
-  function getAccent(): string {
-    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
-    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
-  }
-
-  function getAccentTint(): string {
-    const base = { r: 255, g: 255, b: 255 };
-    const accent = hexToRgb(getAccent());
-    const mixed = accent ? mixRgb(base, accent, 0.14) : base;
-    return rgba(mixed, 0.96);
-  }
-
   async function logout() {
     await api.logout();
     currentUser.set(null);
@@ -429,7 +384,7 @@
 
   $effect(() => {
     if (!$currentUser || initialized) return;
-    defaultHeaderColor = $currentUser.default_collection_header_color ?? DEFAULT_ACCENT;
+    defaultHeaderColor = $currentUser.default_collection_header_color ?? '#4f46e5';
     dayTemplateId = $currentUser.day_collection_template_id ?? '';
     aiLlmUrl = $currentUser.ai_llm_url ?? '';
     aiModelName = $currentUser.ai_model_name ?? '';
@@ -535,8 +490,7 @@
           {/if}
           
           <button
-            class="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all dark:opacity-90"
-            style={`background-color: ${getAccent()}`}
+            class="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all bg-slate-900 dark:bg-white dark:text-slate-900"
             type="button"
             onclick={updateAccount}
             disabled={isBusy || (!newEmail && !newPassword) || !currentPasswordConfirm}
@@ -570,8 +524,7 @@
               {/if}
             </div>
             <span
-              class="text-2xl font-bold tabular-nums"
-              style={`color: ${getAccent()}`}
+              class="text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100"
             >
               {stat.value !== undefined ? stat.value.toLocaleString() : '–'}
             </span>
@@ -695,8 +648,7 @@
 
       <div class="mt-6 flex justify-end">
         <button
-          class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-          style={`color: ${getAccent()}`}
+          class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
           type="button"
           onclick={saveAppearanceSettings}
           disabled={isBusy}
@@ -725,8 +677,7 @@
             {/each}
           </select>
           <button
-            class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
-            style={`color: ${getAccent()}`}
+            class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             type="button"
             onclick={saveDayTemplate}
             disabled={isBusy}
@@ -746,11 +697,10 @@
           <div class="text-xs text-slate-500 dark:text-slate-400">Move unfinished tasks from the last 30 days into today.</div>
         </div>
         <button
-          class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
+          class="rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-700 {Boolean($currentUser?.carry_over_open_tasks ?? true) ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white' : 'border-slate-300 bg-white dark:border-white/10 dark:bg-slate-800'}"
           type="button"
           onclick={toggleCarryOver}
           disabled={isBusy}
-          style={Boolean($currentUser?.carry_over_open_tasks ?? true) ? `border-color: ${getAccent()}; color: ${getAccent()}; background-color: ${getAccentTint()}` : undefined}
         >
           {Boolean($currentUser?.carry_over_open_tasks ?? true) ? 'On' : 'Off'}
         </button>
@@ -766,11 +716,10 @@
           <div class="text-xs text-slate-500 dark:text-slate-400">Receive alerts on this device for reminders.</div>
         </div>
         <button
-          class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
+          class="rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-700 {hasPushEnabled ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white' : 'border-slate-300 bg-white dark:border-white/10 dark:bg-slate-800'}"
           type="button"
           onclick={togglePush}
           disabled={isBusy}
-          style={hasPushEnabled ? `border-color: ${getAccent()}; color: ${getAccent()}; background-color: ${getAccentTint()}` : undefined}
         >
           {hasPushEnabled ? 'Enabled' : 'Disabled'}
         </button>
@@ -855,8 +804,7 @@
         </div>
         <div class="flex justify-end pt-2">
           <button
-            class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
-            style={`color: ${getAccent()}`}
+            class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             type="button"
             onclick={saveAiSettings}
             disabled={isBusy}
@@ -885,8 +833,7 @@
               </div>
             </div>
             <button
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
-              style={`color: ${getAccent()}`}
+              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
               type="button"
               onclick={() => { showPasscodeForm = true; passcodeError = ''; }}
               disabled={isBusy}
@@ -926,8 +873,7 @@
             
             <div class="flex items-center gap-2 pt-2">
               <button
-                class="flex-1 rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all dark:opacity-90"
-                style={`background-color: ${getAccent()}`}
+                class="flex-1 rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all bg-slate-900 dark:bg-white dark:text-slate-900"
                 type="button"
                 onclick={savePasscode}
                 disabled={isBusy || passcode.length < 4 || !passcodeConfirmPassword}
@@ -957,13 +903,12 @@
             </div>
           </div>
           {#if $currentUser?.otp_enabled}
-            <button 
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
-              style={`color: ${isOtpDisableActive ? '#ef4444' : getAccent()}`}
+            <button
+              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700 {isOtpDisableActive ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}"
               type="button"
-              onclick={() => { 
-                isOtpDisableActive = !isOtpDisableActive; 
-                securityError = ''; 
+              onclick={() => {
+                isOtpDisableActive = !isOtpDisableActive;
+                securityError = '';
                 otpDisableConfirmPassword = '';
               }}
               disabled={isBusy}
@@ -972,8 +917,7 @@
             </button>
           {:else}
             <button
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
-              style={`color: ${getAccent()}`}
+              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
               type="button"
               onclick={startOtpSetup}
               disabled={isBusy}
@@ -1051,8 +995,7 @@
 
             <div class="flex gap-2">
               <button
-                class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
-                style={`background-color: ${getAccent()}`}
+                class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50 bg-slate-900 dark:bg-white dark:text-slate-900"
                 type="button"
                 onclick={enableOtp}
                 disabled={isBusy || otpCodeInput.length < 6 || !otpSetupConfirmPassword}
@@ -1082,8 +1025,7 @@
             </div>
           </div>
           <button
-            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
-            style={`color: ${getAccent()}`}
+            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             type="button"
             onclick={() => { isPasskeyAddActive = true; passkeyError = ''; loadPasskeys(); }}
             disabled={isBusy}
@@ -1111,8 +1053,7 @@
 
             <div class="flex gap-2">
               <button
-                class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
-                style={`background-color: ${getAccent()}`}
+                class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50 bg-slate-900 dark:bg-white dark:text-slate-900"
                 type="button"
                 onclick={addPasskey}
                 disabled={isBusy || !newPasskeyName}
@@ -1163,8 +1104,7 @@
             </div>
           </div>
           <button
-            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700"
-            style={`color: ${getAccent()}`}
+            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             type="button"
             onclick={() => { isApiKeyAddActive = true; apiKeyError = ''; newApiKeyName = ''; newApiKeyValue = ''; }}
             disabled={isBusy}
@@ -1225,8 +1165,7 @@
 
               <div class="flex gap-2">
                 <button
-                  class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
-                  style={`background-color: ${getAccent()}`}
+                  class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50 bg-slate-900 dark:bg-white dark:text-slate-900"
                   type="button"
                   onclick={createApiKey}
                   disabled={isBusy || !newApiKeyName}
