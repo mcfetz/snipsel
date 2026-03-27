@@ -75,9 +75,11 @@
   }
 
   $effect(() => {
-    const attachment = attachments[currentIndex];
-    if (attachment) {
-      loadImage(attachment.id);
+    if (attachments.length > 0 && currentIndex >= 0) {
+      const attachment = attachments[currentIndex];
+      if (attachment) {
+        loadImage(attachment.id);
+      }
     }
   });
 </script>
