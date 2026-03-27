@@ -774,8 +774,8 @@ import { collections, collectionAnchor, currentView, currentCollection, isLoadin
           title="Notifications"
         >
           {#if $notificationsStore.filter(n => !n.is_read).length > 0}
-            <span class="al-icon-wrapper absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900"
-                  style="background-color: {getNavPlusColor()}"
+            <span class="al-icon-wrapper absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-bold shadow-sm ring-2 ring-white dark:ring-slate-900"
+                  style="background-color: {getNavPlusColor()}; color: {getNavPlusIconColor()}"
             >
               {$notificationsStore.filter(n => !n.is_read).length}
             </span>
