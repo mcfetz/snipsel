@@ -138,7 +138,8 @@
 
   let shareCount = $state(0);
 
-  let modalImage = $state<{ id: string; filename: string } | null>(null);
+  let modalImages = $state<Array<{ id: string; filename: string }>>([]);
+  let modalImageIndex = $state<number>(-1);
   let modalVideo = $state<{ id: string; filename: string } | null>(null);
 
   let showTypeMenu = $state(false);
@@ -598,12 +599,14 @@
     return `linear-gradient(135deg, ${headerColor} 0%, ${rgba(mid, 1)} 50%, ${rgba(lighter, 1)} 100%)`;
   }
 
-  function openImageModal(id: string, filename: string) {
-    modalImage = { id, filename };
+  function openImageModal(images: Array<{ id: string; filename: string }>, index: number) {
+    modalImages = images;
+    modalImageIndex = index;
   }
 
   function closeImageModal() {
-    modalImage = null;
+    modalImages = [];
+    modalImageIndex = -1;
   }
 
   function openVideoModal(id: string, filename: string) {
@@ -2589,14 +2592,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {@const images = snip.attachments.filter((a) => a.mime_type?.startsWith('image/') || a.has_thumbnail)}
                   {#if images.length > 0}
                     <div class="mt-3 grid grid-cols-3 gap-3">
-                      {#each images as a (a.id)}
+                      {#each images as a, imgIdx (a.id)}
                         <button
                           class="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-95 dark:border-white/10 dark:bg-slate-900"
                           type="button"
                           aria-label="View image"
                           onclick={(e) => {
                             e.stopPropagation();
-                            openImageModal(a.id, a.filename);
+                            openImageModal(images.map(img => ({ id: img.id, filename: img.filename })), imgIdx);
                           }}
                         >
                           <img
@@ -2980,9 +2983,11 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {@const media = item.snipsel.attachments.filter(isMediaAttachment)}
                   {@const others = item.snipsel.attachments.filter((a) => !isMediaAttachment(a))}
 
+                  {@const images = media.filter(isImageAttachment)}
                   {#if media.length > 0}
                     <div class="mt-3 grid grid-cols-3 gap-3">
-                      {#each media as a}
+                      {#each media as a, mediaIdx}
+                        {@const imgIdx = images.findIndex(img => img.id === a.id)}
                         <button
                           type="button"
                           class="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md dark:border-white/10 dark:bg-slate-900"
@@ -2992,7 +2997,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                             if (isVideoAttachment(a)) {
                               openVideoModal(a.id, a.filename);
                             } else {
-                              openImageModal(a.id, a.filename);
+                              openImageModal(images.map(img => ({ id: img.id, filename: img.filename })), imgIdx);
                             }
                           }}
                         >
@@ -3151,14 +3156,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {@const images = snip.attachments.filter((a) => a.mime_type?.startsWith('image/') || a.has_thumbnail)}
                   {#if images.length > 0}
                     <div class="mt-3 grid grid-cols-3 gap-3">
-                      {#each images as a (a.id)}
+                      {#each images as a, imgIdx (a.id)}
                         <button
                           class="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-95 dark:border-white/10 dark:bg-slate-900"
                           type="button"
                           aria-label="View image"
                           onclick={(e) => {
                             e.stopPropagation();
-                            openImageModal(a.id, a.filename);
+                            openImageModal(images.map(img => ({ id: img.id, filename: img.filename })), imgIdx);
                           }}
                         >
                           <img
@@ -3496,9 +3501,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 {/if}
 
 <ImageModal
-  attachmentId={modalImage?.id ?? null}
-  filename={modalImage?.filename ?? ''}
+  attachments={modalImages}
+  currentIndex={modalImageIndex}
   onClose={closeImageModal}
+  onNavigate={(idx) => modalImageIndex = idx}
 />
 
 {#if showCollectionModal}

@@ -33,7 +33,8 @@
   const md = new MarkdownIt({ html: false, linkify: true, breaks: false });
 
   let expandedSnipsels = $state<Set<string>>(new Set());
-  let modalImage = $state<{ id: string; filename: string } | null>(null);
+  let modalImages = $state<Array<{ id: string; filename: string }>>([]);
+  let modalImageIndex = $state<number>(-1);
   let modalVideo = $state<{ id: string; filename: string } | null>(null);
 
   let newContent = $state('');
@@ -426,12 +427,13 @@
             </div>
 
             {#if item.snipsel.attachments?.length}
+              {@const images = item.snipsel.attachments.filter(isImageAttachment)}
               <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {#each item.snipsel.attachments as a}
+                {#each item.snipsel.attachments as a, imgIdx}
                   {#if isImageAttachment(a)}
                     <button
                       class="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5"
-                      onclick={(e) => { e.stopPropagation(); modalImage = a; }}
+                      onclick={(e) => { e.stopPropagation(); modalImages = images.map(img => ({ id: img.id, filename: img.filename })); modalImageIndex = imgIdx; }}
                     >
                       <img 
                         src={`/api/attachments/${a.id}/thumbnail`} 
@@ -515,11 +517,12 @@
   {/if}
 </div>
 
-{#if modalImage}
+{#if modalImages.length > 0 && modalImageIndex >= 0}
   <ImageModal
-    attachmentId={modalImage.id}
-    filename={modalImage.filename}
-    onClose={() => modalImage = null}
+    attachments={modalImages}
+    currentIndex={modalImageIndex}
+    onClose={() => { modalImages = []; modalImageIndex = -1; }}
+    onNavigate={(idx) => modalImageIndex = idx}
   />
 {/if}
 

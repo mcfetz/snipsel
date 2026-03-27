@@ -108,15 +108,18 @@
     return rgba(mixed, 0.96);
   }
 
-  let modalImage = $state<{ id: string; filename: string } | null>(null);
+  let modalImages = $state<Array<{ id: string; filename: string }>>([]);
+  let modalImageIndex = $state<number>(-1);
   let modalVideo = $state<{ id: string; filename: string } | null>(null);
 
-  function openImageModal(id: string, filename: string) {
-    modalImage = { id, filename };
+  function openImageModal(images: Array<{ id: string; filename: string }>, index: number) {
+    modalImages = images;
+    modalImageIndex = index;
   }
 
   function closeImageModal() {
-    modalImage = null;
+    modalImages = [];
+    modalImageIndex = -1;
   }
 
   function openVideoModal(id: string, filename: string) {
@@ -737,35 +740,37 @@
       </div>
     {/if}
 
-			<div class="rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80">
-				<div class="text-xs uppercase text-slate-500 dark:text-slate-400">Attachments</div>
-				{#if snipsel.attachments.length === 0}
-					<div class="mt-2 text-sm text-slate-500">No attachments</div>
-				{:else}
-					<div class="mt-3 space-y-2">
-						{#each snipsel.attachments as a}
-							<div class="flex items-center gap-3 px-1 py-1">
-								{#if isVideoAttachment(a) && a.has_thumbnail}
-									<button
-										type="button"
-										class="al-icon-wrapper relative h-10 w-10 overflow-hidden rounded group"
-										aria-label={`Play ${a.filename}`}
-										onclick={() => openVideoModal(a.id, a.filename)}
-									>
-										<img class="h-10 w-10 object-cover" src={api.attachments.thumbnailUrl(a.id)} alt={a.filename} loading="lazy" />
-										<div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-											<CirclePlay label="" size={20} className="text-white" />
-										</div>
-									</button>
-								{:else if isImageAttachment(a) && a.has_thumbnail}
-									<button
-										type="button"
-										class="h-10 w-10 overflow-hidden rounded"
-										aria-label={`View ${a.filename}`}
-										onclick={() => openImageModal(a.id, a.filename)}
-									>
-										<img class="h-10 w-10 object-cover" src={api.attachments.thumbnailUrl(a.id)} alt={a.filename} loading="lazy" />
-									</button>
+		{@const allImages = snipsel.attachments.filter(isImageAttachment).filter(a => a.has_thumbnail)}
+		<div class="rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80">
+			<div class="text-xs uppercase text-slate-500 dark:text-slate-400">Attachments</div>
+			{#if snipsel.attachments.length === 0}
+				<div class="mt-2 text-sm text-slate-500">No attachments</div>
+			{:else}
+				<div class="mt-3 space-y-2">
+					{#each snipsel.attachments as a}
+						{@const imgIdx = allImages.findIndex(img => img.id === a.id)}
+						<div class="flex items-center gap-3 px-1 py-1">
+							{#if isVideoAttachment(a) && a.has_thumbnail}
+								<button
+									type="button"
+									class="al-icon-wrapper relative h-10 w-10 overflow-hidden rounded group"
+									aria-label={`Play ${a.filename}`}
+									onclick={() => openVideoModal(a.id, a.filename)}
+								>
+									<img class="h-10 w-10 object-cover" src={api.attachments.thumbnailUrl(a.id)} alt={a.filename} loading="lazy" />
+									<div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+										<CirclePlay label="" size={20} className="text-white" />
+									</div>
+								</button>
+							{:else if isImageAttachment(a) && a.has_thumbnail}
+								<button
+									type="button"
+									class="h-10 w-10 overflow-hidden rounded"
+									aria-label={`View ${a.filename}`}
+									onclick={() => openImageModal(allImages.map(img => ({ id: img.id, filename: img.filename })), imgIdx)}
+								>
+									<img class="h-10 w-10 object-cover" src={api.attachments.thumbnailUrl(a.id)} alt={a.filename} loading="lazy" />
+								</button>
 								{:else if a.has_thumbnail}
 									<img class="h-10 w-10 rounded object-cover" src={api.attachments.thumbnailUrl(a.id)} alt={a.filename} loading="lazy" />
 								{:else}
@@ -892,9 +897,10 @@
 </div>
 
 <ImageModal
-  attachmentId={modalImage?.id ?? null}
-  filename={modalImage?.filename ?? ''}
+  attachments={modalImages}
+  currentIndex={modalImageIndex}
   onClose={closeImageModal}
+  onNavigate={(idx) => modalImageIndex = idx}
 />
 
 {#if modalVideo}
