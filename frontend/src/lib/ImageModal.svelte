@@ -98,15 +98,12 @@
   >
     <div class="relative max-h-full max-w-full" in:scale={{ start: 0.9, duration: 150 }} out:fade={{ duration: 100 }}>
       {#if currentBlobUrl}
-        {#key currentIndex}
-          <img
-            class="max-h-[85vh] max-w-[85vw] rounded-lg object-contain shadow-2xl"
-            src={currentBlobUrl}
-            alt={currentAttachment?.filename ?? ''}
-            in:fly={{ x: direction === 'right' ? 100 : -100, duration: 300, opacity: 0.8 }}
-            out:fly={{ x: direction === 'right' ? -100 : 100, duration: 300, opacity: 0.8 }}
-          />
-        {/key}
+        <img
+          class="max-h-[85vh] max-w-[85vw] rounded-lg object-contain shadow-2xl"
+          src={currentBlobUrl}
+          alt={currentAttachment?.filename ?? ''}
+          in:fly={{ x: direction === 'right' ? 50 : -50, duration: 250 }}
+        />
       {:else if error}
         <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
           <div class="text-sm text-red-400">{error}</div>
