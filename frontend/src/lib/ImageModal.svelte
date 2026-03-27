@@ -88,24 +88,26 @@
       {/if}
 
       {#if blobUrl}
-        <a
-          class="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition-colors hover:bg-white"
-          href={blobUrl}
-          download={filename}
-          aria-label="Download image"
-        >
-          <Download label="" size={20} strokeWidth={2} />
-        </a>
+        <div class="absolute right-2 top-2 flex items-center overflow-hidden rounded-full bg-white/90 shadow-lg backdrop-blur-sm">
+          <a
+            class="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white"
+            href={blobUrl}
+            download={filename}
+            aria-label="Download image"
+          >
+            <Download label="" size={20} strokeWidth={2} />
+          </a>
+          <div class="h-5 w-px bg-slate-200"></div>
+          <button
+            class="al-icon-wrapper flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white"
+            type="button"
+            aria-label="Close"
+            onclick={onClose}
+          >
+            <X label="" size={20} strokeWidth={2} />
+          </button>
+        </div>
       {/if}
-
-      <button
-        class="al-icon-wrapper absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg transition-colors hover:bg-white"
-        type="button"
-        aria-label="Close"
-        onclick={onClose}
-      >
-        <X label="" size={20} strokeWidth={2} />
-      </button>
     </div>
   </div>
 {/if}
