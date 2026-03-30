@@ -26,13 +26,21 @@ class Settings:
     snipsel_domain: str | None
     snipsel_frontend_url: str | None
     registration_enabled: bool
+    oidc_enabled: bool
+    oidc_discovery_url: str | None
+    oidc_client_id: str | None
+    oidc_client_secret: str | None
+    oidc_scope: str
+    oidc_provider_name: str
 
     @staticmethod
     def from_env() -> "Settings":
         secret_key = os.environ.get("SNIPSEL_SECRET_KEY", "dev")
         database_url = os.environ.get("SNIPSEL_DATABASE_URL", "sqlite:///snipsel.db")
         upload_dir = os.environ.get("SNIPSEL_UPLOAD_DIR", "./uploads")
-        max_upload_bytes = int(os.environ.get("SNIPSEL_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+        max_upload_bytes = int(
+            os.environ.get("SNIPSEL_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024))
+        )
 
         session_cookie_samesite = os.environ.get("SNIPSEL_SESSION_SAMESITE", "Lax")
         session_cookie_secure = os.environ.get("SNIPSEL_SESSION_SECURE", "0") == "1"
@@ -56,7 +64,16 @@ class Settings:
         vapid_subject = os.environ.get("VAPID_SUBJECT")
         snipsel_domain = os.environ.get("SNIPSEL_DOMAIN")
         snipsel_frontend_url = os.environ.get("SNIPSEL_FRONTEND_URL")
-        registration_enabled = os.environ.get("SNIPSEL_REGISTRATION_ENABLED", "1") != "0"
+        registration_enabled = (
+            os.environ.get("SNIPSEL_REGISTRATION_ENABLED", "1") != "0"
+        )
+
+        oidc_enabled = os.environ.get("SNIPSEL_OIDC_ENABLED", "0") == "1"
+        oidc_discovery_url = os.environ.get("SNIPSEL_OIDC_DISCOVERY_URL")
+        oidc_client_id = os.environ.get("SNIPSEL_OIDC_CLIENT_ID")
+        oidc_client_secret = os.environ.get("SNIPSEL_OIDC_CLIENT_SECRET")
+        oidc_scope = os.environ.get("SNIPSEL_OIDC_SCOPE", "openid email profile")
+        oidc_provider_name = os.environ.get("SNIPSEL_OIDC_PROVIDER_NAME", "OIDC")
 
         return Settings(
             secret_key=secret_key,
@@ -79,4 +96,10 @@ class Settings:
             snipsel_domain=snipsel_domain,
             snipsel_frontend_url=snipsel_frontend_url,
             registration_enabled=registration_enabled,
+            oidc_enabled=oidc_enabled,
+            oidc_discovery_url=oidc_discovery_url,
+            oidc_client_id=oidc_client_id,
+            oidc_client_secret=oidc_client_secret,
+            oidc_scope=oidc_scope,
+            oidc_provider_name=oidc_provider_name,
         )
