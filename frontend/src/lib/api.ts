@@ -278,6 +278,20 @@ import {
 
 export const api = {
   getConfig: () => requestJson<{ registration_enabled: boolean }>('/api/auth/config'),
+  getOidcConfig: () => requestJson<{ enabled: boolean; provider_name: string | null }>('/api/auth/oidc/config'),
+  oidcLogin: async () => {
+    const { auth_url } = await requestJson<{ auth_url: string }>('/api/auth/oidc/login');
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open(
+      auth_url,
+      'oidc_login',
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+    );
+    return popup;
+  },
   register: (input: { username: string; email: string; password: string }) =>
     requestJson<{ user: User }>('/api/auth/register', {
       method: 'POST',
