@@ -601,3 +601,29 @@ class UserApiKey(db.Model):
     last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     user = relationship("User")
+
+
+class UserOidcLink(db.Model):
+    __tablename__ = "user_oidc_links"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+
+    provider: Mapped[str] = mapped_column(String(64), nullable=False, default="oidc")
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, nullable=False
+    )
+
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("provider", "subject", name="uq_oidc_provider_subject"),
+    )
