@@ -86,6 +86,7 @@ class User(db.Model):
     dark_background_color: Mapped[Optional[str]] = mapped_column(
         String(7), nullable=True
     )
+    is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
 
 
 class Collection(db.Model):

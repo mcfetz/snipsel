@@ -31,6 +31,17 @@ def require_auth(fn: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
+def require_admin(fn: Callable[..., T]) -> Callable[..., T]:
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user = current_user()
+        if not user.is_admin:
+            raise api_error(403, "forbidden", "Admin access required")
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
 def current_user() -> User:
     user = getattr(g, "current_user", None)
     if not isinstance(user, User):
