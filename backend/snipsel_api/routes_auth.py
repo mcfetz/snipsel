@@ -18,6 +18,7 @@ from webauthn import (
 from webauthn.helpers import bytes_to_base64url, options_to_json
 from webauthn.helpers.structs import (
     AuthenticatorSelectionCriteria,
+    PublicKeyCredentialDescriptor,
     UserVerificationRequirement,
 )
 
@@ -364,6 +365,111 @@ def passkeys_register_complete():
     session["user_id"] = user.id
     return json_response({"user": _user_json(user)})
 
+
+
+
+@auth_bp.post("/passkeys/login/begin")
+@enforce_json
+def passkeys_login_begin():
+    data = request.get_json() or {}
+    username = (data.get("username") or "").strip()
+    if not username:
+        raise api_error(400, "invalid_input", "username is required")
+
+    user = (
+        db.session.execute(db.select(User).where(User.username == username))
+        .scalars()
+        .first()
+    )
+    if not user or not user.is_active or user.deleted_at is not None:
+        raise api_error(401, "invalid_credentials", "Invalid user")
+
+    passkeys = (
+        db.session.execute(db.select(UserPasskey).where(UserPasskey.user_id == user.id))
+        .scalars()
+        .all()
+    )
+    if not passkeys:
+        raise api_error(400, "no_passkeys", "No passkeys registered for this user")
+
+    settings = Settings.from_env()
+    rp_id = settings.snipsel_domain or request.host.split(":")[0] or "localhost"
+
+    options = generate_authentication_options(
+        rp_id=rp_id,
+        allow_credentials=[
+            webauthn.helpers.structs.PublicKeyCredentialDescriptor(
+                id=webauthn.helpers.base64url_to_bytes(p.credential_id)
+            )
+            for p in passkeys
+        ],
+        user_verification=UserVerificationRequirement.PREFERRED,
+    )
+
+    options_json_str = options_to_json(options)
+    session["passkey_login_options"] = options_json_str
+    session["pending_passkey_user_id"] = user.id
+    return json_response(json.loads(options_json_str))
+
+
+@auth_bp.post("/passkeys/login/complete")
+@enforce_json
+def passkeys_login_complete():
+    data = request.get_json() or {}
+    user_id = session.get("pending_passkey_user_id")
+    options_json = session.get("passkey_login_options")
+    if not user_id or not options_json:
+        raise api_error(400, "invalid_session", "Login session expired")
+
+    user = db.session.get(User, user_id)
+    if not user:
+        raise api_error(401, "unauthorized", "User not found")
+
+    settings = Settings.from_env()
+    rp_id = settings.snipsel_domain or request.host.split(":")[0] or "localhost"
+    origin = settings.snipsel_frontend_url or f"https://{rp_id}"
+    if rp_id == "localhost":
+        origin = "http://localhost:5173"
+
+    credential_id = data.get("id")
+    passkey = (
+        db.session.execute(
+            db.select(UserPasskey).where(
+                UserPasskey.credential_id == credential_id,
+                UserPasskey.user_id == user.id,
+            )
+        )
+        .scalars()
+        .first()
+    )
+
+    if not passkey:
+        raise api_error(401, "invalid_credential", "Passkey not found for this user")
+
+    try:
+        verification = verify_authentication_response(
+            credential=data,
+            expected_challenge=webauthn.helpers.parse_authentication_options_json(
+                options_json
+            ).challenge,
+            expected_origin=origin,
+            expected_rp_id=rp_id,
+            credential_public_key=webauthn.helpers.base64url_to_bytes(
+                passkey.public_key
+            ),
+            credential_current_sign_count=passkey.sign_count,
+        )
+    except Exception as e:
+        raise api_error(401, "verification_failed", str(e))
+
+    passkey.sign_count = verification.new_sign_count
+    db.session.commit()
+
+    session.pop("passkey_login_options", None)
+    session.pop("pending_passkey_user_id", None)
+    session.permanent = True
+    session["user_id"] = user.id
+    return json_response({"user": _user_json(user)})
 
 @auth_bp.get("/passkeys")
 @require_auth
