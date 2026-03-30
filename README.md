@@ -77,6 +77,7 @@ A built-in **daily collection** auto-created for each day. Open tasks from the p
 - **Passcode lock** — protect individual collections with a PIN
 - **Password reset via email**
 - **Registration toggle** — disable new user registration via environment variable
+- **Admin User Management** — admins can create, delete and manage users with role assignments
 
 ### 🎨 Beautiful & Adaptive UI
 - Light, dark, or system-adaptive theme
@@ -198,6 +199,7 @@ The frontend proxies `/api/*` to the backend in dev mode.
 | `SNIPSEL_OIDC_CLIENT_SECRET` | - | OIDC client secret |
 | `SNIPSEL_OIDC_SCOPE` | `openid email profile` | OIDC scopes to request |
 | `SNIPSEL_OIDC_PROVIDER_NAME` | `OIDC` | Display name for the login button |
+| `SNIPSEL_OIDC_DISABLE_PASSWORD_LOGIN` | `0` | Set to `1` to disable password login when OIDC is enabled |
 
 ---
 
