@@ -24,6 +24,7 @@ export type User = {
   ai_api_key_set?: boolean;
   light_background_color?: string | null;
   dark_background_color?: string | null;
+  is_admin?: boolean;
 };
 
 export type UserStats = {
@@ -277,7 +278,7 @@ import {
 } from './db';
 
 export const api = {
-  getConfig: () => requestJson<{ registration_enabled: boolean }>('/api/auth/config'),
+  getConfig: () => requestJson<{ registration_enabled: boolean; oidc_enabled: boolean; oidc_disable_password_login: boolean }>('/api/auth/config'),
   getOidcConfig: () => requestJson<{ enabled: boolean; provider_name: string | null }>('/api/auth/oidc/config'),
   oidcLogin: async () => {
     const { auth_url } = await requestJson<{ auth_url: string }>('/api/auth/oidc/login');
@@ -1162,6 +1163,23 @@ export const api = {
     delete: (id: string) =>
       requestJson<{ ok: true }>(`/api/api_keys/${id}`, {
         method: 'DELETE',
+      }),
+  },
+  admin: {
+    listUsers: () => requestJson<{ users: Array<{ id: string; username: string; email: string; is_admin: boolean; is_active: boolean; created_at: string; last_login: string | null }> }>('/api/admin/users'),
+    createUser: (input: { username: string; email: string; password: string; is_admin?: boolean }) =>
+      requestJson<{ user: { id: string; username: string; email: string; is_admin: boolean; is_active: boolean; created_at: string } }>('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    deleteUser: (id: string) =>
+      requestJson<{ ok: true }>(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+      }),
+    updateUser: (id: string, input: { is_admin?: boolean; is_active?: boolean }) =>
+      requestJson<{ user: { id: string; username: string; email: string; is_admin: boolean; is_active: boolean; created_at: string } }>(`/api/admin/users/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
       }),
   },
 };

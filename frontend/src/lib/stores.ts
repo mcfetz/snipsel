@@ -16,7 +16,8 @@ export type View =
   | { type: 'importer' }
   | { type: 'recycle-bin' }
   | { type: 'public'; token: string }
-  | { type: 'snipsel'; id: string; returnTo?: string };
+  | { type: 'snipsel'; id: string; returnTo?: string }
+  | { type: 'user_management' };
 
 export const currentView = writable<View>({ type: 'loading' });
 export const collections = writable<Collection[]>([]);
