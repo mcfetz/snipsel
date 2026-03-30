@@ -112,10 +112,14 @@
   }
 
   async function loginWithPasskey() {
+    if (!username) {
+      errorMessage = 'Please enter your username first';
+      return;
+    }
     errorMessage = null;
     busy = true;
     try {
-      const optionsRes = await api.passkeys.loginBegin();
+      const optionsRes = await api.passkeys.loginBegin(username);
       const options = optionsRes.options;
       
       // 2. Call WebAuthn API
@@ -157,9 +161,17 @@
 
   {#if oidcDisablePasswordLogin && mode === 'login' && !isOtpStep}
     <div class="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
-      <div class="text-center text-slate-600 dark:text-slate-400">
+      <div class="text-center text-slate-600 dark:text-slate-400 mb-4">
         Password login is disabled.<br>Please use one of the following methods:
       </div>
+      <label class="block">
+        <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Username</span>
+        <input
+          class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-lg shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
+          bind:value={username}
+          autocomplete="username"
+        />
+      </label>
     </div>
   {/if}
 
