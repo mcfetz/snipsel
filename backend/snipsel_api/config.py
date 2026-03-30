@@ -32,6 +32,7 @@ class Settings:
     oidc_client_secret: str | None
     oidc_scope: str
     oidc_provider_name: str
+    oidc_disable_password_login: bool
 
     @staticmethod
     def from_env() -> "Settings":
@@ -74,6 +75,9 @@ class Settings:
         oidc_client_secret = os.environ.get("SNIPSEL_OIDC_CLIENT_SECRET")
         oidc_scope = os.environ.get("SNIPSEL_OIDC_SCOPE", "openid email profile")
         oidc_provider_name = os.environ.get("SNIPSEL_OIDC_PROVIDER_NAME", "OIDC")
+        oidc_disable_password_login = (
+            os.environ.get("SNIPSEL_OIDC_DISABLE_PASSWORD_LOGIN", "0") == "1"
+        )
 
         return Settings(
             secret_key=secret_key,
@@ -102,4 +106,5 @@ class Settings:
             oidc_client_secret=oidc_client_secret,
             oidc_scope=oidc_scope,
             oidc_provider_name=oidc_provider_name,
+            oidc_disable_password_login=oidc_disable_password_login,
         )

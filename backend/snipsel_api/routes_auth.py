@@ -51,7 +51,13 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.get("/config")
 def auth_config():
     settings = Settings.from_env()
-    return json_response({"registration_enabled": settings.registration_enabled})
+    return json_response(
+        {
+            "registration_enabled": settings.registration_enabled,
+            "oidc_enabled": settings.oidc_enabled,
+            "oidc_disable_password_login": settings.oidc_disable_password_login,
+        }
+    )
 
 
 @auth_bp.post("/register")
@@ -83,10 +89,14 @@ def register():
     if existing:
         raise api_error(409, "already_exists", "username or email already exists")
 
+    user_count = db.session.execute(db.select(db.func.count(User.id))).scalar() or 0
+    is_first_user = user_count == 0
+
     user = User(
         username=username,
         email=email,
         password_hash=generate_password_hash(password, method="pbkdf2:sha256"),
+        is_admin=is_first_user,
     )
     db.session.add(user)
     db.session.commit()
@@ -99,6 +109,14 @@ def register():
 @auth_bp.post("/login")
 @enforce_json
 def login():
+    settings = Settings.from_env()
+    if settings.oidc_disable_password_login:
+        raise api_error(
+            403,
+            "password_login_disabled",
+            "Password login is disabled. Please use OIDC.",
+        )
+
     data = request.get_json() or {}
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
@@ -804,6 +822,7 @@ def _user_json(user: User) -> dict:
         "ai_api_key_set": user.ai_api_key is not None,
         "light_background_color": user.light_background_color,
         "dark_background_color": user.dark_background_color,
+        "is_admin": getattr(user, "is_admin", False),
         "created_at": user.created_at.isoformat() + "Z",
     }
 
@@ -1039,10 +1058,16 @@ def oidc_callback():
                 username = f"{base_username[: 32 - len(suffix) - 1]}_{suffix}"
                 counter += 1
 
+            user_count = (
+                db.session.execute(db.select(db.func.count(User.id))).scalar() or 0
+            )
+            is_first_user = user_count == 0
+
             user = User(
                 username=username,
                 email=email,
                 password_hash="oidc_auth",
+                is_admin=is_first_user,
             )
             db.session.add(user)
             db.session.commit()
