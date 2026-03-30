@@ -104,15 +104,8 @@
         const res = await api.register({ username, email, password });
         currentUser.set(res.user);
       }
-    } catch (e) {
-      if (typeof e === 'object' && e && 'status' in e && (e as any).status === 401 && isOtpStep) {
-        errorMessage = 'Invalid 2FA code';
-      } else if (typeof e === 'object' && e && 'error' in e) {
-        const err = e as { error: { message?: string } };
-        errorMessage = err.error.message ?? 'Request failed';
-      } else {
-        errorMessage = 'Request failed';
-      }
+    } catch (e: any) {
+      errorMessage = e.error?.message || e.message || 'Authentication failed';
     } finally {
       busy = false;
     }
@@ -122,11 +115,11 @@
     errorMessage = null;
     busy = true;
     try {
-      // 1. Get options
-      const options = await api.passkeys.loginBegin(username || '');
+      const optionsRes = await api.passkeys.loginBegin();
+      const options = optionsRes.options;
       
-      // 2. Start authentication
-      const authResp = await startAuthentication(options);
+      // 2. Call WebAuthn API
+      const authResp = await startAuthentication({ optionsJSON: options });
       
       // 3. Verify response
       const res = await api.passkeys.loginComplete(authResp);
@@ -162,112 +155,116 @@
     </p>
   </div>
 
-  {#if oidcDisablePasswordLogin && !isOtpStep}
-    <div class="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
-      <div class="text-center text-slate-600 dark:text-slate-400 mb-4">
+  {#if oidcDisablePasswordLogin && mode === 'login' && !isOtpStep}
+    <div class="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
+      <div class="text-center text-slate-600 dark:text-slate-400">
         Password login is disabled.<br>Please use one of the following methods:
       </div>
     </div>
   {/if}
 
-  <form class="space-y-5 {oidcDisablePasswordLogin && !isOtpStep ? 'hidden' : ''}" onsubmit={(e) => { e.preventDefault(); submit(); }}>
-    <div class="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
-      {#if !isOtpStep}
-        <label class="block">
-          <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Username</span>
-          <input 
-            class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-lg shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20" 
-            bind:value={username} 
-            autocomplete="username" 
-          />
-        </label>
-
-        {#if mode === 'register'}
+  {#if !oidcDisablePasswordLogin || mode === 'register' || isOtpStep}
+    <form class="space-y-5 mb-6" onsubmit={(e) => { e.preventDefault(); submit(); }}>
+      <div class="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
+        {#if !isOtpStep}
           <label class="block">
-            <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Email</span>
-            <input
-              class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-lg shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
-              bind:value={email}
-              autocomplete="email"
-              type="email"
+            <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Username</span>
+            <input 
+              class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-lg shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20" 
+              bind:value={username} 
+              autocomplete="username" 
             />
           </label>
+
+          {#if mode === 'register'}
+            <label class="block">
+              <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Email</span>
+              <input
+                class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-lg shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
+                bind:value={email}
+                autocomplete="email"
+                type="email"
+              />
+            </label>
+          {/if}
+
+          <label class="block">
+            <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Password</span>
+            <input
+              class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-lg shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
+              bind:value={password}
+              autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
+              type="password"
+            />
+          </label>
+        {:else}
+          <label class="block">
+            <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">6-digit Code</span>
+            <input
+              class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-2xl tracking-[0.5em] text-center shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
+              bind:value={otpCode}
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="000000"
+            />
+          </label>
+          <button 
+            type="button"
+            class="text-xs text-indigo-500 hover:text-indigo-600 ml-1"
+            onclick={() => { isOtpStep = false; otpCode = ''; }}
+          >
+            ← Back to password
+          </button>
         {/if}
 
-        <label class="block">
-          <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Password</span>
-          <input
-            class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-lg shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
-            bind:value={password}
-            autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
-            type="password"
-          />
-        </label>
-      {:else}
-        <label class="block">
-          <span class="mb-1.5 ml-1 block text-sm font-medium text-slate-600 dark:text-slate-400">6-digit Code</span>
-          <input
-            class="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-2xl tracking-[0.5em] text-center shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
-            bind:value={otpCode}
-            inputmode="numeric"
-            maxlength="6"
-            placeholder="000000"
-          />
-        </label>
-        <button 
-          type="button"
-          class="text-xs text-indigo-500 hover:text-indigo-600 ml-1"
-          onclick={() => { isOtpStep = false; otpCode = ''; }}
+        {#if errorMessage}
+          <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-base text-red-700 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400">
+            {errorMessage}
+          </div>
+        {/if}
+      </div>
+
+      <div class="space-y-3">
+        <button
+          class="w-full rounded-full bg-[#4f46e5] px-4 py-3.5 text-lg font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#4338ca] hover:shadow-xl disabled:pointer-events-none disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+          type="submit"
+          disabled={busy || (isOtpStep && otpCode.length !== 6)}
         >
-          ← Back to password
+          {busy ? 'Please wait...' : isOtpStep ? 'Verify & Login' : mode === 'login' ? 'Login' : 'Register'}
         </button>
-      {/if}
+      </div>
+    </form>
+  {/if}
 
-      {#if errorMessage}
-        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-base text-red-700 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400">
-          {errorMessage}
-        </div>
-      {/if}
-    </div>
-
+  {#if mode === 'login' && !isOtpStep}
     <div class="space-y-3">
       <button
-        class="w-full rounded-full bg-[#4f46e5] px-4 py-3.5 text-lg font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#4338ca] hover:shadow-xl disabled:pointer-events-none disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-        type="submit"
-        disabled={busy || (isOtpStep && otpCode.length !== 6)}
+        class="al-icon-wrapper flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+        type="button"
+        onclick={loginWithPasskey}
+        disabled={busy}
       >
-        {busy ? 'Please wait...' : isOtpStep ? 'Verify & Login' : mode === 'login' ? 'Login' : 'Register'}
+        <Lock label="" size={20} />
+        Login with Passkey
       </button>
 
-      {#if mode === 'login' && !isOtpStep}
+      {#if oidcEnabled}
         <button
           class="al-icon-wrapper flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
           type="button"
-          onclick={loginWithPasskey}
+          onclick={loginWithOidc}
           disabled={busy}
         >
-          <Lock label="" size={20} />
-          Login with Passkey
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Login with {oidcProviderName || 'OIDC'}
         </button>
-
-        {#if oidcEnabled}
-          <button
-            class="al-icon-wrapper flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-            type="button"
-            onclick={loginWithOidc}
-            disabled={busy}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-              <polyline points="10 17 15 12 10 7"/>
-              <line x1="15" y1="12" x2="3" y2="12"/>
-            </svg>
-            Login with {oidcProviderName || 'OIDC'}
-          </button>
-        {/if}
       {/if}
     </div>
-  </form>
+  {/if}
 
   {#if registrationEnabled && (!oidcDisablePasswordLogin || mode === 'register')}
     <button 
