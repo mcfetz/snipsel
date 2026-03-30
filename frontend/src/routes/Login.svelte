@@ -3,7 +3,7 @@
   import { api } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { startAuthentication } from '@simplewebauthn/browser';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   let mode = $state<'login' | 'register'>('login');
   let username = $state('');
@@ -14,6 +14,9 @@
   let errorMessage = $state<string | null>(null);
   let busy = $state(false);
   let registrationEnabled = $state(true);
+  let oidcEnabled = $state(false);
+  let oidcProviderName = $state<string | null>(null);
+  let oidcPopup: Window | null = $state(null);
 
   onMount(async () => {
     try {
@@ -25,7 +28,55 @@
     } catch (e) {
       console.error('Failed to fetch auth config:', e);
     }
+
+    try {
+      const oidcConfig = await api.getOidcConfig();
+      oidcEnabled = oidcConfig.enabled;
+      oidcProviderName = oidcConfig.provider_name;
+    } catch (e) {
+      console.error('Failed to fetch OIDC config:', e);
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'oidc-login-success') {
+        handleOidcSuccess();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      if (oidcPopup && !oidcPopup.closed) {
+        oidcPopup.close();
+      }
+    };
   });
+
+  async function handleOidcSuccess() {
+    busy = true;
+    try {
+      const res = await api.me();
+      currentUser.set(res.user);
+    } catch (e) {
+      errorMessage = 'OIDC login failed. Please try again.';
+    } finally {
+      busy = false;
+      if (oidcPopup && !oidcPopup.closed) {
+        oidcPopup.close();
+      }
+    }
+  }
+
+  async function loginWithOidc() {
+    errorMessage = null;
+    busy = true;
+    try {
+      oidcPopup = await api.oidcLogin();
+    } catch (e) {
+      errorMessage = 'Failed to initiate OIDC login';
+      busy = false;
+    }
+  }
 
   async function submit() {
     errorMessage = null;
@@ -187,6 +238,22 @@
           <Lock label="" size={20} />
           Login with Passkey
         </button>
+
+        {#if oidcEnabled}
+          <button
+            class="al-icon-wrapper flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+            type="button"
+            onclick={loginWithOidc}
+            disabled={busy}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            Login with {oidcProviderName || 'OIDC'}
+          </button>
+        {/if}
       {/if}
     </div>
   </form>
