@@ -119,8 +119,7 @@
     errorMessage = null;
     busy = true;
     try {
-      const optionsRes = await api.passkeys.loginBegin(username);
-      const options = optionsRes.options;
+      const options = await api.passkeys.loginBegin(username);
       
       // 2. Call WebAuthn API
       const authResp = await startAuthentication({ optionsJSON: options });
