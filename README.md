@@ -71,6 +71,7 @@ Process your notes with a built-in AI assistant. Configure your own OpenAI-compa
 A built-in **daily collection** auto-created for each day. Open tasks from the past 30 days are automatically **carried over** so nothing falls through the cracks.
 
 ### 🔒 Security-first
+- **OIDC** — Single Sign-On via your identity provider (Google, Microsoft, Authentik, etc.)
 - **Passkeys** (WebAuthn / FIDO2) — log in with Face ID, Touch ID, or a hardware key
 - **TOTP 2FA** — standard authenticator app support
 - **Passcode lock** — protect individual collections with a PIN
@@ -187,13 +188,24 @@ The frontend proxies `/api/*` to the backend in dev mode.
 | `VAPID_PRIVATE_KEY` | VAPID private key |
 | `VAPID_SUBJECT` | e.g. `mailto:admin@yourdomain.com` |
 
+**Optional OIDC (Single Sign-On):**
+
+| Variable | Default | Description |
+|---|---|---|
+| `SNIPSEL_OIDC_ENABLED` | `0` | Set to `1` to enable OIDC authentication |
+| `SNIPSEL_OIDC_DISCOVERY_URL` | - | OIDC discovery URL (e.g., `https://accounts.google.com/.well-known/openid-configuration`) |
+| `SNIPSEL_OIDC_CLIENT_ID` | - | OIDC client ID |
+| `SNIPSEL_OIDC_CLIENT_SECRET` | - | OIDC client secret |
+| `SNIPSEL_OIDC_SCOPE` | `openid email profile` | OIDC scopes to request |
+| `SNIPSEL_OIDC_PROVIDER_NAME` | `OIDC` | Display name for the login button |
+
 ---
 
 ## 🛠️ Tech Stack
 
 - **Backend:** Python · Flask · SQLAlchemy · SQLite · Flask-Migrate
 - **Frontend:** Svelte 5 · TypeScript · Vite · PWA (Service Worker)
-- **Auth:** Session cookies · WebAuthn (Passkeys) · TOTP · bcrypt
+- **Auth:** Session cookies · WebAuthn (Passkeys) · TOTP · OIDC · bcrypt
 - **Deployment:** Docker (multi-stage build) · single container (includes FFmpeg)
 
 ---
