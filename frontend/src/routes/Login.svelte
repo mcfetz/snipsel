@@ -16,12 +16,15 @@
   let registrationEnabled = $state(true);
   let oidcEnabled = $state(false);
   let oidcProviderName = $state<string | null>(null);
+  let oidcDisablePasswordLogin = $state(false);
   let oidcPopup: Window | null = $state(null);
 
   onMount(async () => {
     try {
       const config = await api.getConfig();
       registrationEnabled = config.registration_enabled;
+      oidcEnabled = config.oidc_enabled;
+      oidcDisablePasswordLogin = config.oidc_disable_password_login;
       if (!registrationEnabled && mode === 'register') {
         mode = 'login';
       }
@@ -159,7 +162,15 @@
     </p>
   </div>
 
-  <form class="space-y-5" onsubmit={(e) => { e.preventDefault(); submit(); }}>
+  {#if oidcDisablePasswordLogin && !isOtpStep}
+    <div class="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
+      <div class="text-center text-slate-600 dark:text-slate-400 mb-4">
+        Password login is disabled.<br>Please use one of the following methods:
+      </div>
+    </div>
+  {/if}
+
+  <form class="space-y-5 {oidcDisablePasswordLogin && !isOtpStep ? 'hidden' : ''}" onsubmit={(e) => { e.preventDefault(); submit(); }}>
     <div class="space-y-4 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
       {#if !isOtpStep}
         <label class="block">
@@ -258,7 +269,7 @@
     </div>
   </form>
 
-  {#if registrationEnabled}
+  {#if registrationEnabled && (!oidcDisablePasswordLogin || mode === 'register')}
     <button 
       class="mt-6 w-full rounded-full bg-[#4f46e5]/10 px-4 py-3.5 text-base font-semibold text-[#4f46e5] transition-all hover:bg-[#4f46e5]/20 dark:bg-indigo-500/20 dark:text-indigo-400 dark:hover:bg-indigo-500/30" 
       type="button" 

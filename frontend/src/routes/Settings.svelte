@@ -10,6 +10,7 @@
   import Upload from '@animated-color-icons/lucide-svelte/Upload.svelte';
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
   import ChevronRight from '@animated-color-icons/lucide-svelte/ChevronRight.svelte';
+  import Users from '@animated-color-icons/lucide-svelte/Users.svelte';
   import { api, type Collection, type UserStats, type ApiKey } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { collectionAnchor, currentView } from '../lib/stores';
@@ -1224,6 +1225,29 @@
         {/if}
       </div>
     </div>
+
+    {#if $currentUser?.is_admin}
+      <!-- Admin -->
+      <div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
+        <div class="text-xs uppercase text-slate-500">Administration</div>
+        <div class="mt-3 space-y-3">
+          <button
+            class="al-icon-wrapper flex w-full items-center gap-4 rounded-xl border border-dashed border-slate-200 p-3 text-left transition-all hover:border-slate-300 hover:bg-slate-50/50 dark:border-white/10 dark:hover:bg-white/5"
+            onclick={() => currentView.set({ type: 'user_management' })}
+            type="button"
+          >
+            <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+              <Users label="" size={20} />
+            </div>
+            <div class="flex-1">
+              <div class="font-medium text-slate-900 dark:text-slate-100">User Management</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400">Manage users, create accounts, assign admin roles</div>
+            </div>
+            <ChevronRight label="" size={20} className="text-slate-400" />
+          </button>
+        </div>
+      </div>
+    {/if}
 
     <!-- Data & Migration -->
     <div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
