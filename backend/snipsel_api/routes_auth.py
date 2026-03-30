@@ -41,6 +41,7 @@ from snipsel_api.models import (
     PasswordResetToken,
     Snipsel,
     User,
+    UserOidcLink,
     UserPasskey,
 )
 
@@ -805,3 +806,270 @@ def _user_json(user: User) -> dict:
         "dark_background_color": user.dark_background_color,
         "created_at": user.created_at.isoformat() + "Z",
     }
+
+
+_oidc_metadata = None
+
+
+def _get_oidc_metadata():
+    global _oidc_metadata
+    if _oidc_metadata is not None:
+        return _oidc_metadata
+
+    settings = Settings.from_env()
+    if not settings.oidc_enabled or not settings.oidc_discovery_url:
+        return None
+
+    import requests
+
+    try:
+        resp = requests.get(settings.oidc_discovery_url, timeout=30)
+        resp.raise_for_status()
+        _oidc_metadata = resp.json()
+        return _oidc_metadata
+    except Exception as e:
+        import logging
+
+        logging.getLogger("snipsel_api.oidc").error(
+            f"Failed to fetch OIDC metadata: {e}"
+        )
+        return None
+
+
+@auth_bp.get("/oidc/config")
+def oidc_config():
+    settings = Settings.from_env()
+    return json_response(
+        {
+            "enabled": settings.oidc_enabled,
+            "provider_name": settings.oidc_provider_name
+            if settings.oidc_enabled
+            else None,
+        }
+    )
+
+
+@auth_bp.get("/oidc/login")
+def oidc_login():
+    settings = Settings.from_env()
+    if not settings.oidc_enabled:
+        raise api_error(400, "oidc_disabled", "OIDC authentication is not enabled")
+
+    metadata = _get_oidc_metadata()
+    if not metadata:
+        raise api_error(500, "oidc_not_configured", "OIDC metadata not available")
+
+    authorization_endpoint = metadata.get("authorization_endpoint")
+    if not authorization_endpoint:
+        raise api_error(
+            500, "oidc_misconfigured", "OIDC provider has no authorization_endpoint"
+        )
+
+    redirect_uri = request.args.get(
+        "redirect_uri", f"{settings.snipsel_frontend_url or ''}/api/auth/oidc/callback"
+    )
+    session["oidc_redirect_uri"] = redirect_uri
+    session["oidc_state"] = secrets.token_urlsafe(32)
+    session["oidc_nonce"] = secrets.token_urlsafe(32)
+
+    from authlib.oauth2.rfc7636 import create_s256_code_challenge
+
+    code_verifier = secrets.token_urlsafe(64)
+    session["oidc_code_verifier"] = code_verifier
+    code_challenge = create_s256_code_challenge(code_verifier)
+
+    params = {
+        "response_type": "code",
+        "client_id": settings.oidc_client_id,
+        "redirect_uri": redirect_uri,
+        "scope": settings.oidc_scope,
+        "state": session["oidc_state"],
+        "nonce": session["oidc_nonce"],
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+    }
+
+    import urllib.parse
+
+    auth_url = f"{authorization_endpoint}?{urllib.parse.urlencode(params)}"
+    return json_response({"auth_url": auth_url})
+
+
+@auth_bp.get("/oidc/callback")
+def oidc_callback():
+    settings = Settings.from_env()
+    if not settings.oidc_enabled:
+        raise api_error(400, "oidc_disabled", "OIDC authentication is not enabled")
+
+    metadata = _get_oidc_metadata()
+    if not metadata:
+        raise api_error(500, "oidc_not_configured", "OIDC metadata not available")
+
+    token_endpoint = metadata.get("token_endpoint")
+    userinfo_endpoint = metadata.get("userinfo_endpoint")
+    if not token_endpoint or not userinfo_endpoint:
+        raise api_error(
+            500, "oidc_misconfigured", "OIDC provider missing required endpoints"
+        )
+
+    state = request.args.get("state")
+    if not state or state != session.get("oidc_state"):
+        raise api_error(400, "invalid_state", "Invalid OIDC state parameter")
+
+    code = request.args.get("code")
+    if not code:
+        error = request.args.get("error", "unknown_error")
+        error_description = request.args.get(
+            "error_description", "No error description"
+        )
+        raise api_error(400, f"oidc_{error}", error_description)
+
+    code_verifier = session.get("oidc_code_verifier")
+    redirect_uri = session.get(
+        "oidc_redirect_uri",
+        f"{settings.snipsel_frontend_url or ''}/api/auth/oidc/callback",
+    )
+
+    import requests
+    from authlib.jose import jwt
+
+    token_data = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": redirect_uri,
+        "client_id": settings.oidc_client_id,
+        "client_secret": settings.oidc_client_secret,
+        "code_verifier": code_verifier,
+    }
+
+    token_response = requests.post(token_endpoint, data=token_data, timeout=30)
+    if not token_response.ok:
+        raise api_error(
+            400, "oidc_token_error", f"Token exchange failed: {token_response.text}"
+        )
+
+    tokens = token_response.json()
+    access_token = tokens.get("access_token")
+    id_token = tokens.get("id_token")
+
+    if id_token:
+        try:
+            claims = jwt.decode(
+                id_token, key="", claims_options={"verify_signature": False}
+            )
+            userinfo = claims
+        except Exception:
+            userinfo = None
+    else:
+        userinfo = None
+
+    if not userinfo and access_token:
+        try:
+            userinfo_response = requests.get(
+                userinfo_endpoint,
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=30,
+            )
+            if userinfo_response.ok:
+                userinfo = userinfo_response.json()
+        except Exception:
+            userinfo = None
+
+    if not userinfo or not userinfo.get("sub"):
+        raise api_error(
+            400,
+            "oidc_no_userinfo",
+            "Could not retrieve user information from OIDC provider",
+        )
+
+    subject = userinfo.get("sub")
+    email = userinfo.get("email") or userinfo.get("email_address")
+    name = userinfo.get("name") or userinfo.get("preferred_username") or email
+
+    if not email:
+        raise api_error(
+            400, "oidc_no_email", "OIDC provider did not provide an email address"
+        )
+
+    oidc_link = (
+        db.session.execute(
+            db.select(UserOidcLink).where(
+                UserOidcLink.provider == "oidc",
+                UserOidcLink.subject == subject,
+            )
+        )
+        .scalars()
+        .first()
+    )
+
+    if oidc_link:
+        user = db.session.get(User, oidc_link.user_id)
+        if not user or not user.is_active or user.deleted_at is not None:
+            raise api_error(401, "account_disabled", "User account is disabled")
+    else:
+        if not settings.registration_enabled:
+            raise api_error(
+                403,
+                "registration_disabled",
+                "Registration is disabled. Contact an administrator.",
+            )
+
+        existing_user = (
+            db.session.execute(db.select(User).where(User.email == email))
+            .scalars()
+            .first()
+        )
+
+        if existing_user:
+            user = existing_user
+        else:
+            username = (
+                name.replace(" ", "_").lower()[:32]
+                if name
+                else email.split("@")[0][:32]
+            )
+            base_username = username
+            counter = 1
+            while (
+                db.session.execute(db.select(User).where(User.username == username))
+                .scalars()
+                .first()
+            ):
+                suffix = str(counter)
+                username = f"{base_username[: 32 - len(suffix) - 1]}_{suffix}"
+                counter += 1
+
+            user = User(
+                username=username,
+                email=email,
+                password_hash="oidc_auth",
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        oidc_link = UserOidcLink(
+            user_id=user.id,
+            provider="oidc",
+            subject=subject,
+            email=email,
+            name=name,
+        )
+        db.session.add(oidc_link)
+        db.session.commit()
+
+    session.permanent = True
+    session["user_id"] = user.id
+
+    frontend_url = settings.snipsel_frontend_url or "/"
+    return f"""
+    <html>
+        <body>
+            <script>
+                window.opener.postMessage({{type: 'oidc-login-success'}}, '*');
+                window.close();
+            </script>
+            <p>Login successful. You can close this window.</p>
+            <script>setTimeout(() => window.location.href = '{frontend_url}', 1000);</script>
+        </body>
+    </html>
+    """
