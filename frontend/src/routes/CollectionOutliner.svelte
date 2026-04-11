@@ -144,12 +144,21 @@
 
   $effect(() => {
     const handler = (e: any) => {
-      // Refresh current collection view if it was reconciled in background
-      if (
-        (e.detail?.type === 'snipsels' && e.detail?.collectionId === $currentCollection?.id) ||
-        (e.detail?.type === 'collection' && e.detail?.id === $currentCollection?.id)
-      ) {
-        loadItems();
+      // Surgically update the store instead of a full reload to prevent UI flickering and state loss
+      if (e.detail?.type === 'snipsels' && e.detail?.collectionId === $currentCollection?.id) {
+        const oldId = e.detail.oldId;
+        const newItem = e.detail.item;
+        if (oldId && newItem) {
+          collectionItems.update((items) =>
+            items.map((i) => (i.snipsel_id === oldId ? newItem : i))
+          );
+        }
+      } else if (e.detail?.type === 'collection' && e.detail?.id === $currentCollection?.id) {
+        const oldId = e.detail.oldId;
+        const newItem = e.detail.item;
+        if (oldId && newItem) {
+          currentCollection.set(newItem);
+        }
       }
     };
     window.addEventListener('snipsel-data-refreshed', handler);
@@ -1292,9 +1301,18 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         geo = null;
       }
 
+      // Calculate the next position to avoid races in the API layer during rapid creation
+      const sorted = $sortedItems;
+      const currentIndex = sorted.findIndex(i => i.position === position);
+      let nextPos = position + 100;
+      if (currentIndex !== -1 && currentIndex < sorted.length - 1) {
+        nextPos = (sorted[currentIndex].position + sorted[currentIndex + 1].position) / 2;
+      }
+
       const res = await api.snipsels.create($currentCollection.id, {
         type: type || $currentCollection.default_snipsel_type || 'text',
         indent: indent,
+        position: nextPos,
         ...(geo ?? {}),
       });
 
