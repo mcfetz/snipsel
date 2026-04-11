@@ -21,7 +21,7 @@
 
 import { get } from 'svelte/store';
 import { currentView, collections, collectionItems, currentCollection, notificationsStore } from './stores';
-import { idbSaveCollections, idbSaveCollectionItems, idbSaveCollection } from './db';
+import { idbSaveCollections, idbSaveCollectionItems, idbSaveCollection, idbGetSyncQueue } from './db';
 import { requestJson, CLIENT_ID } from './api';
 import type { Collection, CollectionItem } from './api';
 
@@ -224,6 +224,9 @@ async function _refreshSnipsels(collectionId: string): Promise<void> {
     if (!isVisible) return; // don't load data we're not showing
 
     try {
+        const syncQueue = await idbGetSyncQueue();
+        if (syncQueue.length > 0) return; // Do not fetch from server and wipe local optimistic updates if local mutations are in flight
+
         const res = await requestJson<{ items: CollectionItem[] }>(
             `/api/collections/${collectionId}/snipsels`,
             { timeout: 10000, cache: 'no-store' }

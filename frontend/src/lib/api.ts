@@ -301,7 +301,8 @@ import {
   idbGetCollectionItems,
   idbDeleteCollectionItem,
   idbSaveCollectionItem,
-  idbUpdateSnipselData
+  idbUpdateSnipselData,
+  idbGetSyncQueue
 } from './db';
 
 /** Monotonically increasing counter. Incremented on every local mutation.
@@ -689,9 +690,13 @@ export const api = {
         const seqBefore = mutationSeq;
         try {
           if (!navigator.onLine) return;
+          
+          const syncQueue = await idbGetSyncQueue();
+          if (syncQueue.length > 0) return; // Do not pull stale server state while local mutations are still flushing
+
           const res = await requestJson<{ items: CollectionItem[] }>(
             `/api/collections/${collectionId}/snipsels`,
-            { timeout: 10000 }
+            { timeout: 10000, cache: 'no-store' }
           );
           if (mutationSeq !== seqBefore) return; // Discard stale response
           await idbReplaceCollectionItems(collectionId, res.items);
