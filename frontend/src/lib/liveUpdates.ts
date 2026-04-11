@@ -178,7 +178,7 @@ async function _handleEvent(event: {
 async function _refreshNotifications(): Promise<void> {
     if (!navigator.onLine) return;
     try {
-        const res = await requestJson<{ notifications: any[] }>('/api/notifications', { timeout: 10000 });
+        const res = await requestJson<{ notifications: any[] }>('/api/notifications', { timeout: 10000, cache: 'no-store' });
         notificationsStore.set(res.notifications);
     } catch { /* silently ignore */ }
 }
@@ -186,7 +186,7 @@ async function _refreshNotifications(): Promise<void> {
 async function _refreshCollectionList(): Promise<void> {
     if (!navigator.onLine) return;
     try {
-        const res = await requestJson<{ collections: Collection[] }>('/api/collections', { timeout: 10000 });
+        const res = await requestJson<{ collections: Collection[] }>('/api/collections', { timeout: 10000, cache: 'no-store' });
         await idbSaveCollections(res.collections);
         collections.set(res.collections);
     } catch { /* silently ignore */ }
@@ -200,7 +200,7 @@ async function _refreshCollection(id: string): Promise<void> {
         (view.type === 'collection_settings' && view.id === id);
 
     try {
-        const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`, { timeout: 10000 });
+        const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`, { timeout: 10000, cache: 'no-store' });
         await idbSaveCollection(res.collection);
 
         // Always update the sidebar list entry
@@ -226,7 +226,7 @@ async function _refreshSnipsels(collectionId: string): Promise<void> {
     try {
         const res = await requestJson<{ items: CollectionItem[] }>(
             `/api/collections/${collectionId}/snipsels`,
-            { timeout: 10000 }
+            { timeout: 10000, cache: 'no-store' }
         );
         await idbSaveCollectionItems(res.items);
         collectionItems.set(res.items);
