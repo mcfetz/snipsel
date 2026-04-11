@@ -213,6 +213,16 @@ export type SearchResponse = {
 
 export type TagCount = { name: string; count: number };
 
+/** Stable per-tab identifier sent with every API request so the backend can
+ *  embed it as `origin_client_id` in SSE events. The originating tab then
+ *  ignores those events since it already applied the optimistic update. */
+export const CLIENT_ID: string = (() => {
+  const KEY = '_snipsel_client_id';
+  let id = sessionStorage.getItem(KEY);
+  if (!id) { id = crypto.randomUUID(); sessionStorage.setItem(KEY, id); }
+  return id;
+})();
+
 export async function requestJson<T>(path: string, init?: RequestInit & { timeout?: number }): Promise<T> {
   const { timeout = 10000, ...fetchInit } = init || {};
   const controller = new AbortController();
@@ -224,6 +234,7 @@ export async function requestJson<T>(path: string, init?: RequestInit & { timeou
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'X-Client-Id': CLIENT_ID,
         ...(fetchInit?.headers ?? {}),
       },
       ...fetchInit,

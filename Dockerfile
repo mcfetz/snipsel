@@ -44,14 +44,22 @@ RUN mkdir -p /app/data /app/uploads && \
 EXPOSE 5000
 
 # Create an entrypoint script
-RUN echo '#!/bin/sh\n\
-set -e\n\
-echo "Running database migrations..."\n\
-cd /app/backend\n\
-flask db upgrade\n\
-echo "Starting backend..."\n\
-cd /app\n\
-exec gunicorn -w 4 -b 0.0.0.0:5000 "snipsel_api.app:create_app()"\n\
-' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# NOTE: -w 1 is intentional.
+# The SSE real-time update system uses an in-process pub/sub bus (sse_bus.py)
+# that lives in process memory. Multiple Gunicorn workers would each have their
+# own isolated bus, so clients on different workers would never receive each
+# other's events. We compensate with --threads 4 so concurrent HTTP requests
+# are still handled efficiently within the single worker process.
+COPY <<'EOF' /app/entrypoint.sh
+#!/bin/sh
+set -e
+echo "Running database migrations..."
+cd /app/backend
+flask db upgrade
+echo "Starting backend..."
+cd /app
+exec gunicorn -w 1 --threads 4 -b 0.0.0.0:5000 "snipsel_api.app:create_app()"
+EOF
+RUN chmod +x /app/entrypoint.sh
 
 CMD ["/app/entrypoint.sh"]

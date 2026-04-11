@@ -26,6 +26,7 @@ from snipsel_api.routes_ai import ai_bp
 from snipsel_api.routes_geo import geo_bp
 from snipsel_api.routes_api_keys import api_keys_bp
 from snipsel_api.routes_admin import admin_bp
+from snipsel_api.routes_sse import sse_bp
 
 
 def create_app() -> Flask:
@@ -85,6 +86,7 @@ def create_app() -> Flask:
     app.register_blueprint(geo_bp, url_prefix="/api/geo")
     app.register_blueprint(api_keys_bp, url_prefix="/api")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(sse_bp, url_prefix="/api/sse")
     app.register_blueprint(errors_bp)
 
     from snipsel_api import models

@@ -38,6 +38,7 @@ from snipsel_api.models import (
     User,
     Notification,
 )
+from snipsel_api import sse_bus
 
 
 def _touch_collections_for_snipsel(*, snipsel_id: str, modified_by_id: str) -> None:
@@ -105,6 +106,25 @@ from snipsel_api.utils_text import (
 )
 
 snipsels_bp = Blueprint("snipsels", __name__)
+
+
+def _snipsel_collection_user_ids(collection_id: str) -> list[str]:
+    """Return IDs of all users who have access to *collection_id* (owner + shares)."""
+    col = db.session.get(Collection, collection_id)
+    if not col:
+        return []
+    ids = [col.owner_user_id]
+    share_ids = (
+        db.session.execute(
+            db.select(CollectionShare.shared_with_user_id).where(
+                CollectionShare.collection_id == collection_id
+            )
+        )
+        .scalars()
+        .all()
+    )
+    ids.extend(share_ids)
+    return ids
 
 
 @snipsels_bp.get("/collections/<collection_id>/snipsels")
@@ -244,7 +264,12 @@ def create_snipsel(collection_id: str):
     _sync_tags_mentions(user_id=user.id, snipsel=s)
     _sync_backlinks(user_id=user.id, snipsel=s)
     db.session.commit()
-
+    # Notify all users with access to this collection
+    sse_bus.publish(
+        _snipsel_collection_user_ids(collection_id),
+        {"type": "snipsels_updated", "collection_id": collection_id, "ids": [s.id]},
+        origin_client_id=request.headers.get("X-Client-Id"),
+    )
     return json_response({"item": _collection_item_json(cs, user.id)}, status=201)
 
 
@@ -642,6 +667,22 @@ def update_snipsel(snipsel_id: str):
         )
     _touch_collections_for_snipsel(snipsel_id=snipsel_id, modified_by_id=user.id)
     db.session.commit()
+    # Notify all collection members about the updated snipsel
+    affected_collection_ids = (
+        db.session.execute(
+            db.select(CollectionSnipsel.collection_id).where(
+                CollectionSnipsel.snipsel_id == snipsel_id
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for cid in affected_collection_ids:
+        sse_bus.publish(
+            _snipsel_collection_user_ids(cid),
+            {"type": "snipsels_updated", "collection_id": cid, "ids": [snipsel_id]},
+            origin_client_id=request.headers.get("X-Client-Id"),
+        )
     return json_response({"snipsel": _snipsel_json(s, user.id)})
 
 
@@ -696,6 +737,12 @@ def delete_from_collection(collection_id: str, snipsel_id: str):
         .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
     )
     db.session.commit()
+    # Notify: snipsel removed from collection
+    sse_bus.publish(
+        _snipsel_collection_user_ids(collection_id),
+        {"type": "snipsels_updated", "collection_id": collection_id, "ids": [snipsel_id]},
+        origin_client_id=request.headers.get("X-Client-Id"),
+    )
     return json_response({"ok": True})
 
 
@@ -752,6 +799,12 @@ def reorder_collection(collection_id: str):
         .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
     )
     db.session.commit()
+    # Notify: order changed in collection
+    sse_bus.publish(
+        _snipsel_collection_user_ids(collection_id),
+        {"type": "snipsels_updated", "collection_id": collection_id, "ids": []},
+        origin_client_id=request.headers.get("X-Client-Id"),
+    )
     return json_response({"ok": True})
 
 

@@ -11,6 +11,7 @@
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
+  import { initLiveUpdates, destroyLiveUpdates } from './lib/liveUpdates';
 import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest, newSnipselInCurrentCollectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
@@ -206,6 +207,7 @@ import UserManagement from './routes/UserManagement.svelte';
   }
 
   async function logout() {
+    destroyLiveUpdates();
     await api.logout();
     currentUser.set(null);
     currentView.set({ type: 'loading' });
@@ -383,6 +385,8 @@ import UserManagement from './routes/UserManagement.svelte';
       didInitRoute = false;
       hasSyncedUrl = false;
       lastUserId = uid;
+      // Start real-time updates for newly logged-in user
+      initLiveUpdates();
       return;
     }
 
@@ -390,6 +394,7 @@ import UserManagement from './routes/UserManagement.svelte';
       didInitRoute = false;
       hasSyncedUrl = false;
       lastUserId = null;
+      destroyLiveUpdates();
     }
   });
 

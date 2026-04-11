@@ -41,8 +41,25 @@ from snipsel_api.routes_attachments import (
     _resolve_thumbnail_path,
 )
 from snipsel_api.routes_snipsels import _sync_backlinks, _sync_tags_mentions
+from snipsel_api import sse_bus
 
 collections_bp = Blueprint("collections", __name__)
+
+
+def _collection_user_ids(collection: Collection) -> list[str]:
+    """Return IDs of all users who have access to *collection* (owner + shares)."""
+    ids = [collection.owner_user_id]
+    share_user_ids = (
+        db.session.execute(
+            db.select(CollectionShare.shared_with_user_id).where(
+                CollectionShare.collection_id == collection.id
+            )
+        )
+        .scalars()
+        .all()
+    )
+    ids.extend(share_user_ids)
+    return ids
 
 
 def _get_share_permission(user_id: str, collection_id: str) -> str | None:
@@ -738,6 +755,9 @@ def create_collection():
     j = _collection_json(c)
     j["is_favorite"] = False
     j["access_level"] = "owner"
+    # Notify all clients of the owner that the collection list changed
+    sse_bus.publish([user.id], {"type": "collection_list_changed"},
+                   origin_client_id=request.headers.get("X-Client-Id"))
     return json_response({"collection": j}, status=201)
 
 
@@ -868,6 +888,9 @@ def update_collection(collection_id: str):
         is not None
     )
     j["access_level"] = "owner"
+    # Notify all users with access that this collection changed
+    sse_bus.publish(_collection_user_ids(c), {"type": "collection_updated", "ids": [c.id]},
+                   origin_client_id=request.headers.get("X-Client-Id"))
     return json_response({"collection": j})
 
 
@@ -949,6 +972,9 @@ def delete_collection(collection_id: str):
             c.list_for_day = None
 
     db.session.commit()
+    # Notify all users with access that the collection list changed (it's gone)
+    sse_bus.publish(_collection_user_ids(c), {"type": "collection_list_changed"},
+                   origin_client_id=request.headers.get("X-Client-Id"))
     return json_response({"ok": True})
 
 
