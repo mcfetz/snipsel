@@ -142,15 +142,24 @@ export async function idbRemoveSync(id: string) {
     await db.delete('syncQueue', id);
 }
 
-export async function idbReplaceTempCollection(tempId: string, realCollection: Collection) {
+export async function idbReplaceTempCollection(tempId: string, realCollection: Collection): Promise<Collection> {
     const db = await getDB();
     const tx = db.transaction('collections', 'readwrite');
+    const existing = await tx.store.get(tempId);
     await tx.store.delete(tempId);
-    await tx.store.put(realCollection);
+    
+    const finalCollection = existing ? {
+        ...existing,
+        id: realCollection.id,
+        created_at: realCollection.created_at || existing.created_at
+    } : realCollection;
+    
+    await tx.store.put(finalCollection);
     await tx.done;
+    return finalCollection;
 }
 
-export async function idbReplaceTempCollectionItem(tempSnipselId: string, realItem: CollectionItem) {
+export async function idbReplaceTempCollectionItem(tempSnipselId: string, realItem: CollectionItem): Promise<CollectionItem> {
     const db = await getDB();
     const tx = db.transaction('collectionItems', 'readwrite');
     
@@ -159,10 +168,28 @@ export async function idbReplaceTempCollectionItem(tempSnipselId: string, realIt
     const all = await tx.store.getAll();
     const matches = all.filter(i => i.snipsel_id === tempSnipselId);
     
+    let finalItem = realItem;
+
     for (const m of matches) {
         await tx.store.delete([m.collection_id, m.snipsel_id]);
+        finalItem = {
+            ...m,
+            snipsel_id: realItem.snipsel_id,
+            snipsel: {
+                ...m.snipsel,
+                id: realItem.snipsel_id,
+                created_by_id: realItem.snipsel.created_by_id, // ensure user ownership is updated
+                created_at: realItem.snipsel.created_at || m.snipsel.created_at
+            }
+        };
+        await tx.store.put(finalItem);
     }
     
-    await tx.store.put(realItem);
+    // If no matches found, we just append the realItem
+    if (matches.length === 0) {
+        await tx.store.put(realItem);
+    }
+
     await tx.done;
+    return finalItem;
 }

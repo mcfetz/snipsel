@@ -37,9 +37,16 @@ export async function processSyncQueue() {
                     if (op.body && (op.body as any)._tempId) {
                         const tempId = (op.body as any)._tempId;
                         idMap[tempId] = res.collection.id;
-                        await idbReplaceTempCollection(tempId, res.collection);
+                        const mergedCol = await idbReplaceTempCollection(tempId, res.collection);
                         if (typeof window !== 'undefined') {
-                            window.dispatchEvent(new CustomEvent('snipsel-data-refreshed', { detail: { type: 'collection', id: res.collection.id } }));
+                            window.dispatchEvent(new CustomEvent('snipsel-data-refreshed', { 
+                                detail: { 
+                                    type: 'collection', 
+                                    id: mergedCol.id,
+                                    item: mergedCol,
+                                    oldId: tempId
+                                } 
+                            }));
                         }
                     }
                 }
@@ -49,9 +56,16 @@ export async function processSyncQueue() {
                     if (op.body && (op.body as any)._tempId) {
                         const tempId = (op.body as any)._tempId;
                         idMap[tempId] = res.item.snipsel_id;
-                        await idbReplaceTempCollectionItem(tempId, res.item);
+                        const mergedItem = await idbReplaceTempCollectionItem(tempId, res.item);
                         if (typeof window !== 'undefined') {
-                            window.dispatchEvent(new CustomEvent('snipsel-data-refreshed', { detail: { type: 'snipsels', collectionId: res.item.collection_id } }));
+                            window.dispatchEvent(new CustomEvent('snipsel-data-refreshed', { 
+                                detail: { 
+                                    type: 'snipsels', 
+                                    collectionId: mergedItem.collection_id,
+                                    item: mergedItem,
+                                    oldId: tempId
+                                } 
+                            }));
                         }
                     }
                 }
