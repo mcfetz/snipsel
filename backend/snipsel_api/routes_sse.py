@@ -23,6 +23,7 @@ from flask import Blueprint, Response, request, stream_with_context
 
 from snipsel_api.auth_session import current_user, require_auth
 from snipsel_api import sse_bus
+from snipsel_api.extensions import db
 
 sse_bp = Blueprint("sse", __name__)
 
@@ -35,6 +36,12 @@ def sse_events():
     # The client supplies its own stable random ID so the server can embed it
     # in events. The client then ignores events it originated itself.
     client_id = request.args.get("client_id") or str(uuid.uuid4())
+
+    # CRITICAL: Release the checkout of the database connection back to the SQLAlchemy pool
+    # before we block indefinitely in the streaming generator.
+    # Otherwise, every open SSE tab holds a DB connection forever, causing a timeout 
+    # once ~15 tabs are open (default SQLAlchemy QueuePool size).
+    db.session.remove()
 
     return Response(
         stream_with_context(sse_bus.event_stream(user_id, client_id)),
