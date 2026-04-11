@@ -663,48 +663,38 @@ export const api = {
   },
 
   snipsels: {
-    list: (() => {
-      const listCache: Record<string, Promise<{ items: CollectionItem[] }> | undefined> = {};
-      return async (collectionId: string) => {
-        if (listCache[collectionId]) return listCache[collectionId];
-        const promise = (async () => {
-          const local = await idbGetCollectionItems(collectionId);
+    list: async (collectionId: string) => {
+      const local = await idbGetCollectionItems(collectionId);
 
-          const refresh = async () => {
-            try {
-              if (!navigator.onLine) return;
-              const res = await requestJson<{ items: CollectionItem[] }>(
-                `/api/collections/${collectionId}/snipsels`,
-                { timeout: 10000 }
-              );
-              await idbSaveCollectionItems(res.items);
-            } catch {}
-          };
-
-          if (local.length > 0) {
-            refresh(); // Background
-            return { items: local };
-          }
-
-          try {
-            if (!navigator.onLine) throw new Error('offline');
-            const res = await requestJson<{ items: CollectionItem[] }>(
-              `/api/collections/${collectionId}/snipsels`,
-              { timeout: 10000 }
-            );
-            await idbSaveCollectionItems(res.items);
-            return res;
-          } catch (err: any) {
-            if (err?.error?.code === 'passcode_required' || (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error')) throw err;
-            return { items: local };
-          } finally {
-            delete listCache[collectionId];
-          }
-        })();
-        listCache[collectionId] = promise;
-        return promise;
+      const refresh = async () => {
+        try {
+          if (!navigator.onLine) return;
+          const res = await requestJson<{ items: CollectionItem[] }>(
+            `/api/collections/${collectionId}/snipsels`,
+            { timeout: 10000 }
+          );
+          await idbSaveCollectionItems(res.items);
+        } catch {}
       };
-    })(),
+
+      if (local.length > 0) {
+        refresh(); // Background
+        return { items: local };
+      }
+
+      try {
+        if (!navigator.onLine) throw new Error('offline');
+        const res = await requestJson<{ items: CollectionItem[] }>(
+          `/api/collections/${collectionId}/snipsels`,
+          { timeout: 10000 }
+        );
+        await idbSaveCollectionItems(res.items);
+        return res;
+      } catch (err: any) {
+        if (err?.error?.code === 'passcode_required' || (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error')) throw err;
+        return { items: local };
+      }
+    },
     get: (snipselId: string) =>
       // We don't cache individual snipsels yet, but usually `list` caches them inside `CollectionItem`.
       // For now, `get` can just fail if offline, as it's rarely used directly offline.
