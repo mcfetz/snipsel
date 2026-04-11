@@ -174,6 +174,18 @@
     return () => window.removeEventListener('snipsel-data-refreshed', handler);
   });
 
+  // Update the store when a background refresh brings fresh server data
+  $effect(() => {
+    const handler = (e: any) => {
+      if (e.detail?.collectionId !== $currentCollection?.id) return;
+      // Don't disrupt the user while they are editing
+      if ($editingSnipselId) return;
+      collectionItems.set(e.detail.items);
+    };
+    window.addEventListener('snipsel-items-refreshed', handler);
+    return () => window.removeEventListener('snipsel-items-refreshed', handler);
+  });
+
   let showTypeMenu = $state(false);
   let showScrollTop = $state(false);
   let showDeleteModal = $state(false);

@@ -297,6 +297,7 @@ import {
   idbDeleteCollection,
   idbEnqueueSync,
   idbSaveCollectionItems,
+  idbReplaceCollectionItems,
   idbGetCollectionItems,
   idbDeleteCollectionItem,
   idbSaveCollectionItem,
@@ -693,7 +694,13 @@ export const api = {
             { timeout: 10000 }
           );
           if (mutationSeq !== seqBefore) return; // Discard stale response
-          await idbSaveCollectionItems(res.items);
+          await idbReplaceCollectionItems(collectionId, res.items);
+          // Notify UI to update store with fresh server data
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('snipsel-items-refreshed', {
+              detail: { collectionId, items: res.items }
+            }));
+          }
         } catch {}
       };
 

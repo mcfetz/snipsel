@@ -85,6 +85,21 @@ export async function idbSaveCollectionItems(items: CollectionItem[]) {
     await tx.done;
 }
 
+/** Atomically replace ALL items for a collection in IDB.
+ *  Deletes items no longer on the server and adds/updates the rest. */
+export async function idbReplaceCollectionItems(collectionId: string, items: CollectionItem[]) {
+    const db = await getDB();
+    const tx = db.transaction('collectionItems', 'readwrite');
+    const existing = await tx.store.index('by-collection').getAll(collectionId);
+    for (const old of existing) {
+        await tx.store.delete([old.collection_id, old.snipsel_id]);
+    }
+    for (const item of items) {
+        await tx.store.put(item);
+    }
+    await tx.done;
+}
+
 export async function idbSaveCollectionItem(item: CollectionItem) {
     const db = await getDB();
     await db.put('collectionItems', item);
