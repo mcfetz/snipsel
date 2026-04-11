@@ -48,8 +48,8 @@ EXPOSE 5000
 # The SSE real-time update system uses an in-process pub/sub bus (sse_bus.py)
 # that lives in process memory. Multiple Gunicorn workers would each have their
 # own isolated bus, so clients on different workers would never receive each
-# other's events. We compensate with --threads 4 so concurrent HTTP requests
-# are still handled efficiently within the single worker process.
+# other's events. We compensate with --threads 128 so concurrent HTTP requests
+# (especially long-lived SSE connections) don't starve the single worker process.
 COPY <<'EOF' /app/entrypoint.sh
 #!/bin/sh
 set -e
@@ -58,7 +58,7 @@ cd /app/backend
 flask db upgrade
 echo "Starting backend..."
 cd /app
-exec gunicorn -w 1 --threads 4 -b 0.0.0.0:5000 "snipsel_api.app:create_app()"
+exec gunicorn -w 1 --threads 128 -b 0.0.0.0:5000 "snipsel_api.app:create_app()"
 EOF
 RUN chmod +x /app/entrypoint.sh
 

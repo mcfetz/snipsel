@@ -131,6 +131,18 @@ function _scheduleReconnect(): void {
 // ---------------------------------------------------------------------------
 // Event handling
 // ---------------------------------------------------------------------------
+
+const _debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+function _debounce(key: string, fn: () => void, delayMs = 300) {
+    if (_debounceTimers.has(key)) {
+        clearTimeout(_debounceTimers.get(key)!);
+    }
+    _debounceTimers.set(key, setTimeout(() => {
+        _debounceTimers.delete(key);
+        fn();
+    }, delayMs));
+}
+
 async function _handleEvent(event: {
     type: string;
     ids?: string[];
@@ -144,18 +156,19 @@ async function _handleEvent(event: {
 
     try {
         if (event.type === 'notification_created') {
-            await _refreshNotifications();
+            _debounce('notifications', () => { void _refreshNotifications(); });
 
         } else if (event.type === 'collection_list_changed') {
-            await _refreshCollectionList();
+            _debounce('collection_list', () => { void _refreshCollectionList(); });
 
         } else if (event.type === 'collection_updated' && event.ids?.length) {
             for (const id of event.ids) {
-                await _refreshCollection(id);
+                _debounce(`collection_${id}`, () => { void _refreshCollection(id); });
             }
 
         } else if (event.type === 'snipsels_updated' && event.collection_id) {
-            await _refreshSnipsels(event.collection_id);
+            const cid = event.collection_id;
+            _debounce(`snipsels_${cid}`, () => { void _refreshSnipsels(cid); });
         }
     } catch {
         // Never let a refresh error bubble up and crash the event listener
