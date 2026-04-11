@@ -981,16 +981,37 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
       await api.snipsels.update(snipselId, { content_markdown: isEmpty ? null : editContent });
 
+      // Surgically update the store instead of calling loadItems().
+      // loadItems() would fire a background GET that races with our PATCH,
+      // potentially overwriting IDB with stale (empty) server data.
+      const contentToStore = isEmpty ? null : editContent;
+      
       if (currentItem && currentItem.indent !== editIndent) {
-        const items = $sortedItems.map((i, idx) => ({
+        // Indent changed → reorder and update indent + content in store
+        const reorderItems = $sortedItems.map((i, idx) => ({
           snipsel_id: i.snipsel_id,
           position: idx + 1,
           indent: i.snipsel_id === snipselId ? editIndent : i.indent,
         }));
-        await api.snipsels.reorder($currentCollection.id, items);
+        await api.snipsels.reorder($currentCollection.id, reorderItems);
+        
+        collectionItems.update((items) =>
+          items.map((i, idx) =>
+            i.snipsel_id === snipselId
+              ? { ...i, position: idx + 1, indent: editIndent, snipsel: { ...i.snipsel, content_markdown: contentToStore } }
+              : { ...i, position: idx + 1 }
+          )
+        );
+      } else {
+        // Only content changed → update just the content in store
+        collectionItems.update((items) =>
+          items.map((i) =>
+            i.snipsel_id === snipselId
+              ? { ...i, snipsel: { ...i.snipsel, content_markdown: contentToStore } }
+              : i
+          )
+        );
       }
-
-      await loadItems();
       
       // Set success indicator
       saveStatuses[snipselId] = 'success';
