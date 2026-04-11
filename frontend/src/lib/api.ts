@@ -303,6 +303,11 @@ import {
   idbUpdateSnipselData
 } from './db';
 
+/** Monotonically increasing counter. Incremented on every local mutation.
+ *  Background refresh functions capture this before issuing a GET and discard
+ *  the response if the counter changed, preventing stale overwrites. */
+let mutationSeq = 0;
+
 export const api = {
   getConfig: () => requestJson<{ registration_enabled: boolean; oidc_enabled: boolean; oidc_disable_password_login: boolean }>('/api/auth/config'),
   getOidcConfig: () => requestJson<{ enabled: boolean; provider_name: string | null }>('/api/auth/oidc/config'),
@@ -416,12 +421,14 @@ export const api = {
       const filteredLocal = includeArchived ? local : local.filter(c => !c.archived);
       
       const refresh = async () => {
+        const seqBefore = mutationSeq;
         try {
           if (!navigator.onLine) return;
           const res = await requestJson<{ collections: Collection[] }>(
             `/api/collections${includeArchived ? '?include_archived=1' : ''}`,
             { timeout: 10000 }
           );
+          if (mutationSeq !== seqBefore) return; // Discard stale response
           await idbSaveCollections(res.collections);
         } catch {}
       };
@@ -678,12 +685,14 @@ export const api = {
       const local = await idbGetCollectionItems(collectionId);
 
       const refresh = async () => {
+        const seqBefore = mutationSeq;
         try {
           if (!navigator.onLine) return;
           const res = await requestJson<{ items: CollectionItem[] }>(
             `/api/collections/${collectionId}/snipsels`,
             { timeout: 10000 }
           );
+          if (mutationSeq !== seqBefore) return; // Discard stale response
           await idbSaveCollectionItems(res.items);
         } catch {}
       };
@@ -760,6 +769,7 @@ export const api = {
         snipsel
       };
       await idbSaveCollectionItem(item);
+      mutationSeq++;
       const syncPayload = { ...input, _tempId: tempId, position: finalPosition };
       await idbEnqueueSync('POST', `/api/collections/${collectionId}/snipsels`, syncPayload);
       return { item };
@@ -779,11 +789,13 @@ export const api = {
       }
     ) => {
       await idbUpdateSnipselData(snipselId, input);
+      mutationSeq++;
       await idbEnqueueSync('PATCH', `/api/snipsels/${snipselId}`, input);
       return { snipsel: { id: snipselId, ...input } as unknown as Snipsel };
     },
     delete: async (collectionId: string, snipselId: string) => {
       await idbDeleteCollectionItem(collectionId, snipselId);
+      mutationSeq++;
       await idbEnqueueSync('DELETE', `/api/collections/${collectionId}/snipsels/${snipselId}`);
       return { ok: true as const };
     },
@@ -810,6 +822,7 @@ export const api = {
           await idbSaveCollectionItem(m);
         }
       }
+      mutationSeq++;
       await idbEnqueueSync('PATCH', `/api/collections/${collectionId}/snipsels/reorder`, { items });
       return { ok: true as const };
     },

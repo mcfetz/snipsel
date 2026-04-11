@@ -51,10 +51,6 @@ export async function getDB(): Promise<IDBPDatabase<SnipselDB>> {
 
 // -- Collections --
 export async function idbSaveCollections(collections: Collection[]) {
-    const queue = await idbGetSyncQueue();
-    const hasPendingMutations = queue.some(op => op.endpoint.includes('/api/collections'));
-    if (hasPendingMutations) return;
-
     const db = await getDB();
     const tx = db.transaction('collections', 'readwrite');
     await Promise.all(collections.map((c) => tx.store.put(c)));
@@ -83,19 +79,6 @@ export async function idbDeleteCollection(id: string) {
 
 // -- Collection Items --
 export async function idbSaveCollectionItems(items: CollectionItem[]) {
-    if (items.length === 0) return;
-    const collectionId = items[0].collection_id;
-    
-    // Protection against race conditions: Do not overwrite local IDB state
-    // with server GET responses if we have pending optimistic mutations for this collection.
-    const queue = await idbGetSyncQueue();
-    const hasPendingMutations = queue.some(op => 
-        op.endpoint.includes(`/api/collections/${collectionId}`) || 
-        op.endpoint.includes(`/api/snipsels/`)
-    );
-    
-    if (hasPendingMutations) return;
-
     const db = await getDB();
     const tx = db.transaction('collectionItems', 'readwrite');
     await Promise.all(items.map((item) => tx.store.put(item)));
