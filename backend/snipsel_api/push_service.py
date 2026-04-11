@@ -5,6 +5,7 @@ from sqlalchemy import event
 
 from snipsel_api.extensions import db
 from snipsel_api.models import PushSubscription, Notification
+from snipsel_api import sse_bus
 
 
 def send_push_notification(user_id: str, payload: dict, commit: bool = True):
@@ -80,7 +81,20 @@ def init_push_listeners():
         elif target.collection_id:
             payload["url"] = f"/collections/{target.collection_id}"
 
-        # Trigger the push
+        # Trigger the web push (for offline/closed-tab clients)
         # IMPORTANT: Pass commit=False here because we are inside a session flush/commit cycle.
         # Committing here would cause recursive flushes and potential errors.
         send_push_notification(target.user_id, payload, commit=False)
+
+        # Also notify any open browser tabs via SSE so the badge updates
+        # immediately without waiting for the 60-second polling interval.
+        # sse_bus.publish() is purely in-memory – safe to call inside a
+        # SQLAlchemy event listener.
+        sse_bus.publish(
+            [target.user_id],
+            {
+                "type": "notification_created",
+                "notification_id": target.id,
+                "message": target.message,
+            },
+        )

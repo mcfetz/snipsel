@@ -404,20 +404,16 @@ import UserManagement from './routes/UserManagement.svelte';
     }
   });
 
-  // Notifications Effect
+  // Notifications Effect – initial fetch on login/view-change.
+  // Badge updates in real-time via SSE (notification_created event in liveUpdates.ts).
   $effect(() => {
     if (!initialized || !$currentUser) return;
-    
-    // Only track view type changes
+
+    // Re-fetch when switching views (covers first load and tab revisits)
     const viewType = $currentView.type;
     void viewType;
 
     untrack(() => fetchNotifications());
-
-    const intervalId = setInterval(() => {
-      untrack(() => fetchNotifications());
-    }, 60000);
-    return () => clearInterval(intervalId);
   });
 
   // Theme Effect

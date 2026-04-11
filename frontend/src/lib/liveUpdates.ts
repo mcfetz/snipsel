@@ -20,7 +20,7 @@
  */
 
 import { get } from 'svelte/store';
-import { currentView, collections, collectionItems, currentCollection } from './stores';
+import { currentView, collections, collectionItems, currentCollection, notificationsStore } from './stores';
 import { idbSaveCollections, idbSaveCollectionItems, idbSaveCollection } from './db';
 import { requestJson, CLIENT_ID } from './api';
 import type { Collection, CollectionItem } from './api';
@@ -136,13 +136,17 @@ async function _handleEvent(event: {
     ids?: string[];
     collection_id?: string;
     origin_client_id?: string;
+    notification_id?: string;
 }): Promise<void> {
     // Ignore events that originated from this very tab – the optimistic
     // local update already reflects the change correctly.
     if (event.origin_client_id && event.origin_client_id === CLIENT_ID) return;
 
     try {
-        if (event.type === 'collection_list_changed') {
+        if (event.type === 'notification_created') {
+            await _refreshNotifications();
+
+        } else if (event.type === 'collection_list_changed') {
             await _refreshCollectionList();
 
         } else if (event.type === 'collection_updated' && event.ids?.length) {
@@ -156,6 +160,14 @@ async function _handleEvent(event: {
     } catch {
         // Never let a refresh error bubble up and crash the event listener
     }
+}
+
+async function _refreshNotifications(): Promise<void> {
+    if (!navigator.onLine) return;
+    try {
+        const res = await requestJson<{ notifications: any[] }>('/api/notifications', { timeout: 10000 });
+        notificationsStore.set(res.notifications);
+    } catch { /* silently ignore */ }
 }
 
 async function _refreshCollectionList(): Promise<void> {
