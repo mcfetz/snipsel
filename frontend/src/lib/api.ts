@@ -709,6 +709,7 @@ export const api = {
         geo_lng?: number;
         geo_accuracy_m?: number;
         indent?: number;
+        position?: number;
       }
     ) => {
       const tempId = crypto.randomUUID();
@@ -733,17 +734,22 @@ export const api = {
         mentions: [],
         reactions: []
       };
-      const items = await idbGetCollectionItems(collectionId);
-      const position = items.length > 0 ? items[items.length - 1].position + 100 : 100;
+
+      let finalPosition = input.position;
+      if (typeof finalPosition === 'undefined') {
+        const items = await idbGetCollectionItems(collectionId);
+        finalPosition = items.length > 0 ? items[items.length - 1].position + 100 : 100;
+      }
+
       const item: CollectionItem = {
         collection_id: collectionId,
         snipsel_id: tempId,
-        position,
+        position: finalPosition,
         indent: input.indent || 0,
         snipsel
       };
       await idbSaveCollectionItem(item);
-      const syncPayload = { ...input, _tempId: tempId };
+      const syncPayload = { ...input, _tempId: tempId, position: finalPosition };
       await idbEnqueueSync('POST', `/api/collections/${collectionId}/snipsels`, syncPayload);
       return { item };
     },
