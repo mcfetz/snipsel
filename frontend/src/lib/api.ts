@@ -213,24 +213,39 @@ export type SearchResponse = {
 
 export type TagCount = { name: string; count: number };
 
-export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+export async function requestJson<T>(path: string, init?: RequestInit & { timeout?: number }): Promise<T> {
+  const { timeout = 10000, ...fetchInit } = init || {};
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
   let res: Response;
   try {
     res = await fetch(path, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(init?.headers ?? {}),
+        ...(fetchInit?.headers ?? {}),
       },
-      ...init,
+      ...fetchInit,
+      signal: controller.signal,
     });
-  } catch (err) {
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw {
+        error: {
+          code: 'network_error',
+          message: 'Zeitüberschreitung bei der Verbindung zum Server.',
+        },
+      } as ApiError;
+    }
     throw {
       error: {
         code: 'network_error',
         message: 'Keine Verbindung zum Server möglich.',
       },
     } as ApiError;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (res.status === 413) {
@@ -389,7 +404,8 @@ export const api = {
       try {
         if (!navigator.onLine) throw new Error('offline');
         const res = await requestJson<{ collections: Collection[] }>(
-          `/api/collections${includeArchived ? '?include_archived=1' : ''}`
+          `/api/collections${includeArchived ? '?include_archived=1' : ''}`,
+          { timeout: 5000 }
         );
         await idbSaveCollections(res.collections);
         return res;
@@ -402,7 +418,7 @@ export const api = {
     get: async (id: string) => {
       try {
         if (!navigator.onLine) throw new Error('offline');
-        const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`);
+        const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`, { timeout: 5000 });
         await idbSaveCollection(res.collection);
         return res;
       } catch (err: any) {
@@ -450,35 +466,45 @@ export const api = {
       show_completed_tasks?: boolean;
       mute_notifications?: boolean;
     }) => {
+      const tempId = crypto.randomUUID();
+      const fallbackCollection: Collection = {
+        id: tempId,
+        title: input.title,
+        icon: input.icon || '📝',
+        header_image_url: input.header_image_url || null,
+        header_color: input.header_color || null,
+        is_template: false,
+        is_passcode_protected: false,
+        show_completed_tasks: input.show_completed_tasks ?? true,
+        mute_notifications: input.mute_notifications ?? false,
+        default_snipsel_type: input.default_snipsel_type || null,
+        archived: false,
+        list_for_day: null,
+        created_at: new Date().toISOString(),
+        modified_at: new Date().toISOString(),
+        access_level: 'owner',
+      };
+
       if (!navigator.onLine) {
-        const tempId = crypto.randomUUID();
-        const collection: Collection = {
-          id: tempId,
-          title: input.title,
-          icon: input.icon || '📝',
-          header_image_url: input.header_image_url || null,
-          header_color: input.header_color || null,
-          is_template: false,
-          is_passcode_protected: false,
-          show_completed_tasks: input.show_completed_tasks ?? true,
-          mute_notifications: input.mute_notifications ?? false,
-          default_snipsel_type: input.default_snipsel_type || null,
-          archived: false,
-          list_for_day: null,
-          created_at: new Date().toISOString(),
-          modified_at: new Date().toISOString(),
-          access_level: 'owner',
-        };
-        await idbSaveCollection(collection);
+        await idbSaveCollection(fallbackCollection);
         await idbEnqueueSync('POST', '/api/collections', { ...input, _tempId: tempId });
-        return { collection };
+        return { collection: fallbackCollection };
       }
-      const res = await requestJson<{ collection: Collection }>('/api/collections', {
-        method: 'POST',
-        body: JSON.stringify(input),
-      });
-      await idbSaveCollection(res.collection);
-      return res;
+
+      try {
+        const res = await requestJson<{ collection: Collection }>('/api/collections', {
+          method: 'POST',
+          body: JSON.stringify(input),
+          timeout: 2000,
+        });
+        await idbSaveCollection(res.collection);
+        return res;
+      } catch (err: any) {
+        if (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error') throw err;
+        await idbSaveCollection(fallbackCollection);
+        await idbEnqueueSync('POST', '/api/collections', { ...input, _tempId: tempId });
+        return { collection: fallbackCollection };
+      }
     },
     update: async (
       id: string,
@@ -498,7 +524,7 @@ export const api = {
         header_image_zoom?: number | null;
       }
     ) => {
-      if (!navigator.onLine) {
+      const performFallback = async () => {
         const col = await idbGetCollection(id);
         if (col) {
           const updated = { ...col, ...input };
@@ -506,24 +532,27 @@ export const api = {
           await idbEnqueueSync('PATCH', `/api/collections/${id}`, input);
           return { collection: updated };
         }
+        throw new Error('Collection not found in local DB');
+      };
+
+      if (!navigator.onLine) {
+        return await performFallback();
       }
       try {
         const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`, {
           method: 'PATCH',
           body: JSON.stringify(input),
+          timeout: 2000,
         });
         await idbSaveCollection(res.collection);
         return res;
       } catch (err: any) {
         if (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error') throw err;
-        const col = await idbGetCollection(id);
-        if (col) {
-          const updated = { ...col, ...input };
-          await idbSaveCollection(updated);
-          await idbEnqueueSync('PATCH', `/api/collections/${id}`, input);
-          return { collection: updated };
+        try {
+          return await performFallback();
+        } catch (innerErr) {
+          throw err;
         }
-        throw err;
       }
     },
 
@@ -580,7 +609,7 @@ export const api = {
     favorite: async (id: string) => {
       try {
         if (!navigator.onLine) throw new Error('offline');
-        const res = await requestJson<{ ok: true }>(`/api/collections/${id}/favorite`, { method: 'POST' });
+        const res = await requestJson<{ ok: true }>(`/api/collections/${id}/favorite`, { method: 'POST', timeout: 2000 });
         const col = await idbGetCollection(id);
         if (col) { col.is_favorite = true; await idbSaveCollection(col); }
         return res;
@@ -589,13 +618,13 @@ export const api = {
         const col = await idbGetCollection(id);
         if (col) { col.is_favorite = true; await idbSaveCollection(col); }
         await idbEnqueueSync('POST', `/api/collections/${id}/favorite`);
-        return { ok: true };
+        return { ok: true as const };
       }
     },
     unfavorite: async (id: string) => {
       try {
         if (!navigator.onLine) throw new Error('offline');
-        const res = await requestJson<{ ok: true }>(`/api/collections/${id}/favorite`, { method: 'DELETE' });
+        const res = await requestJson<{ ok: true }>(`/api/collections/${id}/favorite`, { method: 'DELETE', timeout: 2000 });
         const col = await idbGetCollection(id);
         if (col) { col.is_favorite = false; await idbSaveCollection(col); }
         return res;
@@ -604,20 +633,20 @@ export const api = {
         const col = await idbGetCollection(id);
         if (col) { col.is_favorite = false; await idbSaveCollection(col); }
         await idbEnqueueSync('DELETE', `/api/collections/${id}/favorite`);
-        return { ok: true };
+        return { ok: true as const };
       }
     },
     delete: async (id: string) => {
       try {
         if (!navigator.onLine) throw new Error('offline');
-        const res = await requestJson<{ ok: true }>(`/api/collections/${id}`, { method: 'DELETE' });
+        const res = await requestJson<{ ok: true }>(`/api/collections/${id}`, { method: 'DELETE', timeout: 2000 });
         await idbDeleteCollection(id);
         return res;
       } catch (err: any) {
         if (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error') throw err;
         await idbDeleteCollection(id);
         await idbEnqueueSync('DELETE', `/api/collections/${id}`);
-        return { ok: true };
+        return { ok: true as const };
       }
     },
     autocomplete: (q: string) =>
@@ -677,7 +706,8 @@ export const api = {
           try {
             if (!navigator.onLine) throw new Error('offline');
             const res = await requestJson<{ items: CollectionItem[] }>(
-              `/api/collections/${collectionId}/snipsels`
+              `/api/collections/${collectionId}/snipsels`,
+              { timeout: 5000 }
             );
             await idbSaveCollectionItems(res.items);
             return res;
@@ -709,9 +739,9 @@ export const api = {
         indent?: number;
       }
     ) => {
-      if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const createFallback = async () => {
         // Optimistic create
-        const tempId = crypto.randomUUID();
         const snipsel: Snipsel = {
           id: tempId,
           type: input.type || 'text',
@@ -745,15 +775,23 @@ export const api = {
         await idbSaveCollectionItem(item);
         const syncPayload = { ...input, _tempId: tempId };
         await idbEnqueueSync('POST', `/api/collections/${collectionId}/snipsels`, syncPayload);
-        // Note: Real ID will be different, UI will reload when online
         return { item };
+      };
+
+      if (!navigator.onLine) {
+        return await createFallback();
       }
-      const res = await requestJson<{ item: CollectionItem }>(
-        `/api/collections/${collectionId}/snipsels`,
-        { method: 'POST', body: JSON.stringify(input) }
-      );
-      await idbSaveCollectionItem(res.item);
-      return res;
+      try {
+        const res = await requestJson<{ item: CollectionItem }>(
+          `/api/collections/${collectionId}/snipsels`,
+          { method: 'POST', body: JSON.stringify(input), timeout: 2000 }
+        );
+        await idbSaveCollectionItem(res.item);
+        return res;
+      } catch (err: any) {
+        if (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error') throw err;
+        return await createFallback();
+      }
     },
     update: async (
       snipselId: string,
@@ -780,6 +818,7 @@ export const api = {
         const res = await requestJson<{ snipsel: Snipsel }>(`/api/snipsels/${snipselId}`, {
           method: 'PATCH',
           body: JSON.stringify(input),
+          timeout: 2000,
         });
         await idbUpdateSnipselData(snipselId, res.snipsel);
         return res;
@@ -799,7 +838,7 @@ export const api = {
       try {
         const res = await requestJson<{ ok: true }>(
           `/api/collections/${collectionId}/snipsels/${snipselId}`,
-          { method: 'DELETE' }
+          { method: 'DELETE', timeout: 2000 }
         );
         await idbDeleteCollectionItem(collectionId, snipselId);
         return res;
@@ -841,7 +880,7 @@ export const api = {
       try {
         const res = await requestJson<{ ok: true }>(
           `/api/collections/${collectionId}/snipsels/reorder`,
-          { method: 'PATCH', body: JSON.stringify({ items }) }
+          { method: 'PATCH', body: JSON.stringify({ items }), timeout: 2000 }
         );
         // Re-saving is complex but the following reload/sync will handle it, or we just rely on later fetches
         return res;
@@ -852,14 +891,17 @@ export const api = {
       }
     },
     toggleReaction: async (snipselId: string, emoji: string) => {
-      if (!navigator.onLine) {
+      try {
+        return await requestJson<{ message: string; active: boolean }>(`/api/snipsels/${snipselId}/reactions`, {
+          method: 'POST',
+          body: JSON.stringify({ emoji }),
+          timeout: 2000,
+        });
+      } catch (err: any) {
+        if (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error') throw err;
         await idbEnqueueSync('POST', `/api/snipsels/${snipselId}/reactions`, { emoji });
-        return { message: 'Qeueud offline', active: true };
+        return { message: 'Queued offline', active: true };
       }
-      return requestJson<{ message: string; active: boolean }>(`/api/snipsels/${snipselId}/reactions`, {
-        method: 'POST',
-        body: JSON.stringify({ emoji }),
-      });
     },
     trash: () => requestJson<{ snipsels: Snipsel[] }>('/api/snipsels/trash'),
     emptyTrash: () => requestJson<{ ok: true; deleted: number }>('/api/snipsels/trash', { method: 'DELETE' }),
@@ -952,13 +994,11 @@ export const api = {
         return { ok: true as const };
       }
       try {
-        const res = await fetch(`/api/attachments/${attachmentId}`, {
+        const res = await requestJson<{ ok: true }>(`/api/attachments/${attachmentId}`, {
           method: 'DELETE',
-          credentials: 'include',
+          timeout: 2000,
         });
-        const data = (await res.json()) as { ok: true } | ApiError;
-        if (!res.ok) throw data;
-        return data as { ok: true };
+        return res;
       } catch (err: any) {
         if (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error') throw err;
         await idbEnqueueSync('DELETE', `/api/attachments/${attachmentId}`);
