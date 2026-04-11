@@ -141,3 +141,28 @@ export async function idbRemoveSync(id: string) {
     const db = await getDB();
     await db.delete('syncQueue', id);
 }
+
+export async function idbReplaceTempCollection(tempId: string, realCollection: Collection) {
+    const db = await getDB();
+    const tx = db.transaction('collections', 'readwrite');
+    await tx.store.delete(tempId);
+    await tx.store.put(realCollection);
+    await tx.done;
+}
+
+export async function idbReplaceTempCollectionItem(tempSnipselId: string, realItem: CollectionItem) {
+    const db = await getDB();
+    const tx = db.transaction('collectionItems', 'readwrite');
+    
+    // An item is stored by [collection_id, snipsel_id]. 
+    // We need to find all items that have this tempSnipselId.
+    const all = await tx.store.getAll();
+    const matches = all.filter(i => i.snipsel_id === tempSnipselId);
+    
+    for (const m of matches) {
+        await tx.store.delete([m.collection_id, m.snipsel_id]);
+    }
+    
+    await tx.store.put(realItem);
+    await tx.done;
+}

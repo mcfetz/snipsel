@@ -1,4 +1,4 @@
-import { idbGetSyncQueue, idbRemoveSync } from './db';
+import { idbGetSyncQueue, idbRemoveSync, idbReplaceTempCollection, idbReplaceTempCollectionItem } from './db';
 import { requestJson } from './api';
 
 let syncInProgress = false;
@@ -32,20 +32,27 @@ export async function processSyncQueue() {
                     body: bodyStr,
                 });
 
-                // If this was a collection creation endpoint, map its ID
+                // If this was a collection creation endpoint, map its ID and replace temp local record
                 if (op.method === 'POST' && res?.collection?.id && op.endpoint === '/api/collections') {
                     if (op.body && (op.body as any)._tempId) {
-                        idMap[(op.body as any)._tempId] = res.collection.id;
+                        const tempId = (op.body as any)._tempId;
+                        idMap[tempId] = res.collection.id;
+                        await idbReplaceTempCollection(tempId, res.collection);
+                        if (typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('snipsel-data-refreshed', { detail: { type: 'collection', id: res.collection.id } }));
+                        }
                     }
                 }
 
-                // If this was a snipsel creation endpoint, map its ID
+                // If this was a snipsel creation endpoint, map its ID and replace temp local record
                 if (op.method === 'POST' && res?.item?.snipsel_id && op.endpoint.endsWith('/snipsels')) {
-                    // We need to extract the temp ID that was originally generated.
-                    // Unfortunately op doesn't store the tempId directly. 
-                    // However, we modified api.ts so we can append the tempId to the queue op.
                     if (op.body && (op.body as any)._tempId) {
-                        idMap[(op.body as any)._tempId] = res.item.snipsel_id;
+                        const tempId = (op.body as any)._tempId;
+                        idMap[tempId] = res.item.snipsel_id;
+                        await idbReplaceTempCollectionItem(tempId, res.item);
+                        if (typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('snipsel-data-refreshed', { detail: { type: 'snipsels', collectionId: res.item.collection_id } }));
+                        }
                     }
                 }
 

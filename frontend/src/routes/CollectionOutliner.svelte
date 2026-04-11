@@ -142,6 +142,20 @@
   let modalImageIndex = $state<number>(-1);
   let modalVideo = $state<{ id: string; filename: string } | null>(null);
 
+  $effect(() => {
+    const handler = (e: any) => {
+      // Refresh current collection view if it was reconciled in background
+      if (
+        (e.detail?.type === 'snipsels' && e.detail?.collectionId === $currentCollection?.id) ||
+        (e.detail?.type === 'collection' && e.detail?.id === $currentCollection?.id)
+      ) {
+        loadItems();
+      }
+    };
+    window.addEventListener('snipsel-data-refreshed', handler);
+    return () => window.removeEventListener('snipsel-data-refreshed', handler);
+  });
+
   let showTypeMenu = $state(false);
   let showScrollTop = $state(false);
   let showDeleteModal = $state(false);
