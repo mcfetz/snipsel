@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import ChevronsUp from '@animated-color-icons/lucide-svelte/ChevronsUp.svelte';
   import ChevronsDown from '@animated-color-icons/lucide-svelte/ChevronsDown.svelte';
@@ -152,6 +153,14 @@
           collectionItems.update((items) =>
             items.map((i) => (i.snipsel_id === oldId ? newItem : i))
           );
+          
+          // Re-attach active edit session to the newly reconciled ID and force focus
+          if ($editingSnipselId === oldId) {
+            editingSnipselId.set(newItem.snipsel_id);
+            tick().then(() => {
+              textareaRef?.focus();
+            });
+          }
         }
       } else if (e.detail?.type === 'collection' && e.detail?.id === $currentCollection?.id) {
         const oldId = e.detail.oldId;
