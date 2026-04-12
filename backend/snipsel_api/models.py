@@ -226,8 +226,8 @@ class Snipsel(db.Model):
 
     content_markdown: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    geo_lat: Mapped[Optional[float]] = mapped_column(nullable=True)
-    geo_lng: Mapped[Optional[float]] = mapped_column(nullable=True)
+    geo_lat: Mapped[Optional[float]] = mapped_column(nullable=True, index=True)
+    geo_lng: Mapped[Optional[float]] = mapped_column(nullable=True, index=True)
     geo_accuracy_m: Mapped[Optional[float]] = mapped_column(nullable=True)
 
     task_done: Mapped[bool] = mapped_column(default=False, nullable=False)
@@ -351,7 +351,7 @@ class SnipselTag(db.Model):
     __tablename__ = "snipsel_tags"
 
     snipsel_id: Mapped[str] = mapped_column(ForeignKey("snipsels.id"), primary_key=True)
-    tag_id: Mapped[str] = mapped_column(ForeignKey("tags.id"), primary_key=True)
+    tag_id: Mapped[str] = mapped_column(ForeignKey("tags.id"), primary_key=True, index=True)
 
     snipsel = relationship("Snipsel", back_populates="tags")
     tag = relationship("Tag")
@@ -380,7 +380,7 @@ class SnipselMention(db.Model):
     __tablename__ = "snipsel_mentions"
 
     snipsel_id: Mapped[str] = mapped_column(ForeignKey("snipsels.id"), primary_key=True)
-    mention_id: Mapped[str] = mapped_column(ForeignKey("mentions.id"), primary_key=True)
+    mention_id: Mapped[str] = mapped_column(ForeignKey("mentions.id"), primary_key=True, index=True)
 
     snipsel = relationship("Snipsel", back_populates="mentions")
     mention = relationship("Mention")
@@ -437,7 +437,7 @@ class SnipselCollectionRef(db.Model):
 
     snipsel_id: Mapped[str] = mapped_column(ForeignKey("snipsels.id"), primary_key=True)
     collection_id: Mapped[str] = mapped_column(
-        ForeignKey("collections.id"), primary_key=True
+        ForeignKey("collections.id"), primary_key=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, nullable=False
