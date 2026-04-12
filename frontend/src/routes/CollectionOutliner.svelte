@@ -2585,7 +2585,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
                   <div class="flex items-start gap-2">
-                    <div class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0">
+                    <div class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
                       {@html renderMarkdown(stripMediaLinks(snip.content_markdown))}
                     </div>
 
@@ -2919,7 +2919,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
                   <div class="flex items-start gap-2">
                     <div
-                      class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0"
+                      class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words"
                       style="--accent-light: {getToolboxBg()}"
                     >
                       {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown) : item.snipsel.content_markdown, item.collection_refs)}
@@ -3149,7 +3149,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
                   <div class="flex items-start gap-2">
-                    <div class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0">
+                    <div class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
                       {@html renderMarkdown(stripMediaLinks(snip.content_markdown))}
                     </div>
 
