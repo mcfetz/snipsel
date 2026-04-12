@@ -36,7 +36,8 @@ def list_tags():
     if scope not in {"my", "shared", "all"}:
         raise api_error(400, "invalid_input", "scope must be my, shared or all")
 
-    accessible_collections_sq = (
+    # Step 1: collect the IDs of all collections the user can access
+    accessible_col_ids = db.session.execute(
         db.select(Collection.id)
         .outerjoin(
             CollectionShare,
@@ -49,22 +50,31 @@ def list_tags():
             Collection.deleted_at.is_(None),
             db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
         )
+    ).scalars().all()
+
+    if not accessible_col_ids:
+        return json_response({"tags": []})
+
+    # Step 2: distinct snipsel IDs that live in any of those collections
+    accessible_snipsel_ids_sq = (
+        db.select(db.distinct(CollectionSnipsel.snipsel_id))
+        .where(CollectionSnipsel.collection_id.in_(accessible_col_ids))
     )
 
+    # Step 3: aggregate – no CollectionSnipsel join needed here, no DISTINCT needed
     rows = (
         db.session.execute(
-            db.select(Tag.name, db.func.count(db.distinct(Snipsel.id)))
+            db.select(Tag.name, db.func.count(SnipselTag.snipsel_id))
             .join(SnipselTag, SnipselTag.tag_id == Tag.id)
             .join(Snipsel, Snipsel.id == SnipselTag.snipsel_id)
-            .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
             .where(
-                CollectionSnipsel.collection_id.in_(accessible_collections_sq),
+                SnipselTag.snipsel_id.in_(accessible_snipsel_ids_sq),
                 Tag.owner_user_id == user.id if scope == "my" else Tag.owner_user_id != user.id if scope == "shared" else db.true(),
                 Snipsel.deleted_at.is_(None),
                 Tag.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Tag.name)
-            .order_by(db.func.count(db.distinct(Snipsel.id)).desc(), Tag.name.asc())
+            .order_by(db.func.count(SnipselTag.snipsel_id).desc(), Tag.name.asc())
             .limit(100)
         ).all()
     )
@@ -88,7 +98,8 @@ def list_mentions():
     if scope not in {"my", "shared", "all"}:
         raise api_error(400, "invalid_input", "scope must be my, shared or all")
 
-    accessible_collections_sq = (
+    # Step 1: collect the IDs of all collections the user can access
+    accessible_col_ids = db.session.execute(
         db.select(Collection.id)
         .outerjoin(
             CollectionShare,
@@ -101,22 +112,31 @@ def list_mentions():
             Collection.deleted_at.is_(None),
             db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
         )
+    ).scalars().all()
+
+    if not accessible_col_ids:
+        return json_response({"mentions": []})
+
+    # Step 2: distinct snipsel IDs that live in any of those collections
+    accessible_snipsel_ids_sq = (
+        db.select(db.distinct(CollectionSnipsel.snipsel_id))
+        .where(CollectionSnipsel.collection_id.in_(accessible_col_ids))
     )
 
+    # Step 3: aggregate – no CollectionSnipsel join needed here, no DISTINCT needed
     rows = (
         db.session.execute(
-            db.select(Mention.name, db.func.count(db.distinct(Snipsel.id)))
+            db.select(Mention.name, db.func.count(SnipselMention.snipsel_id))
             .join(SnipselMention, SnipselMention.mention_id == Mention.id)
             .join(Snipsel, Snipsel.id == SnipselMention.snipsel_id)
-            .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
             .where(
-                CollectionSnipsel.collection_id.in_(accessible_collections_sq),
+                SnipselMention.snipsel_id.in_(accessible_snipsel_ids_sq),
                 Mention.owner_user_id == user.id if scope == "my" else Mention.owner_user_id != user.id if scope == "shared" else db.true(),
                 Snipsel.deleted_at.is_(None),
                 Mention.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Mention.name)
-            .order_by(db.func.count(db.distinct(Snipsel.id)).desc(), Mention.name.asc())
+            .order_by(db.func.count(SnipselMention.snipsel_id).desc(), Mention.name.asc())
             .limit(100)
         ).all()
     )
