@@ -77,7 +77,7 @@ def get_snipsels_by_bounds():
             Snipsel.geo_lng <= ne_lng,
         )
 
-    query = query.order_by(Snipsel.created_at.desc())
+    query = query.order_by(Snipsel.created_at.desc()).limit(200)
 
     results = db.session.execute(query).all()
 
