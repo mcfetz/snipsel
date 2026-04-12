@@ -64,6 +64,9 @@
   let items = $state<TagCount[]>([]);
   let loadingList = $state(false);
 
+  const VISIBLE_LIMIT = 100;
+  let visibleItems = $derived(items.slice(0, VISIBLE_LIMIT));
+
   // Map related state
   let mapContainer = $state<HTMLDivElement>()
   let map: L.Map | null = null;
@@ -443,7 +446,7 @@
     <div class="py-8 text-center text-sm text-slate-500">No {mode} yet</div>
   {:else}
     <div class="space-y-1">
-      {#each items as it (it.name)}
+      {#each visibleItems as it (it.name)}
         <button
           type="button"
           class="w-full px-2 py-3 text-left transition-colors hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-white/5 dark:active:bg-white/10"
@@ -459,6 +462,12 @@
           </div>
         </button>
       {/each}
+      {#if items.length > VISIBLE_LIMIT}
+        <div class="py-6 mt-4 text-center text-sm text-slate-500 font-medium bg-slate-50/50 rounded-xl border border-slate-200/50 dark:bg-slate-900/30 dark:border-white/5">
+          Showing <span class="font-bold text-slate-700 dark:text-slate-300">{VISIBLE_LIMIT}</span> of <span class="font-bold text-slate-700 dark:text-slate-300">{items.length}</span> {mode}.<br/>
+          Use the global search at the top to find more.
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
