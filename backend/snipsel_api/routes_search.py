@@ -36,7 +36,8 @@ def list_tags():
     if scope not in {"my", "shared", "all"}:
         raise api_error(400, "invalid_input", "scope must be my, shared or all")
 
-    # Step 1: IDs der zugänglichen Collections (schnell)
+    # Step 1: IDs der zugänglichen Collections als Python-Liste materialisieren.
+    # ~1200 Einträge – klein genug für ein effizientes IN (...).
     accessible_col_ids = db.session.execute(
         db.select(Collection.id)
         .outerjoin(
@@ -55,32 +56,30 @@ def list_tags():
     if not accessible_col_ids:
         return json_response({"tags": []})
 
-    # Step 2: IDs der zugänglichen, nicht-gelöschten Snipsels materialisieren.
-    # Kein Snipsel-Join nötig: deleted_at-Filter per Subquery in der WHERE-Klausel.
-    accessible_snipsel_ids = db.session.execute(
-        db.select(CollectionSnipsel.snipsel_id)
+    # Step 2: Aggregation mit EXISTS-Check.
+    # Der neue composite Index ix_collection_snipsels_snipsel_collection (snipsel_id, collection_id)
+    # macht diesen EXISTS-Check nahezu O(1) pro Snipsel.
+    accessible_cs_sq = (
+        db.select(literal(1))
+        .select_from(CollectionSnipsel)
         .where(
+            CollectionSnipsel.snipsel_id == Snipsel.id,
             CollectionSnipsel.collection_id.in_(accessible_col_ids),
-            ~CollectionSnipsel.snipsel_id.in_(
-                db.select(Snipsel.id).where(Snipsel.deleted_at.isnot(None))
-            ),
         )
-        .distinct()
-    ).scalars().all()
+        .correlate(Snipsel)
+        .exists()
+    )
 
-    if not accessible_snipsel_ids:
-        return json_response({"tags": []})
-
-    # Step 3: Tag-Aggregation ohne jegliche Subquery.
-    # SnipselTag.snipsel_id ist erster Teil des Composite-PK → Index wird optimal genutzt.
     rows = (
         db.session.execute(
             db.select(Tag.name, db.func.count(SnipselTag.snipsel_id))
             .select_from(SnipselTag)
             .join(Tag, Tag.id == SnipselTag.tag_id)
+            .join(Snipsel, Snipsel.id == SnipselTag.snipsel_id)
             .where(
-                SnipselTag.snipsel_id.in_(accessible_snipsel_ids),
+                accessible_cs_sq,
                 Tag.owner_user_id == user.id if scope == "my" else Tag.owner_user_id != user.id if scope == "shared" else db.true(),
+                Snipsel.deleted_at.is_(None),
                 Tag.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Tag.name)
@@ -109,7 +108,7 @@ def list_mentions():
     if scope not in {"my", "shared", "all"}:
         raise api_error(400, "invalid_input", "scope must be my, shared or all")
 
-    # Step 1: IDs der zugänglichen Collections (schnell)
+    # Step 1: IDs der zugänglichen Collections als Python-Liste materialisieren.
     accessible_col_ids = db.session.execute(
         db.select(Collection.id)
         .outerjoin(
@@ -128,30 +127,28 @@ def list_mentions():
     if not accessible_col_ids:
         return json_response({"mentions": []})
 
-    # Step 2: IDs der zugänglichen, nicht-gelöschten Snipsels materialisieren.
-    accessible_snipsel_ids = db.session.execute(
-        db.select(CollectionSnipsel.snipsel_id)
+    # Step 2: Aggregation mit EXISTS-Check über den neuen composite Index.
+    accessible_cs_sq = (
+        db.select(literal(1))
+        .select_from(CollectionSnipsel)
         .where(
+            CollectionSnipsel.snipsel_id == Snipsel.id,
             CollectionSnipsel.collection_id.in_(accessible_col_ids),
-            ~CollectionSnipsel.snipsel_id.in_(
-                db.select(Snipsel.id).where(Snipsel.deleted_at.isnot(None))
-            ),
         )
-        .distinct()
-    ).scalars().all()
+        .correlate(Snipsel)
+        .exists()
+    )
 
-    if not accessible_snipsel_ids:
-        return json_response({"mentions": []})
-
-    # Step 3: Mention-Aggregation ohne jegliche Subquery.
     rows = (
         db.session.execute(
             db.select(Mention.name, db.func.count(SnipselMention.snipsel_id))
             .select_from(SnipselMention)
             .join(Mention, Mention.id == SnipselMention.mention_id)
+            .join(Snipsel, Snipsel.id == SnipselMention.snipsel_id)
             .where(
-                SnipselMention.snipsel_id.in_(accessible_snipsel_ids),
+                accessible_cs_sq,
                 Mention.owner_user_id == user.id if scope == "my" else Mention.owner_user_id != user.id if scope == "shared" else db.true(),
+                Snipsel.deleted_at.is_(None),
                 Mention.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Mention.name)
