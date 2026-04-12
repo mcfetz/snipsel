@@ -11,6 +11,8 @@ from flask import Blueprint, current_app
 from PIL import Image
 from datetime import datetime, timezone
 
+import sqlalchemy.exc
+
 from snipsel_api.routes_snipsels import _sync_tags_mentions
 from snipsel_api.auth_session import current_user, json_response, require_auth
 from snipsel_api.errors import ApiError, api_error
@@ -354,6 +356,11 @@ def twos_import():
 
             print(f"[TwoS Import]   Completed: {list_id}")
 
+        except sqlalchemy.exc.IntegrityError as e:
+            db.session.rollback()
+            error_msg = f"Datenbank-Konflikt in Liste '{list_id}'. Möglicherweise Duplikate im Export oder Element bereits importiert. Details: {getattr(e, 'orig', str(e))}"
+            print(f"[TwoS Import] ERROR: {error_msg}")
+            errors.append(error_msg)
         except Exception as e:
             db.session.rollback()
             error_msg = f"Failed to import list '{list_id}': {str(e)}"
@@ -580,9 +587,18 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
                 ref_list_id = thing.get("subEntry_id")
                 linked_collection_id = import_list_with_id(user, data, ref_list_id, context)
                 if linked_collection_id:
-                    ref = SnipselCollectionRef(snipsel_id=snipsel.id, collection_id=linked_collection_id)
-                    db.session.add(ref)
                     db.session.flush()
+                    exists = db.session.execute(
+                        db.select(SnipselCollectionRef).where(
+                            SnipselCollectionRef.snipsel_id == snipsel.id,
+                            SnipselCollectionRef.collection_id == linked_collection_id
+                        )
+                    ).scalars().first()
+                    
+                    if not exists:
+                        ref = SnipselCollectionRef(snipsel_id=snipsel.id, collection_id=linked_collection_id)
+                        db.session.add(ref)
+                        db.session.flush()
 
         notice_body = "Imported from TwoS #twos-import"
         notice_snipsel = Snipsel(
