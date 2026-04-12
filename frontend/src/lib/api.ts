@@ -917,7 +917,29 @@ export const api = {
           }
 
           if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(data);
+            if (data.attachment) {
+              import('./db').then(async ({ getDB }) => {
+                const db = await getDB();
+                const tx = db.transaction('collectionItems', 'readwrite');
+                const items = await tx.store.getAll();
+                const matched = items.filter((item) => item.snipsel_id === snipselId);
+                for (const item of matched) {
+                  const atts = item.snipsel.attachments || [];
+                  // Only push if it's not already in there
+                  if (!atts.find(a => a.id === data.attachment.id)) {
+                    item.snipsel = { ...item.snipsel, attachments: [...atts, data.attachment] };
+                    await tx.store.put(item);
+                  }
+                }
+                await tx.done;
+                resolve(data);
+              }).catch((e) => {
+                console.error("IDB attachment save failed", e);
+                resolve(data);
+              });
+            } else {
+              resolve(data);
+            }
           } else {
             reject(data);
           }
