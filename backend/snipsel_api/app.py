@@ -48,10 +48,28 @@ def create_app() -> Flask:
     _pkg_logger.setLevel(logging.DEBUG)
 
     app = Flask(__name__, instance_relative_config=True)
+    # Build engine options — apply SQLite-specific tuning when relevant.
+    _engine_options: dict = {}
+    if settings.database_url.startswith("sqlite"):
+        _engine_options = {
+            "connect_args": {
+                # Allow the same connection to be used across threads (required
+                # for multi-threaded Flask / Gunicorn threaded workers).
+                "check_same_thread": False,
+                # Retry writes for up to 5 s instead of immediately raising
+                # "database is locked" under concurrent access.
+                "timeout": 5,
+            },
+            # Run PRAGMA statements on every new connection so WAL mode and the
+            # busy timeout are active from the very first query.
+            "pool_pre_ping": True,
+        }
+
     app.config.update(
         SECRET_KEY=settings.secret_key,
         SQLALCHEMY_DATABASE_URI=settings.database_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_ENGINE_OPTIONS=_engine_options,
         MAX_CONTENT_LENGTH=settings.max_upload_bytes,
         PERMANENT_SESSION_LIFETIME=timedelta(days=30),
         SESSION_COOKIE_HTTPONLY=True,
@@ -65,6 +83,21 @@ def create_app() -> Flask:
 
     db.init_app(app)
     migrate.init_app(app, db)
+
+    # Enable WAL journal mode for SQLite so readers never block writers and
+    # vice-versa.  Must be done via an event, not connect_args, because
+    # journal_mode is a PRAGMA rather than a connection-level option.
+    if settings.database_url.startswith("sqlite"):
+        from sqlalchemy import event
+        from sqlalchemy.engine import Engine
+        import sqlite3 as _sqlite3
+
+        @event.listens_for(Engine, "connect")
+        def _set_sqlite_pragma(dbapi_conn, _conn_record):
+            if isinstance(dbapi_conn, _sqlite3.Connection):
+                cursor = dbapi_conn.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.close()
     cors.init_app(
         app,
         resources={r"/api/*": {"origins": settings.cors_origins}},
