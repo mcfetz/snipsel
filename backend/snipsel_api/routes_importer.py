@@ -461,7 +461,19 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
         list_for_day = None
         if lst.get("today"):
             try:
-                dt = datetime.strptime(list_name, "%a %b %d, %Y")
+                # Twos uses non-standard weekday abbreviations that Python's
+                # strptime (%a) does not recognise.  Normalise them first.
+                _TWOS_DAY_FIXES = {
+                    "Tues ": "Tue ",
+                    "Weds ": "Wed ",
+                    "Thurs ": "Thu ",
+                }
+                normalised_name = list_name
+                for bad, good in _TWOS_DAY_FIXES.items():
+                    if normalised_name.startswith(bad):
+                        normalised_name = good + normalised_name[len(bad):]
+                        break
+                dt = datetime.strptime(normalised_name, "%a %b %d, %Y")
                 list_for_day = dt.date()
             except Exception:
                 pass
