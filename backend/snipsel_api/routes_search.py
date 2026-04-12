@@ -68,8 +68,8 @@ def list_tags():
                 Tag.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Tag.name)
-            .order_by(Tag.name.asc())
-            .limit(10 if q else None)
+            .order_by(db.func.count(db.distinct(SnipselTag.snipsel_id)).desc(), Tag.name.asc())
+            .limit(10 if q else 100)
         ).all()
     )
     return json_response(
@@ -124,8 +124,8 @@ def list_mentions():
                 Mention.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Mention.name)
-            .order_by(Mention.name.asc())
-            .limit(10 if q else None)
+            .order_by(db.func.count(db.distinct(SnipselMention.snipsel_id)).desc(), Mention.name.asc())
+            .limit(10 if q else 100)
         ).all()
     )
     return json_response(
