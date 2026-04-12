@@ -676,6 +676,7 @@ export const api = {
     emptyTrash: () => requestJson<{ ok: true; deleted: number }>('/api/collections/trash', { method: 'DELETE' }),
     deleteTrashItem: (id: string) => requestJson<{ ok: true; deleted: number }>(`/api/collections/trash/${id}`, { method: 'DELETE' }),
     restore: (id: string) => requestJson<{ collection: Collection }>(`/api/collections/${id}/restore`, { method: 'POST' }),
+    syncAll: () => requestJson<{ collections: Collection[]; items: Record<string, CollectionItem[]> }>('/api/collections/sync/all'),
   },
 
   users: {

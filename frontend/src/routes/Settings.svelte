@@ -14,6 +14,7 @@
   import { api, type Collection, type UserStats, type ApiKey } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { collectionAnchor, currentView } from '../lib/stores';
+  import { idbSaveBulkSync } from '../lib/db';
   import {
     checkPushSubscription,
     subscribeToPushNotifications,
@@ -71,6 +72,11 @@
   let newApiKeyValue = $state('');
   let apiKeyError = $state('');
   let showCopiedKey = $state(false);
+
+  // Offline Sync
+  let syncStatus = $state<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  let syncError = $state('');
+  let lastFullSync = $state<number | null>(null);
 
 
   async function startOtpSetup() {
@@ -389,6 +395,36 @@
     }
   }
 
+  async function performFullSync() {
+    if (!navigator.onLine) {
+      syncStatus = 'error';
+      syncError = 'You must be online to perform a full sync.';
+      return;
+    }
+
+    syncStatus = 'syncing';
+    syncError = '';
+    isBusy = true;
+
+    try {
+      const res = await api.collections.syncAll();
+      await idbSaveBulkSync(res.collections, res.items);
+      
+      const now = Date.now();
+      lastFullSync = now;
+      localStorage.setItem('snipsel_last_full_sync', String(now));
+      
+      syncStatus = 'success';
+      setTimeout(() => { if (syncStatus === 'success') syncStatus = 'idle'; }, 5000);
+    } catch (e: any) {
+      console.error('Full sync failed', e);
+      syncStatus = 'error';
+      syncError = e.error?.message || 'Sync failed. Please try again later.';
+    } finally {
+      isBusy = false;
+    }
+  }
+
   $effect(() => {
     if (!$currentUser || initialized) return;
     defaultHeaderColor = $currentUser.default_collection_header_color ?? '#4f46e5';
@@ -398,6 +434,11 @@
     lightBackgroundColor = $currentUser.light_background_color ?? '';
     darkBackgroundColor = $currentUser.dark_background_color ?? '';
     initialized = true;
+    
+    const savedLastSync = localStorage.getItem('snipsel_last_full_sync');
+    if (savedLastSync) {
+      lastFullSync = parseInt(savedLastSync, 10);
+    }
   });
 
   $effect(() => {
@@ -1282,6 +1323,43 @@
           </div>
           <ChevronRight label="" size={20} className="text-slate-400" />
         </button>
+
+        <div class="mt-6 border-t border-slate-100 pt-6 dark:border-white/5">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100">
+                <div class="grid h-8 w-8 place-items-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                  <SquareCheck label="" size={16} />
+                </div>
+                Full Offline Sync
+              </div>
+              <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Download all collections and snipsels to your device for offline use.
+                {#if lastFullSync}
+                  <div class="mt-1 font-medium text-blue-600 dark:text-blue-400">Last sync: {new Date(lastFullSync).toLocaleString()}</div>
+                {/if}
+              </div>
+            </div>
+            <button
+              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              type="button"
+              onclick={performFullSync}
+              disabled={isBusy || syncStatus === 'syncing'}
+            >
+              {#if syncStatus === 'syncing'}
+                Syncing...
+              {:else}
+                Sync Now
+              {/if}
+            </button>
+          </div>
+          {#if syncStatus === 'error'}
+            <div class="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{syncError}</div>
+          {/if}
+          {#if syncStatus === 'success'}
+            <div class="mt-2 text-xs font-medium text-green-600 dark:text-green-400">Sync completed successfully!</div>
+          {/if}
+        </div>
       </div>
     </div>
 

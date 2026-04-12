@@ -208,3 +208,30 @@ export async function idbReplaceTempCollectionItem(tempSnipselId: string, realIt
     await tx.done;
     return finalItem;
 }
+
+export async function idbSaveBulkSync(collections: Collection[], collectionItemsMap: Record<string, CollectionItem[]>) {
+    const db = await getDB();
+    
+    // Use a single large transaction for both stores to ensure consistency
+    const tx = db.transaction(['collections', 'collectionItems'], 'readwrite');
+    
+    // 1. Collections: Clear and replace
+    await tx.objectStore('collections').clear();
+    for (const c of collections) {
+        await tx.objectStore('collections').put(c);
+    }
+    
+    // 2. CollectionItems: Clear and replace
+    await tx.objectStore('collectionItems').clear();
+    for (const [collId, items] of Object.entries(collectionItemsMap)) {
+        for (const item of items) {
+            await tx.objectStore('collectionItems').put(item);
+        }
+    }
+    
+    await tx.done;
+    
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('snipsel-bulk-sync-completed'));
+    }
+}
