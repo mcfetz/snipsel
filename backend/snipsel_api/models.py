@@ -254,7 +254,7 @@ class Snipsel(db.Model):
     )
     modified_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
     deleted_by_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )

@@ -51,21 +51,29 @@ def list_tags():
         )
     )
 
+    visibility_sq = (
+        db.select(literal(1))
+        .select_from(CollectionSnipsel)
+        .where(CollectionSnipsel.snipsel_id == Snipsel.id)
+        .where(CollectionSnipsel.collection_id.in_(accessible_collections_sq))
+        .correlate(Snipsel)
+        .exists()
+    )
+
     rows = (
         db.session.execute(
-            db.select(Tag.name, db.func.count(db.distinct(SnipselTag.snipsel_id)))
+            db.select(Tag.name, db.func.count(SnipselTag.snipsel_id))
             .join(SnipselTag, SnipselTag.tag_id == Tag.id)
             .join(Snipsel, Snipsel.id == SnipselTag.snipsel_id)
-            .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
             .where(
-                CollectionSnipsel.collection_id.in_(accessible_collections_sq),
+                visibility_sq,
                 Tag.owner_user_id == user.id if scope == "my" else Tag.owner_user_id != user.id if scope == "shared" else db.true(),
                 Snipsel.deleted_at.is_(None),
                 Tag.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Tag.name)
-            .order_by(db.func.count(db.distinct(SnipselTag.snipsel_id)).desc(), Tag.name.asc())
-            .limit(10 if q else 100)
+            .order_by(db.func.count(SnipselTag.snipsel_id).desc(), Tag.name.asc())
+            .limit(100)
         ).all()
     )
     return json_response(
@@ -103,21 +111,29 @@ def list_mentions():
         )
     )
 
+    visibility_sq = (
+        db.select(literal(1))
+        .select_from(CollectionSnipsel)
+        .where(CollectionSnipsel.snipsel_id == Snipsel.id)
+        .where(CollectionSnipsel.collection_id.in_(accessible_collections_sq))
+        .correlate(Snipsel)
+        .exists()
+    )
+
     rows = (
         db.session.execute(
-            db.select(Mention.name, db.func.count(db.distinct(SnipselMention.snipsel_id)))
+            db.select(Mention.name, db.func.count(SnipselMention.snipsel_id))
             .join(SnipselMention, SnipselMention.mention_id == Mention.id)
             .join(Snipsel, Snipsel.id == SnipselMention.snipsel_id)
-            .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
             .where(
-                CollectionSnipsel.collection_id.in_(accessible_collections_sq),
+                visibility_sq,
                 Mention.owner_user_id == user.id if scope == "my" else Mention.owner_user_id != user.id if scope == "shared" else db.true(),
                 Snipsel.deleted_at.is_(None),
                 Mention.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Mention.name)
-            .order_by(db.func.count(db.distinct(SnipselMention.snipsel_id)).desc(), Mention.name.asc())
-            .limit(10 if q else 100)
+            .order_by(db.func.count(SnipselMention.snipsel_id).desc(), Mention.name.asc())
+            .limit(100)
         ).all()
     )
     return json_response(
