@@ -36,23 +36,19 @@ def list_tags():
     if scope not in {"my", "shared", "all"}:
         raise api_error(400, "invalid_input", "scope must be my, shared or all")
 
-    accessible_collection_ids = (
-        db.session.execute(
-            db.select(Collection.id)
-            .outerjoin(
-                CollectionShare,
-                db.and_(
-                    CollectionShare.collection_id == Collection.id,
-                    CollectionShare.shared_with_user_id == user.id,
-                ),
-            )
-            .where(
-                Collection.deleted_at.is_(None),
-                db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
-            )
+    accessible_collections_sq = (
+        db.select(Collection.id)
+        .outerjoin(
+            CollectionShare,
+            db.and_(
+                CollectionShare.collection_id == Collection.id,
+                CollectionShare.shared_with_user_id == user.id,
+            ),
         )
-        .scalars()
-        .all()
+        .where(
+            Collection.deleted_at.is_(None),
+            db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
+        )
     )
 
     rows = (
@@ -62,7 +58,7 @@ def list_tags():
             .join(Snipsel, Snipsel.id == SnipselTag.snipsel_id)
             .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
             .where(
-                CollectionSnipsel.collection_id.in_(accessible_collection_ids) if accessible_collection_ids else db.false(),
+                CollectionSnipsel.collection_id.in_(accessible_collections_sq),
                 Tag.owner_user_id == user.id if scope == "my" else Tag.owner_user_id != user.id if scope == "shared" else db.true(),
                 Snipsel.deleted_at.is_(None),
                 Tag.name.ilike(f"%{q}%") if q else db.true(),
@@ -92,23 +88,19 @@ def list_mentions():
     if scope not in {"my", "shared", "all"}:
         raise api_error(400, "invalid_input", "scope must be my, shared or all")
 
-    accessible_collection_ids = (
-        db.session.execute(
-            db.select(Collection.id)
-            .outerjoin(
-                CollectionShare,
-                db.and_(
-                    CollectionShare.collection_id == Collection.id,
-                    CollectionShare.shared_with_user_id == user.id,
-                ),
-            )
-            .where(
-                Collection.deleted_at.is_(None),
-                db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
-            )
+    accessible_collections_sq = (
+        db.select(Collection.id)
+        .outerjoin(
+            CollectionShare,
+            db.and_(
+                CollectionShare.collection_id == Collection.id,
+                CollectionShare.shared_with_user_id == user.id,
+            ),
         )
-        .scalars()
-        .all()
+        .where(
+            Collection.deleted_at.is_(None),
+            db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
+        )
     )
 
     rows = (
@@ -118,7 +110,7 @@ def list_mentions():
             .join(Snipsel, Snipsel.id == SnipselMention.snipsel_id)
             .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
             .where(
-                CollectionSnipsel.collection_id.in_(accessible_collection_ids) if accessible_collection_ids else db.false(),
+                CollectionSnipsel.collection_id.in_(accessible_collections_sq),
                 Mention.owner_user_id == user.id if scope == "my" else Mention.owner_user_id != user.id if scope == "shared" else db.true(),
                 Snipsel.deleted_at.is_(None),
                 Mention.name.ilike(f"%{q}%") if q else db.true(),
