@@ -127,6 +127,9 @@
     sortDir
   );
 
+  const VISIBLE_LIMIT = 100;
+  $: visible = filtered.slice(0, VISIBLE_LIMIT);
+
   async function loadCollections() {
     isLoading.set(true);
     try {
@@ -388,7 +391,7 @@
     <div class="py-8 text-center text-sm text-slate-500 font-medium" in:fade={{ duration: 200 }}>No collections found</div>
   {:else}
     <div class="space-y-2">
-      {#each filtered as c (c.id)}
+      {#each visible as c (c.id)}
         <div class="flex w-full items-center gap-3 px-1 py-2 group" animate:flip={{ duration: 200 }} in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 150 }}>
           <button class="flex flex-1 items-center gap-3 text-left transition-all hover:translate-x-0.5" type="button" onclick={() => openCollection(c)}>
             <span class="text-3xl transition-transform duration-200 group-hover:scale-110">{c.icon}</span>
@@ -460,6 +463,12 @@
           </div>
         </div>
       {/each}
+      {#if filtered.length > VISIBLE_LIMIT}
+        <div class="py-6 text-center text-sm text-slate-500 font-medium bg-slate-50/50 rounded-xl border border-slate-200/50 dark:bg-slate-900/30 dark:border-white/5">
+          Showing <span class="font-bold text-slate-700 dark:text-slate-300">{VISIBLE_LIMIT}</span> of <span class="font-bold text-slate-700 dark:text-slate-300">{filtered.length}</span> collections.<br/>
+          Use the filter above to find more.
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
