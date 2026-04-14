@@ -78,6 +78,65 @@
   let syncError = $state('');
   let lastFullSync = $state<number | null>(null);
 
+  const DEFAULT_ACCENT = '#4f46e5';
+  type Rgb = { r: number; g: number; b: number };
+
+  function clampByte(n: number): number {
+    return Math.max(0, Math.min(255, Math.round(n)));
+  }
+
+  function hexToRgb(hex: string): Rgb | null {
+    const h = (hex || '').trim();
+    const m = /^#([0-9a-fA-F]{6})$/.exec(h);
+    if (!m) return null;
+    const v = m[1];
+    return {
+      r: parseInt(v.slice(0, 2), 16),
+      g: parseInt(v.slice(2, 4), 16),
+      b: parseInt(v.slice(4, 6), 16),
+    };
+  }
+
+  function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
+    const tt = Math.max(0, Math.min(1, t));
+    return {
+      r: clampByte(a.r + (b.r - a.r) * tt),
+      g: clampByte(a.g + (b.g - a.g) * tt),
+      b: clampByte(a.b + (b.b - a.b) * tt),
+    };
+  }
+
+  function rgba(c: Rgb, alpha: number): string {
+    const a = Math.max(0, Math.min(1, alpha));
+    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
+  }
+
+  function getAccent(): string {
+    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
+    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
+  }
+
+  function getAccentTint(): string {
+    const isDark = document.documentElement.classList.contains('dark');
+    const baseColor = isDark ? '#1e293b' : '#ffffff';
+    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
+    const accent = hexToRgb(getAccent());
+    const mixed = accent ? mixRgb(base, accent, 0.14) : base;
+    return rgba(mixed, 0.96);
+  }
+
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
+  function getContrastColor(bgColor: string): string {
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
 
   async function startOtpSetup() {
     isBusy = true;
