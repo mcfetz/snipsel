@@ -279,12 +279,6 @@
     setTimeout(() => showCopiedKey = false, 2000);
   }
 
-  const DEFAULT_ACCENT = '#4f46e5';
-  function getAccent(): string {
-    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
-    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
-  }
-
   async function logout() {
     await api.logout();
     currentUser.set(null);
