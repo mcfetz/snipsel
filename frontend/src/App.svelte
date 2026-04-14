@@ -709,16 +709,16 @@ import UserManagement from './routes/UserManagement.svelte';
         <input
           class="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-100/50 px-4 py-2 text-base transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-white/5 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:bg-slate-800"
           style={`--tw-ring-color: ${getAccent()}33; --accent: ${getAccent()}`}
-          onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
-          onblur={(e) => (e.currentTarget.style.borderColor = '')}
-          placeholder="Search"
-          type="search"
-          bind:value={$searchQuery}
-          onfocus={() => {
+          onfocus={(e) => {
+            e.currentTarget.style.borderColor = getAccent();
             if ($currentUser && $currentView.type !== 'search') {
               currentView.set({ type: 'search' });
             }
           }}
+          onblur={(e) => (e.currentTarget.style.borderColor = '')}
+          placeholder="Search"
+          type="search"
+          bind:value={$searchQuery}
           onkeydown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
