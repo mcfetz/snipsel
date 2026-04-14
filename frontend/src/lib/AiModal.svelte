@@ -6,7 +6,7 @@
   import { api } from './api';
   import { currentUser } from './session';
   import History from '@animated-color-icons/lucide-svelte/History.svelte';
-  import Star from '@animated-color-icons/lucide-svelte/Star.svelte';
+  import Heart from '@animated-color-icons/lucide-svelte/Heart.svelte';
   import Clock from '@animated-color-icons/lucide-svelte/Clock.svelte';
 
   interface HistoryItem {
@@ -106,6 +106,20 @@
   function getAccent(): string {
     return ($currentUser?.default_collection_header_color || '#4f46e5');
   }
+
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    if (hex.length !== 6) return false;
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
+  function getContrastColor(bgColor: string): string {
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
 </script>
 
 <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
@@ -177,11 +191,11 @@
                           <X label="" size={14} />
                         </button>
                         <button 
-                          class="al-icon-wrapper p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors {item.starred ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100'}"
+                          class="al-icon-wrapper p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors {item.starred ? 'text-rose-500' : 'text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100'}"
                           onclick={(e) => toggleStar(item, e)}
-                          title={item.starred ? 'Unstar prompt' : 'Star as template'}
+                          title={item.starred ? 'Unfavorite prompt' : 'Favorite as template'}
                         >
-                          <Star label="" size={16} fill={item.starred ? 'currentColor' : 'none'} />
+                          <Heart label="" size={16} fill={item.starred ? 'currentColor' : 'none'} />
                         </button>
                       </div>
                     </div>
@@ -220,8 +234,8 @@
       <div class="flex items-center gap-2 pt-2">
         {#if !response}
           <button
-            class="flex-1 rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-            style={`background-color: ${getAccent()}`}
+            class="flex-1 rounded-full px-6 py-2.5 text-sm font-semibold shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             onclick={generate}
             disabled={isGenerating || !prompt.trim()}
           >
@@ -235,8 +249,8 @@
             New Prompt
           </button>
           <button
-            class="flex-1 rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95"
-            style={`background-color: ${getAccent()}`}
+            class="flex-1 rounded-full px-4 py-2.5 text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             onclick={() => onInsert(response)}
           >
             Insert
