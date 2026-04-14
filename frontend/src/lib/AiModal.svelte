@@ -154,9 +154,12 @@
               {:else}
                 <div class="grid gap-2">
                   {#each historyItems as item}
-                    <button 
-                      class="flex items-center gap-3 w-full text-left p-2.5 rounded-xl border border-slate-100 bg-white/50 hover:bg-slate-50 hover:border-slate-200 transition-all dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:border-white/10 group"
+                    <div 
+                      class="flex items-center gap-3 w-full text-left p-2.5 rounded-xl border border-slate-100 bg-white/50 hover:bg-slate-50 hover:border-slate-200 transition-all dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:border-white/10 group cursor-pointer"
                       onclick={() => selectHistoryItem(item)}
+                      onkeydown={(e) => e.key === 'Enter' && selectHistoryItem(item)}
+                      role="button"
+                      tabindex="0"
                     >
                       <div class="flex-1 min-w-0">
                         <div class="text-sm text-slate-700 dark:text-white truncate font-medium">{item.text}</div>
@@ -181,7 +184,7 @@
                           <Star label="" size={16} fill={item.starred ? 'currentColor' : 'none'} />
                         </button>
                       </div>
-                    </button>
+                    </div>
                   {/each}
                 </div>
               {/if}
