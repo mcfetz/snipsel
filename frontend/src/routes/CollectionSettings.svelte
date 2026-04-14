@@ -442,34 +442,34 @@
             <div class="overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10">
               <div class="grid grid-cols-4">
                 <button
-                  class="px-2 py-2.5 text-xs font-medium transition-colors {defaultSnipselType === '' || defaultSnipselType === 'text' ? 'text-slate-900 dark:text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+                  class="px-2 py-2.5 text-xs font-medium transition-colors {defaultSnipselType === '' || defaultSnipselType === 'text' ? '' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
                   type="button"
                   onclick={() => (defaultSnipselType = '')}
-                  style={defaultSnipselType === '' || defaultSnipselType === 'text' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+                  style={defaultSnipselType === '' || defaultSnipselType === 'text' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   Note
                 </button>
                 <button
-                  class="border-l border-black/5 dark:border-white/5 px-2 py-2.5 text-xs font-medium transition-colors {defaultSnipselType === 'image' ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+                  class="border-l border-black/5 dark:border-white/5 px-2 py-2.5 text-xs font-medium transition-colors {defaultSnipselType === 'image' ? '' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
                   type="button"
                   onclick={() => (defaultSnipselType = 'image')}
-                  style={defaultSnipselType === 'image' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+                  style={defaultSnipselType === 'image' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   Image
                 </button>
                 <button
-                  class="border-l border-black/5 dark:border-white/5 px-2 py-2.5 text-xs font-medium transition-colors {defaultSnipselType === 'attachment' ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+                  class="border-l border-black/5 dark:border-white/5 px-2 py-2.5 text-xs font-medium transition-colors {defaultSnipselType === 'attachment' ? '' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
                   type="button"
                   onclick={() => (defaultSnipselType = 'attachment')}
-                  style={defaultSnipselType === 'attachment' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+                  style={defaultSnipselType === 'attachment' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   File
                 </button>
                 <button
-                  class="border-l border-black/5 dark:border-white/5 px-2 py-2.5 text-xs font-medium transition-colors {defaultSnipselType === 'task' ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+                  class="border-l border-black/5 dark:border-white/5 px-2 py-2.5 text-xs font-medium transition-colors {defaultSnipselType === 'task' ? '' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
                   type="button"
                   onclick={() => (defaultSnipselType = 'task')}
-                  style={defaultSnipselType === 'task' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+                  style={defaultSnipselType === 'task' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   Task
                 </button>

@@ -108,6 +108,19 @@
     return rgba(mixed, 0.96);
   }
 
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
+  function getContrastColor(bgColor: string): string {
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
+
   let modalImages = $state<Array<{ id: string; filename: string }>>([]);
   let modalImageIndex = $state<number>(-1);
   let modalVideo = $state<{ id: string; filename: string } | null>(null);
@@ -471,22 +484,22 @@
         <div class="mt-2 overflow-hidden rounded-full border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900">
           <div class="grid grid-cols-2">
           <button
-            class="px-4 py-3 text-sm font-medium transition-colors {snipsel.type === 'text' ? 'text-slate-900 dark:text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+            class="px-4 py-3 text-sm font-medium transition-colors {snipsel.type === 'text' ? '' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
             type="button"
             onclick={() => setType('text')}
             disabled={changingType}
-            style={snipsel.type === 'text' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+            style={snipsel.type === 'text' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
           >
             Note
           </button>
           <button
             class="border-l border-black/5 px-4 py-3 text-sm font-medium transition-colors dark:border-white/5 {snipsel.type === 'task'
-              ? 'text-slate-900 dark:text-white'
+              ? ''
               : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
             type="button"
             onclick={() => setType('task')}
             disabled={changingType}
-            style={snipsel.type === 'task' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+            style={snipsel.type === 'task' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
           >
             Task
           </button>
@@ -504,7 +517,10 @@
               aria-checked={snipsel?.card_view !== false}
               aria-label="Toggle card view"
             >
-              <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {snipsel?.card_view !== false ? 'translate-x-5' : 'translate-x-0'}"></span>
+              <span 
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out {snipsel?.card_view !== false ? 'translate-x-5' : 'translate-x-0'}"
+                style={snipsel?.card_view !== false ? `background-color: ${getContrastColor(getHeaderColor())}` : 'background-color: white'}
+              ></span>
             </button>
           </div>
 			</div>
@@ -616,7 +632,8 @@
             {#if reminderAt}
               <button
                 type="button"
-                class="rounded-md bg-slate-100 px-2 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                class="rounded-md px-3 py-2 text-xs font-medium shadow-sm transition-all hover:opacity-90"
+                style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
                 onclick={() => { reminderAt = null; updateReminders(); }}
               >
                 Clear
@@ -624,8 +641,8 @@
             {/if}
             <button
               type="button"
-              class="rounded-md px-3 py-2 text-xs font-medium text-white shadow-sm transition-opacity hover:opacity-90"
-              style={`background-color: ${getAccent()}`}
+              class="rounded-md px-3 py-2 text-xs font-medium shadow-sm transition-all hover:opacity-90"
+              style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
               onclick={updateReminders}
               disabled={updatingReminders}
             >
@@ -688,8 +705,8 @@
                     {#each ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as day}
                       <button
                         type="button"
-                        class="h-7 w-8 rounded text-[10px] font-bold transition-colors {rrByDay.includes(day) ? 'text-white' : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400'}"
-                        style={rrByDay.includes(day) ? `background-color: ${getAccent()}` : undefined}
+                        class="h-7 w-8 rounded text-[10px] font-bold transition-colors {rrByDay.includes(day) ? '' : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400'}"
+                        style={rrByDay.includes(day) ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                         onclick={() => toggleDay(day)}
                       >
                         {day}
@@ -702,8 +719,8 @@
               <div class="flex justify-end pt-1">
                 <button
                   type="button"
-                  class="rounded-md px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-                  style={`background-color: ${getAccent()}`}
+                  class="rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-opacity hover:opacity-90"
+                  style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
                   onclick={applyRRuleBuilder}
                 >
                   Apply
