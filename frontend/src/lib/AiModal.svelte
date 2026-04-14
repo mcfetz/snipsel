@@ -197,7 +197,7 @@
                           onclick={(e) => toggleStar(item, e)}
                           title={item.starred ? 'Unfavorite prompt' : 'Favorite as template'}
                         >
-                          <Heart label="" size={16} fill={item.starred ? 'currentColor' : 'none'} />
+                          <Heart label="" size={16} fill={item.starred ? getAccent() : 'none'} />
                         </button>
                       </div>
                     </div>
