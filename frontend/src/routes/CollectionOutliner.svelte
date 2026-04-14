@@ -30,6 +30,8 @@
   import FileText from '@animated-color-icons/lucide-svelte/FileText.svelte';
   import ImageIcon from '@animated-color-icons/lucide-svelte/Image.svelte';
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
+import Share from '@animated-color-icons/lucide-svelte/Share.svelte';
+import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
 
   import MarkdownIt from 'markdown-it';
   import { api, type Attachment, type CollectionItem, type SearchSnipselHit } from '../lib/api';
@@ -138,6 +140,7 @@
   let autocompleteDebounce: ReturnType<typeof setTimeout> | null = null;
 
   let shareCount = $state(0);
+  let shareSuccess = $state(false);
 
   let modalImages = $state<Array<{ id: string; filename: string }>>([]);
   let modalImageIndex = $state<number>(-1);
@@ -467,6 +470,23 @@
       activeReactionPickerId = null;
     } catch (err) {
       console.error('Failed to toggle reaction:', err);
+    }
+  }
+
+  async function shareSelectedSnipsels() {
+    if (selectedIds.size === 0) return;
+    
+    // Maintain visual order from the outliner
+    const items = $sortedItems.filter(i => selectedIds.has(i.snipsel_id));
+    const text = items.map(i => i.snipsel.content_markdown || '').join('\n\n');
+    
+    try {
+      await navigator.clipboard.writeText(text);
+      shareSuccess = true;
+      setTimeout(() => { shareSuccess = false; }, 2000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      errorModal = { title: 'Copy failed', message: 'Could not copy to clipboard. Please try again.' };
     }
   }
 
@@ -3483,6 +3503,21 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         disabled={uploadingAttachments || !canWrite()}
       >
           <Paperclip label="" size={20} strokeWidth={2} />
+      </button>
+      <button
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        type="button"
+        aria-label="Share"
+        title="Copy content to clipboard"
+        onclick={shareSelectedSnipsels}
+      >
+        {#if shareSuccess}
+          <div in:scale={{ duration: 150 }}>
+            <Check label="" size={20} strokeWidth={3} className="text-green-600 dark:text-green-400" />
+          </div>
+        {:else}
+          <Share label="" size={20} strokeWidth={2} />
+        {/if}
       </button>
       <button
         class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
