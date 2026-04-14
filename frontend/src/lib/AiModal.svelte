@@ -197,7 +197,7 @@
                           onclick={(e) => toggleStar(item, e)}
                           title={item.starred ? 'Unfavorite prompt' : 'Favorite as template'}
                         >
-                          <Heart label="" size={16} fill={item.starred ? getAccent() : 'none'} />
+                          <Heart label="" size={16} fill={item.starred ? 'currentColor' : 'none'} className={item.starred ? 'fill-current' : ''} />
                         </button>
                       </div>
                     </div>
@@ -258,7 +258,7 @@
             Insert
           </button>
           <button
-            class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200"
+            class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             onclick={() => onReplace(response)}
           >
             Replace
