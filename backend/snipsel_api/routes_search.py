@@ -178,6 +178,12 @@ def search():
     scope = (request.args.get("scope") or "my").strip().lower()
     if scope not in {"my", "shared", "all"}:
         raise api_error(400, "invalid_input", "scope must be my, shared, or all")
+
+    # Limit search to at least 3 characters unless filters are present
+    q_len = len(q)
+    has_filters = any([tag, mention, snipsel_type, day])
+    if q_len > 0 and q_len < 3 and not has_filters:
+        return json_response({"items": [], "total": 0, "limit": 200, "offset": 0})
     snipsel_type = (request.args.get("type") or "").strip() or None
     task_done_raw = (request.args.get("task_done") or "").strip()
     task_done_filter: bool | None

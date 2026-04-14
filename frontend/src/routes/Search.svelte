@@ -264,9 +264,13 @@
         {/if}
       </div>
     </div>
-  {:else}
-    <div class="py-12 text-center text-slate-500">
-      Type a query in the header and press Enter to start searching.
-    </div>
-  {/if}
+    {#if $searchQuery.trim().length > 0 && $searchQuery.trim().length < 3 && !$searchType}
+      <div class="py-12 text-center text-slate-500">
+        Please enter at least 3 characters for a search.
+      </div>
+    {:else}
+      <div class="py-12 text-center text-slate-500">
+        Type a query in the header to search across all your snipsels.
+      </div>
+    {/if}
 </div>

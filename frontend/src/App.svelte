@@ -241,12 +241,12 @@ import UserManagement from './routes/UserManagement.svelte';
     const type = untrack(() => $searchType);
     const scope = untrack(() => $searchScope);
 
-    if (!qRaw && !type) {
-      searchResults.set(null);
-      searchError.set(null);
+    // Minimum 3 characters for full-text search unless filters are used
+    if (qRaw.length > 0 && qRaw.length < 3 && !type && !qRaw.startsWith('#') && !qRaw.startsWith('@')) {
+      isSearching = false;
       return;
     }
-    
+
     isSearching = true;
     
     // Auto-detect tag/mention prefix
