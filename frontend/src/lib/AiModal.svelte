@@ -5,6 +5,16 @@
   import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
   import { api } from './api';
   import { currentUser } from './session';
+  import History from '@animated-color-icons/lucide-svelte/History.svelte';
+  import Star from '@animated-color-icons/lucide-svelte/Star.svelte';
+  import Clock from '@animated-color-icons/lucide-svelte/Clock.svelte';
+
+  interface HistoryItem {
+    id: string;
+    text: string;
+    starred: boolean;
+    last_used_at: string;
+  }
 
   interface Props {
     context: string;
@@ -20,6 +30,59 @@
   let response = $state('');
   let isGenerating = $state(false);
   let error = $state('');
+  let showHistory = $state(false);
+  let isHistoryLoading = $state(false);
+
+  let historyItems = $state<HistoryItem[]>([]);
+
+  async function fetchHistory() {
+    isHistoryLoading = true;
+    try {
+      const res = await api.ai.getHistory();
+      historyItems = res.history;
+    } catch (e) {
+      console.error('Failed to fetch AI history', e);
+    } finally {
+      isHistoryLoading = false;
+    }
+  }
+
+  $effect(() => {
+    fetchHistory();
+  });
+
+  async function toggleStar(item: HistoryItem, e: MouseEvent) {
+    e.stopPropagation();
+    const original = item.starred;
+    // Optimistic update
+    item.starred = !original;
+    try {
+      const res = await api.ai.toggleStarPrompt({ id: item.id });
+      item.starred = res.starred;
+    } catch (e) {
+      item.starred = original;
+      console.error('Failed to toggle star', e);
+    }
+  }
+
+  async function deleteHistoryItem(item: HistoryItem, e: MouseEvent) {
+    e.stopPropagation();
+    if (!confirm('Remove this prompt from history?')) return;
+    
+    const originalItems = [...historyItems];
+    historyItems = historyItems.filter(i => i.id !== item.id);
+    try {
+      await api.ai.deleteHistoryItem(item.id);
+    } catch (e) {
+      historyItems = originalItems;
+      console.error('Failed to delete history item', e);
+    }
+  }
+
+  function selectHistoryItem(item: HistoryItem) {
+    prompt = item.text;
+    showHistory = false;
+  }
 
   async function generate() {
     if (!prompt.trim()) return;
@@ -28,6 +91,7 @@
     try {
       const res = await api.ai.generate({ prompt, context, attachment_ids: attachmentIds });
       response = res.text;
+      fetchHistory(); // Refresh history to include the new/updated entry
     } catch (e: any) {
       error = e.error?.message || 'AI request failed. Please check your settings.';
     } finally {
@@ -71,16 +135,69 @@
 
     <div class="p-6 space-y-4">
       {#if !response}
-        <div>
-          <label for="ai-prompt" class="block text-sm font-medium text-slate-700 dark:text-slate-300">What should AI do with this snipsel?</label>
-          <textarea
-            id="ai-prompt"
-            class="mt-2 block w-full min-h-[100px] rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-slate-800 dark:text-white"
-            placeholder="e.g. Summarize this, Fix grammar, Translate to German..."
-            bind:value={prompt}
-            disabled={isGenerating}
-            onkeydown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate(); }}
-          ></textarea>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label for="ai-prompt" class="block text-sm font-medium text-slate-700 dark:text-slate-300">What should AI do with this snipsel?</label>
+            <button 
+              class="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
+              onclick={() => showHistory = !showHistory}
+            >
+              <History label="" size={14} />
+              {showHistory ? 'Hide History' : 'History'}
+            </button>
+          </div>
+
+          {#if showHistory}
+            <div class="space-y-2 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10" in:fly={{ y: -10, duration: 200 }}>
+              {#if historyItems.length === 0}
+                <div class="py-4 text-center text-xs text-slate-400 dark:text-slate-500 italic">No history yet</div>
+              {:else}
+                <div class="grid gap-2">
+                  {#each historyItems as item}
+                    <button 
+                      class="flex items-center gap-3 w-full text-left p-2.5 rounded-xl border border-slate-100 bg-white/50 hover:bg-slate-50 hover:border-slate-200 transition-all dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:border-white/10 group"
+                      onclick={() => selectHistoryItem(item)}
+                    >
+                      <div class="flex-1 min-w-0">
+                        <div class="text-sm text-slate-700 dark:text-white truncate font-medium">{item.text}</div>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                          <Clock label="" size={10} className="text-slate-400" />
+                          <span class="text-[10px] text-slate-400">{new Date(item.last_used_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button 
+                          class="al-icon-wrapper p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500"
+                          onclick={(e) => deleteHistoryItem(item, e)}
+                          title="Remove from history"
+                        >
+                          <X label="" size={14} />
+                        </button>
+                        <button 
+                          class="al-icon-wrapper p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors {item.starred ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100'}"
+                          onclick={(e) => toggleStar(item, e)}
+                          title={item.starred ? 'Unstar prompt' : 'Star as template'}
+                        >
+                          <Star label="" size={16} fill={item.starred ? 'currentColor' : 'none'} />
+                        </button>
+                      </div>
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+          {/if}
+          
+          <div class="relative">
+            <textarea
+              id="ai-prompt"
+              class="mt-2 block w-full min-h-[100px] rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-slate-800 dark:text-white"
+              placeholder="e.g. Summarize this, Fix grammar, Translate to German..."
+              bind:value={prompt}
+              disabled={isGenerating}
+              onkeydown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate(); }}
+            ></textarea>
+          </div>
         </div>
       {:else}
         <div class="space-y-4">

@@ -628,3 +628,25 @@ class UserOidcLink(db.Model):
     __table_args__ = (
         UniqueConstraint("provider", "subject", name="uq_oidc_provider_subject"),
     )
+
+
+class AiPromptHistory(db.Model):
+    __tablename__ = "ai_prompt_history"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    starred: Mapped[bool] = mapped_column(default=False, nullable=False)
+    last_used_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "prompt", name="uq_ai_prompt_history_user_prompt"),
+    )

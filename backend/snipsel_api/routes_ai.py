@@ -10,7 +10,7 @@ from flask import Blueprint, request, current_app
 from snipsel_api.auth_session import json_response, require_auth, current_user
 from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
-from snipsel_api.models import Attachment
+from snipsel_api.models import Attachment, AiPromptHistory
 from snipsel_api.permissions import can_read_snipsel_via_collections
 
 ai_bp = Blueprint("ai", __name__)
@@ -131,6 +131,28 @@ def generate():
             # Expecting OpenAI format
             if "choices" in res_data and len(res_data["choices"]) > 0:
                 ai_text = res_data["choices"][0]["message"]["content"]
+                
+                # Save to history
+                try:
+                    hist_entry = db.session.execute(
+                        db.select(AiPromptHistory).where(
+                            AiPromptHistory.user_id == user.id,
+                            AiPromptHistory.prompt == prompt
+                        )
+                    ).scalar_one_or_none()
+
+                    if hist_entry:
+                        hist_entry.last_used_at = db.func.now()
+                    else:
+                        hist_entry = AiPromptHistory(user_id=user.id, prompt=prompt)
+                        db.session.add(hist_entry)
+
+                    db.session.commit()
+                    _cleanup_ai_history(user.id)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to save AI history: {e}")
+                    db.session.rollback()
+
                 return json_response({"text": ai_text})
             else:
                 return json_response(
@@ -209,3 +231,100 @@ def get_models():
         raise api_error(502, "external_error", f"Failed to connect to LLM: {str(e)}")
     except Exception as e:
         raise api_error(500, "internal_error", str(e))
+
+
+@ai_bp.get("/history")
+@require_auth
+def get_history():
+    user = current_user()
+    history = (
+        db.session.execute(
+            db.select(AiPromptHistory)
+            .where(AiPromptHistory.user_id == user.id)
+            .order_by(AiPromptHistory.starred.desc(), AiPromptHistory.last_used_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    
+    return json_response({
+        "history": [
+            {
+                "id": h.id,
+                "text": h.prompt,
+                "starred": h.starred,
+                "last_used_at": h.last_used_at.isoformat()
+            } for h in history
+        ]
+    })
+
+
+@ai_bp.post("/history/toggle-star")
+@require_auth
+def toggle_star():
+    user = current_user()
+    data = request.get_json() or {}
+    prompt_text = data.get("prompt")
+    prompt_id = data.get("id")
+
+    if not prompt_text and not prompt_id:
+        raise api_error(400, "invalid_input", "Prompt text or ID is required")
+
+    stmt = db.select(AiPromptHistory).where(AiPromptHistory.user_id == user.id)
+    if prompt_id:
+        stmt = stmt.where(AiPromptHistory.id == prompt_id)
+    else:
+        stmt = stmt.where(AiPromptHistory.prompt == prompt_text)
+    
+    hist_entry = db.session.execute(stmt).scalar_one_or_none()
+    if not hist_entry:
+        raise api_error(404, "not_found", "History entry not found")
+
+    hist_entry.starred = not hist_entry.starred
+    db.session.commit()
+    
+    if not hist_entry.starred:
+        _cleanup_ai_history(user.id)
+
+    return json_response({
+        "id": hist_entry.id,
+        "text": hist_entry.prompt,
+        "starred": hist_entry.starred
+    })
+
+
+@ai_bp.delete("/history/<id>")
+@require_auth
+def delete_history_item(id):
+    user = current_user()
+    hist_entry = db.session.execute(
+        db.select(AiPromptHistory).where(
+            AiPromptHistory.id == id,
+            AiPromptHistory.user_id == user.id
+        )
+    ).scalar_one_or_none()
+
+    if not hist_entry:
+        raise api_error(404, "not_found", "History entry not found")
+
+    db.session.delete(hist_entry)
+    db.session.commit()
+    return json_response({"ok": True})
+
+
+def _cleanup_ai_history(user_id: str):
+    # Keep only 10 most recent unstarred prompts
+    unstarred = (
+        db.session.execute(
+            db.select(AiPromptHistory)
+            .where(AiPromptHistory.user_id == user_id, AiPromptHistory.starred == False)
+            .order_by(AiPromptHistory.last_used_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    
+    if len(unstarred) > 10:
+        for item in unstarred[10:]:
+            db.session.delete(item)
+        db.session.commit()

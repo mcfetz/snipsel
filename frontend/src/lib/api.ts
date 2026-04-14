@@ -415,6 +415,15 @@ export const api = {
       }),
     getModels: () =>
       requestJson<{ models: Array<{ id: string; name: string }> }>('/api/ai/models'),
+    getHistory: () =>
+      requestJson<{ history: Array<{ id: string; text: string; starred: boolean; last_used_at: string }> }>('/api/ai/history'),
+    toggleStarPrompt: (input: { id?: string; prompt?: string }) =>
+      requestJson<{ id: string; text: string; starred: boolean }>('/api/ai/history/toggle-star', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    deleteHistoryItem: (id: string) =>
+      requestJson<{ ok: boolean }>(`/api/ai/history/${id}`, { method: 'DELETE' }),
   },
 
   collections: {
