@@ -93,6 +93,19 @@
     return rgba(mixed, 0.96);
   }
 
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
+  function getContrastColor(bgColor: string): string {
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
+
   async function load() {
     isLoading.set(true);
     try {
@@ -634,20 +647,20 @@
             <div class="flex gap-2">
               <div class="flex flex-1 overflow-hidden rounded-full border border-slate-200 bg-white p-1 shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10">
                 <button
-                  class="flex-1 rounded-full py-1.5 text-xs font-medium transition-all {sharePermission === 'read' ? 'text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5'}"
+                  class="flex-1 rounded-full py-1.5 text-xs font-medium transition-all {sharePermission === 'read' ? '' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5'}"
                   type="button"
                   onclick={() => (sharePermission = 'read')}
                   disabled={sharingBusy}
-                  style={sharePermission === 'read' ? `background-color: ${getAccent()}` : undefined}
+                  style={sharePermission === 'read' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   Read
                 </button>
                 <button
-                  class="flex-1 rounded-full py-1.5 text-xs font-medium transition-all {sharePermission === 'write' ? 'text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5'}"
+                  class="flex-1 rounded-full py-1.5 text-xs font-medium transition-all {sharePermission === 'write' ? '' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5'}"
                   type="button"
                   onclick={() => (sharePermission = 'write')}
                   disabled={sharingBusy}
-                  style={sharePermission === 'write' ? `background-color: ${getAccent()}` : undefined}
+                  style={sharePermission === 'write' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   Write
                 </button>
