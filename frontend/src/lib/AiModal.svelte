@@ -153,7 +153,8 @@
           <div class="flex items-center justify-between">
             <label for="ai-prompt" class="block text-sm font-medium text-slate-700 dark:text-slate-300">What should AI do with this snipsel?</label>
             <button 
-              class="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
+              class="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-all"
+              style={`background-color: ${getAccent()}15; color: ${getAccent()}; border: 1px solid ${getAccent()}30`}
               onclick={() => showHistory = !showHistory}
             >
               <History label="" size={14} />
@@ -191,7 +192,8 @@
                           <X label="" size={14} />
                         </button>
                         <button 
-                          class="al-icon-wrapper p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors {item.starred ? 'text-rose-500' : 'text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100'}"
+                          class="al-icon-wrapper p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors {item.starred ? '' : 'text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100'}"
+                          style={item.starred ? `color: ${getAccent()}` : ''}
                           onclick={(e) => toggleStar(item, e)}
                           title={item.starred ? 'Unfavorite prompt' : 'Favorite as template'}
                         >
