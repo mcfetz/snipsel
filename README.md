@@ -43,7 +43,7 @@ Snipsel is an open-source PWA for capturing ideas, notes, tasks, bookmarks, and 
 
 ## ✨ Why Snipsel?
 
-Most note apps are either too simple (just plain text) or too heavy (Notion, Obsidian). Snipsel hits the sweet spot: structured collections, multiple content types, sharing, reminders — yet still feels as lightweight and instant as a sticky note.
+Most note apps are either too simple (just plain text) or too heavy (Notion, Obsidian). Snipsel hits the sweet spot: structured collections, multiple content types, sharing, and reminders — all powered by a **local-first architecture** and **real-time synchronization**. It feels as lightweight and instant as a sticky note, but scales with your knowledge.
 
 ---
 
@@ -58,14 +58,23 @@ Organize everything in **collections** — from grocery lists to project notes. 
 - 🖼️ **Image** — attach and view photos
 - 📁 **File attachment** — store any file
 
+### 🔄 Local-first & Real-time Sync
+Snipsel is built for speed and reliability:
+- **Real-time Engine** — Powered by Server-Sent Events (SSE), changes sync instantly across all your devices and browser tabs.
+- **Local-first Architecture** — Uses optimistic mutations and stale-while-revalidate patterns to ensure the UI is always responsive.
+- **Full Offline Mode** — Optionally sync your entire library to local storage (IndexedDB) for seamless access without an internet connection.
+
 **Smart Selection Features:**
 - **Multi-Select** — Click the selection bar on the right to select multiple snipsels
 - **Range Selection** — Hold Shift (desktop) or long-press (mobile) to select all snipsels between two items
 - **Auto-Select Children** — Selecting a parent snipsel with collapsed children automatically selects all nested items
+- **Bulk Sharing** — Quickly copy the content of all selected snipsels to your clipboard with one click
 - **Keyboard Shortcuts** — Extensive keyboard shortcuts for navigation, editing, and bulk operations (see User Documentation)
 
 ### 🤖 AI Assistant (Vision-ready)
-Process your notes with a built-in AI assistant. Configure your own OpenAI-compatible endpoint (OpenAI, Groq, Ollama) and use it to summarize, translate, or transform snipsels with custom prompts. Supports **vision models** for image analysis and text extraction from attachments.
+Process your notes with a built-in AI assistant. Configure your own OpenAI-compatible endpoint (OpenAI, Groq, Ollama) and use it to summarize, translate, or transform snipsels with custom prompts.
+- **Cross-device Sync** — Your prompt history and custom snippets are synchronized to your account.
+- **Vision Support** — Use vision models for image analysis and text extraction from attachments.
 
 ### 📅 Daily Journal
 A built-in **daily collection** auto-created for each day. Open tasks from the past 30 days are automatically **carried over** so nothing falls through the cracks.
@@ -80,13 +89,16 @@ A built-in **daily collection** auto-created for each day. Open tasks from the p
 - **Admin User Management** — admins can create, delete and manage users with role assignments
 
 ### 🎨 Beautiful & Adaptive UI
-- Light, dark, or system-adaptive theme
-- Custom accent color per collection
-- Cover images for collections
-- Installable as a PWA on any device
+- **Dynamic Accent Colors** — System-wide accent colors that adapt to your preferences and per-collection settings.
+- **Theming** — Light, dark, or system-adaptive theme with premium aesthetics.
+- **Visuals** — Custom cover images for collections and sleek micro-animations.
+- **PWA** — Installable on any device for a native-like experience.
 
 ### 🗺️ Geo Location
-Capture and view snipsels with geographic coordinates. See your notes on an interactive map in the Tags/Mentions view, filter by location, and track where your ideas were born. Perfect for travel journals, field notes, or location-based task management.
+Capture and view snipsels with geographic coordinates. See your notes on an interactive map, filter by location, and track where your ideas were born.
+
+### ⚡ Speed & Scale
+Snipsel is optimized for performance. With database indexing and smart result limiting, the UI remains snappy even when managing thousands of snipsels and collections.
 
 ### 📥 Import from Twos
 Coming from [Twos](https://www.twosapp.com/)? Snipsel can import all your lists, tasks, photos, and reminders with a single click — including recurrence rules.
