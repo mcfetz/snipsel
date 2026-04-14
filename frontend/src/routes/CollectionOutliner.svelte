@@ -1048,6 +1048,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    e.stopPropagation();
     if (showAutocomplete) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
