@@ -10,6 +10,66 @@
   import { currentView } from '../lib/stores';
   import { currentUser } from '../lib/session';
 
+  const DEFAULT_ACCENT = '#4f46e5';
+  type Rgb = { r: number; g: number; b: number };
+
+  function clampByte(n: number): number {
+    return Math.max(0, Math.min(255, Math.round(n)));
+  }
+
+  function hexToRgb(hex: string): Rgb | null {
+    const h = (hex || '').trim();
+    const m = /^#([0-9a-fA-F]{6})$/.exec(h);
+    if (!m) return null;
+    const v = m[1];
+    return {
+      r: parseInt(v.slice(0, 2), 16),
+      g: parseInt(v.slice(2, 4), 16),
+      b: parseInt(v.slice(4, 6), 16),
+    };
+  }
+
+  function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
+    const tt = Math.max(0, Math.min(1, t));
+    return {
+      r: clampByte(a.r + (b.r - a.r) * tt),
+      g: clampByte(a.g + (b.g - a.g) * tt),
+      b: clampByte(a.b + (b.b - a.b) * tt),
+    };
+  }
+
+  function rgba(c: Rgb, alpha: number): string {
+    const a = Math.max(0, Math.min(1, alpha));
+    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
+  }
+
+  function getAccent(): string {
+    const u = $currentUser;
+    const raw = (u?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
+    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
+  }
+
+  function getAccentTint(): string {
+    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    const base = isDark ? { r: 30, g: 41, b: 59 } : { r: 255, g: 255, b: 255 };
+    const accent = hexToRgb(getAccent());
+    const mixed = accent ? mixRgb(base, accent, 0.14) : base;
+    return rgba(mixed, 0.96);
+  }
+
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
+  function getContrastColor(bgColor: string): string {
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
+
   type AdminUser = {
     id: string;
     username: string;
@@ -131,7 +191,7 @@
       <ArrowLeft label="" size={20} />
     </button>
     <div class="flex items-center gap-2">
-      <Users label="" size={24} className="text-indigo-600 dark:text-indigo-400" />
+      <Users label="" size={24} style={`color: ${getAccent()}`} />
       <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">User Management</h1>
     </div>
   </div>
@@ -147,7 +207,8 @@
       {users.length} user{users.length !== 1 ? 's' : ''}
     </div>
     <button
-      class="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+      class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+      style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
       onclick={() => { isCreating = true; createError = ''; }}
       disabled={isCreating}
       type="button"
@@ -166,7 +227,10 @@
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Username</label>
           <input
             type="text"
-            class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-slate-800"
+            class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none dark:border-white/10 dark:bg-slate-800"
+            style={`--accent: ${getAccent()}`}
+            onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
+            onblur={(e) => (e.currentTarget.style.borderColor = '')}
             bind:value={newUsername}
             placeholder="johndoe"
           />
@@ -176,7 +240,9 @@
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
           <input
             type="email"
-            class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-slate-800"
+            class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none dark:border-white/10 dark:bg-slate-800"
+            onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
+            onblur={(e) => (e.currentTarget.style.borderColor = '')}
             bind:value={newEmail}
             placeholder="john@example.com"
           />
@@ -186,16 +252,19 @@
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
           <input
             type="password"
-            class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-white/10 dark:bg-slate-800"
+            class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none dark:border-white/10 dark:bg-slate-800"
+            onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
+            onblur={(e) => (e.currentTarget.style.borderColor = '')}
             bind:value={newPassword}
             placeholder="At least 8 characters"
           />
         </div>
 
-        <label class="flex items-center gap-2">
+        <label class="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
-            class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            class="rounded border-slate-300 focus:ring-0"
+            style={`color: ${getAccent()}`}
             bind:checked={newIsAdmin}
           />
           <span class="text-sm text-slate-700 dark:text-slate-300">Admin user</span>
@@ -207,7 +276,8 @@
 
         <div class="flex gap-2">
           <button
-            class="flex-1 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+            class="flex-1 rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             onclick={createUser}
             disabled={isSubmitting}
             type="button"
@@ -236,7 +306,7 @@
         <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/80">
           <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 dark:bg-slate-800">
             {#if user.is_admin}
-              <Shield label="" size={20} className="text-indigo-600 dark:text-indigo-400" />
+              <Shield label="" size={20} style={`color: ${getAccent()}`} />
             {:else}
               <User label="" size={20} className="text-slate-400" />
             {/if}
@@ -246,7 +316,12 @@
             <div class="flex items-center gap-2">
               <span class="font-medium text-slate-900 dark:text-slate-100">{user.username}</span>
               {#if user.is_admin}
-                <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">Admin</span>
+                <span 
+                  class="rounded-full px-2 py-0.5 text-xs font-medium"
+                  style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}
+                >
+                  Admin
+                </span>
               {/if}
               {#if !user.is_active}
                 <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300">Inactive</span>
@@ -258,7 +333,8 @@
           <div class="flex items-center gap-2">
             {#if user.id !== $currentUser?.id}
               <button
-                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {user.is_admin ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}"
+                class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {user.is_admin ? '' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}"
+                style={user.is_admin ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 onclick={() => toggleAdmin(user)}
                 type="button"
                 title={user.is_admin ? 'Remove admin' : 'Make admin'}

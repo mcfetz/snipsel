@@ -21,6 +21,66 @@
 
   let inputRefs = $state<HTMLInputElement[]>([]);
 
+  const DEFAULT_ACCENT = '#4f46e5';
+  type Rgb = { r: number; g: number; b: number };
+
+  function clampByte(n: number): number {
+    return Math.max(0, Math.min(255, Math.round(n)));
+  }
+
+  function hexToRgb(hex: string): Rgb | null {
+    const h = (hex || '').trim();
+    const m = /^#([0-9a-fA-F]{6})$/.exec(h);
+    if (!m) return null;
+    const v = m[1];
+    return {
+      r: parseInt(v.slice(0, 2), 16),
+      g: parseInt(v.slice(2, 4), 16),
+      b: parseInt(v.slice(4, 6), 16),
+    };
+  }
+
+  function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
+    const tt = Math.max(0, Math.min(1, t));
+    return {
+      r: clampByte(a.r + (b.r - a.r) * tt),
+      g: clampByte(a.g + (b.g - a.g) * tt),
+      b: clampByte(a.b + (b.b - a.b) * tt),
+    };
+  }
+
+  function rgba(c: Rgb, alpha: number): string {
+    const a = Math.max(0, Math.min(1, alpha));
+    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
+  }
+
+  function getAccent(): string {
+    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
+    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
+  }
+
+  function getAccentTint(): string {
+    const isDark = document.documentElement.classList.contains('dark');
+    const baseColor = isDark ? '#1e293b' : '#ffffff';
+    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
+    const accent = hexToRgb(getAccent());
+    const mixed = accent ? mixRgb(base, accent, 0.14) : base;
+    return rgba(mixed, 0.96);
+  }
+
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
+  function getContrastColor(bgColor: string): string {
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
+
   async function handleSubmit() {
     if (digits.some((d) => !d)) return;
 
@@ -102,7 +162,10 @@
 >
   <div class="mx-4 w-full max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-8 shadow-2xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
     <div class="mb-6 flex flex-col items-center">
-      <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+      <div 
+        class="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+        style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}
+      >
         <Lock label="" size={32} strokeWidth={2} />
       </div>
       <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Protected Collection</h2>
@@ -117,7 +180,10 @@
           inputmode="numeric"
           maxlength="1"
           value={digit}
-          class="h-16 w-14 rounded-xl border-2 border-slate-200 bg-white text-center text-2xl font-bold focus:border-indigo-500 focus:outline-none disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-white"
+          class="h-16 w-14 rounded-xl border-2 border-slate-200 bg-white text-center text-2xl font-bold focus:outline-none disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-white"
+          style={`--tw-ring-color: ${getAccent()}33; --accent: ${getAccent()}`}
+          onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
+          onblur={(e) => (e.currentTarget.style.borderColor = '')}
           disabled={loading}
           oninput={(e) => handleInput(i, e)}
           onkeydown={(e) => handleKeyDown(i, e)}
@@ -137,7 +203,8 @@
     <div class="mt-8 flex flex-col gap-3">
       <button
         type="button"
-        class="al-icon-wrapper flex h-12 items-center justify-center rounded-xl bg-indigo-600 font-semibold text-white transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+        class="al-icon-wrapper flex h-12 items-center justify-center rounded-xl font-semibold transition-all hover:opacity-90 focus:outline-none focus:ring-2 disabled:opacity-50"
+        style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; --tw-ring-color: ${getAccent()}50`}
         onclick={handleSubmit}
         disabled={loading || digits.some(d => !d)}
       >

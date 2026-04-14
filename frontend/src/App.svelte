@@ -707,7 +707,10 @@ import UserManagement from './routes/UserManagement.svelte';
           <span class="hidden sm:inline transition-transform duration-200 origin-left group-hover:scale-105">snipsel</span>
         </button>
         <input
-          class="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-100/50 px-4 py-2 text-base transition-all focus:border-[#4f46e5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/5 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:bg-slate-800"
+          class="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-100/50 px-4 py-2 text-base transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-white/5 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:bg-slate-800"
+          style={`--tw-ring-color: ${getAccent()}33; --accent: ${getAccent()}`}
+          onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
+          onblur={(e) => (e.currentTarget.style.borderColor = '')}
           placeholder="Search"
           type="search"
           bind:value={$searchQuery}

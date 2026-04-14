@@ -697,7 +697,8 @@
 
       <div class="mt-6 flex justify-end">
         <button
-          class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          class="rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+          style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
           type="button"
           onclick={saveAppearanceSettings}
           disabled={isBusy}
@@ -726,7 +727,8 @@
             {/each}
           </select>
           <button
-            class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            class="rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             type="button"
             onclick={saveDayTemplate}
             disabled={isBusy}
@@ -746,7 +748,8 @@
           <div class="text-xs text-slate-500 dark:text-slate-400">Move unfinished tasks from the last 30 days into today.</div>
         </div>
         <button
-          class="rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-700 {Boolean($currentUser?.carry_over_open_tasks ?? true) ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white' : 'border-slate-300 bg-white dark:border-white/10 dark:bg-slate-800'}"
+          class="rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-700 {Boolean($currentUser?.carry_over_open_tasks ?? true) ? '' : 'border-slate-300 bg-white dark:border-white/10 dark:bg-slate-800'}"
+          style={Boolean($currentUser?.carry_over_open_tasks ?? true) ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; border-color: ${getAccent()}` : undefined}
           type="button"
           onclick={toggleCarryOver}
           disabled={isBusy}
@@ -765,7 +768,8 @@
           <div class="text-xs text-slate-500 dark:text-slate-400">Receive alerts on this device for reminders.</div>
         </div>
         <button
-          class="rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-700 {hasPushEnabled ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white' : 'border-slate-300 bg-white dark:border-white/10 dark:bg-slate-800'}"
+          class="rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-700 {hasPushEnabled ? '' : 'border-slate-300 bg-white dark:border-white/10 dark:bg-slate-800'}"
+          style={hasPushEnabled ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; border-color: ${getAccent()}` : undefined}
           type="button"
           onclick={togglePush}
           disabled={isBusy}
@@ -853,7 +857,8 @@
         </div>
         <div class="flex justify-end pt-2">
           <button
-            class="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            class="rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             type="button"
             onclick={saveAiSettings}
             disabled={isBusy}
@@ -1277,7 +1282,10 @@
             onclick={() => currentView.set({ type: 'user_management' })}
             type="button"
           >
-            <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+            <div 
+              class="grid h-10 w-10 shrink-0 place-items-center rounded-full"
+              style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}
+            >
               <Users label="" size={20} />
             </div>
             <div class="flex-1">

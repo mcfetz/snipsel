@@ -298,7 +298,10 @@
 
   <div class="flex items-center gap-3">
     <input
-      class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-base shadow-sm outline-none ring-1 ring-black/5 transition-all focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-500"
+      class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-base shadow-sm outline-none ring-1 ring-black/5 transition-all focus:ring-2 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100"
+      style={`--tw-ring-color: ${getAccent()}33; --accent: ${getAccent()}`}
+      onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
+      onblur={(e) => (e.currentTarget.style.borderColor = '')}
       type="search"
       placeholder="Filter by title"
       bind:value={titleFilter}

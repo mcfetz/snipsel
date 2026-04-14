@@ -77,6 +77,19 @@
     return rgba(mixed, 0.96);
   }
 
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
+  function getContrastColor(bgColor: string): string {
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
+
   async function handleLogin() {
     if (!username || !password) {
       error = 'Please enter username and password';
@@ -278,8 +291,8 @@ async function startImport() {
           <button
             onclick={handleLogin}
             disabled={isLoading || !username || !password}
-            class="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-50"
-            style={`background-color: ${getAccent()}`}
+            class="w-full rounded-full px-4 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
           >
             {isLoading ? 'Connecting...' : 'Continue'}
           </button>
@@ -432,8 +445,8 @@ async function startImport() {
             <button
               onclick={startImport}
               disabled={isImporting || selectedLists.size === 0}
-              class="w-full rounded-full px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-50"
-              style={`background-color: ${getAccent()}`}
+              class="w-full rounded-full px-4 py-3 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+              style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             >
               {isImporting ? 'Importing...' : `Import ${selectedLists.size} Selected`}
             </button>
