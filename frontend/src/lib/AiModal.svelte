@@ -264,7 +264,7 @@
             Replace
           </button>
           <button
-            class="al-icon-wrapper grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300"
+            class="al-icon-wrapper grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             title="Copy to clipboard"
             onclick={copyToClipboard}
           >
