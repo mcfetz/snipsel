@@ -1,4 +1,8 @@
 from __future__ import annotations
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 from datetime import date, datetime, timedelta
 
@@ -29,13 +33,19 @@ search_bp = Blueprint("search", __name__)
 
 @cache.memoize(timeout=600)
 def _get_tags_cached(user_id: str, scope: str):
+    logger.debug(f"CACHE MISS: Fetching tags for user={user_id} scope={scope}")
+    start = time.time()
+    
     user = db.session.get(User, user_id)
     if not user:
         return []
 
-    # Step 1: IDs der zugänglichen Collections als Python-Liste materialisieren.
-    accessible_col_ids = db.session.execute(
-        db.select(Collection.id)
+    # Aggregation mit EXISTS-Check über die Berechtigungen direkt im SQL.
+    # Vermeidet das Materialisieren von Tausenden von IDs in Python.
+    accessible_cs_sq = (
+        db.select(literal(1))
+        .select_from(CollectionSnipsel)
+        .join(Collection, Collection.id == CollectionSnipsel.collection_id)
         .outerjoin(
             CollectionShare,
             db.and_(
@@ -44,21 +54,12 @@ def _get_tags_cached(user_id: str, scope: str):
             ),
         )
         .where(
-            Collection.deleted_at.is_(None),
-            db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
-        )
-    ).scalars().all()
-
-    if not accessible_col_ids:
-        return []
-
-    # Step 2: Aggregation mit EXISTS-Check.
-    accessible_cs_sq = (
-        db.select(literal(1))
-        .select_from(CollectionSnipsel)
-        .where(
             CollectionSnipsel.snipsel_id == Snipsel.id,
-            CollectionSnipsel.collection_id.in_(accessible_col_ids),
+            Collection.deleted_at.is_(None),
+            db.or_(
+                Collection.owner_user_id == user.id,
+                CollectionShare.permission.in_(["read", "write"]),
+            ),
         )
         .correlate(Snipsel)
         .exists()
@@ -81,11 +82,13 @@ def _get_tags_cached(user_id: str, scope: str):
             .limit(1000)
         ).all()
     )
-    return [
+    result = [
         {"name": name, "count": int(count)}
         for name, count in rows
         if name and name[:1].isalpha()
     ]
+    logger.debug(f"SQL execution took {time.time() - start:.3f}s for {len(result)} items")
+    return result
 
 
 @search_bp.get("/tags")
@@ -108,13 +111,18 @@ def list_tags():
 
 @cache.memoize(timeout=600)
 def _get_mentions_cached(user_id: str, scope: str):
+    logger.debug(f"CACHE MISS: Fetching mentions for user={user_id} scope={scope}")
+    start = time.time()
+
     user = db.session.get(User, user_id)
     if not user:
         return []
 
-    # Step 1: IDs der zugänglichen Collections als Python-Liste materialisieren.
-    accessible_col_ids = db.session.execute(
-        db.select(Collection.id)
+    # Aggregation mit EXISTS-Check direkt im SQL.
+    accessible_cs_sq = (
+        db.select(literal(1))
+        .select_from(CollectionSnipsel)
+        .join(Collection, Collection.id == CollectionSnipsel.collection_id)
         .outerjoin(
             CollectionShare,
             db.and_(
@@ -123,21 +131,12 @@ def _get_mentions_cached(user_id: str, scope: str):
             ),
         )
         .where(
-            Collection.deleted_at.is_(None),
-            db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
-        )
-    ).scalars().all()
-
-    if not accessible_col_ids:
-        return []
-
-    # Step 2: Aggregation mit EXISTS-Check über den neuen composite Index.
-    accessible_cs_sq = (
-        db.select(literal(1))
-        .select_from(CollectionSnipsel)
-        .where(
             CollectionSnipsel.snipsel_id == Snipsel.id,
-            CollectionSnipsel.collection_id.in_(accessible_col_ids),
+            Collection.deleted_at.is_(None),
+            db.or_(
+                Collection.owner_user_id == user.id,
+                CollectionShare.permission.in_(["read", "write"]),
+            ),
         )
         .correlate(Snipsel)
         .exists()

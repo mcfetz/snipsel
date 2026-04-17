@@ -75,7 +75,8 @@ def create_app() -> Flask:
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE=settings.session_cookie_samesite,
         SESSION_COOKIE_SECURE=settings.session_cookie_secure,
-        CACHE_TYPE="SimpleCache",
+        CACHE_TYPE="FileSystemCache",
+        CACHE_DIR=str(Path(app.instance_path) / "flask_cache"),
         CACHE_DEFAULT_TIMEOUT=300,
     )
     upload_dir = settings.upload_dir
