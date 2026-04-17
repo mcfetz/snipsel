@@ -21,6 +21,7 @@ from snipsel_api.permissions import (
     can_write_snipsel_via_collections,
     is_passcode_unlocked,
 )
+from snipsel_api.routes_search import clear_search_cache
 
 from snipsel_api.models import (
     Attachment,
@@ -263,6 +264,7 @@ def create_snipsel(collection_id: str):
 
     _sync_tags_mentions(user_id=user.id, snipsel=s)
     _sync_backlinks(user_id=user.id, snipsel=s)
+    clear_search_cache(user.id)
     db.session.commit()
     # Notify all users with access to this collection
     sse_bus.publish(
@@ -317,6 +319,7 @@ def reference_snipsel(collection_id: str, snipsel_id: str):
         .where(Collection.id == collection_id, Collection.deleted_at.is_(None))
         .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
     )
+    clear_search_cache(user.id)
     db.session.commit()
     return json_response({"item": _collection_item_json(cs)}, status=201)
 
@@ -374,6 +377,7 @@ def copy_snipsel(collection_id: str, snipsel_id: str):
     db.session.add(cs)
     _sync_tags_mentions(user_id=user.id, snipsel=s)
     _sync_backlinks(user_id=user.id, snipsel=s)
+    clear_search_cache(user.id)
     db.session.commit()
     return json_response({"item": _collection_item_json(cs, user.id)}, status=201)
 
@@ -666,6 +670,7 @@ def update_snipsel(snipsel_id: str):
             newly_became_task=(old_type != "task" and s.type == "task"),
         )
     _touch_collections_for_snipsel(snipsel_id=snipsel_id, modified_by_id=user.id)
+    clear_search_cache(user.id)
     db.session.commit()
     # Notify all collection members about the updated snipsel
     affected_collection_ids = (
@@ -736,6 +741,7 @@ def delete_from_collection(collection_id: str, snipsel_id: str):
         .where(Collection.id == collection_id, Collection.deleted_at.is_(None))
         .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
     )
+    clear_search_cache(user.id)
     db.session.commit()
     # Notify: snipsel removed from collection
     sse_bus.publish(

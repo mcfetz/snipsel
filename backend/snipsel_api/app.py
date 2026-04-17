@@ -9,7 +9,7 @@ from datetime import timedelta
 from flask import Flask, send_from_directory
 
 from snipsel_api.config import Settings
-from snipsel_api.extensions import cors, db, migrate
+from snipsel_api.extensions import cache, cors, db, migrate
 from snipsel_api.routes_errors import errors_bp
 from snipsel_api.routes_attachments import attachments_bp
 from snipsel_api.routes_auth import auth_bp
@@ -75,6 +75,8 @@ def create_app() -> Flask:
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE=settings.session_cookie_samesite,
         SESSION_COOKIE_SECURE=settings.session_cookie_secure,
+        CACHE_TYPE="SimpleCache",
+        CACHE_DEFAULT_TIMEOUT=300,
     )
     upload_dir = settings.upload_dir
     if "SNIPSEL_UPLOAD_DIR" not in os.environ:
@@ -83,6 +85,7 @@ def create_app() -> Flask:
 
     db.init_app(app)
     migrate.init_app(app, db)
+    cache.init_app(app)
 
     # Enable WAL journal mode for SQLite so readers never block writers and
     # vice-versa.  Must be done via an event, not connect_args, because

@@ -8,7 +8,7 @@ from sqlalchemy import literal
 
 from snipsel_api.auth_session import current_user, json_response, require_auth
 from snipsel_api.errors import api_error
-from snipsel_api.extensions import db
+from snipsel_api.extensions import cache, db
 from snipsel_api.models import (
     Attachment,
     Collection,
@@ -27,17 +27,13 @@ from sqlalchemy.orm import joinedload
 search_bp = Blueprint("search", __name__)
 
 
-@search_bp.get("/tags")
-@require_auth
-def list_tags():
-    user = current_user()
-    scope = (request.args.get("scope") or "my").strip().lower()
-    q = (request.args.get("q") or "").strip().lower()
-    if scope not in {"my", "shared", "all"}:
-        raise api_error(400, "invalid_input", "scope must be my, shared or all")
+@cache.memoize(timeout=600)
+def _get_tags_cached(user_id: str, scope: str):
+    user = db.session.get(User, user_id)
+    if not user:
+        return []
 
     # Step 1: IDs der zugänglichen Collections als Python-Liste materialisieren.
-    # ~1200 Einträge – klein genug für ein effizientes IN (...).
     accessible_col_ids = db.session.execute(
         db.select(Collection.id)
         .outerjoin(
@@ -54,11 +50,9 @@ def list_tags():
     ).scalars().all()
 
     if not accessible_col_ids:
-        return json_response({"tags": []})
+        return []
 
     # Step 2: Aggregation mit EXISTS-Check.
-    # Der neue composite Index ix_collection_snipsels_snipsel_collection (snipsel_id, collection_id)
-    # macht diesen EXISTS-Check nahezu O(1) pro Snipsel.
     accessible_cs_sq = (
         db.select(literal(1))
         .select_from(CollectionSnipsel)
@@ -80,33 +74,43 @@ def list_tags():
                 accessible_cs_sq,
                 Tag.owner_user_id == user.id if scope == "my" else Tag.owner_user_id != user.id if scope == "shared" else db.true(),
                 Snipsel.deleted_at.is_(None),
-                Tag.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Tag.name)
             .order_by(db.func.count(SnipselTag.snipsel_id).desc(), Tag.name.asc())
-            .limit(100)
+            # We fetch more than 100 for the cache so filtering by 'q' in Python has room to work
+            .limit(1000)
         ).all()
     )
-    return json_response(
-        {
-            "tags": [
-                {"name": name, "count": int(count)}
-                for name, count in rows
-                if name and name[:1].isalpha()
-            ]
-        }
-    )
+    return [
+        {"name": name, "count": int(count)}
+        for name, count in rows
+        if name and name[:1].isalpha()
+    ]
 
 
-
-@search_bp.get("/mentions")
+@search_bp.get("/tags")
 @require_auth
-def list_mentions():
+def list_tags():
     user = current_user()
     scope = (request.args.get("scope") or "my").strip().lower()
     q = (request.args.get("q") or "").strip().lower()
     if scope not in {"my", "shared", "all"}:
         raise api_error(400, "invalid_input", "scope must be my, shared or all")
+
+    tags = _get_tags_cached(user.id, scope)
+    if q:
+        filtered = [t for t in tags if q in t["name"].lower()]
+        return json_response({"tags": filtered[:100]})
+    
+    return json_response({"tags": tags[:100]})
+
+
+
+@cache.memoize(timeout=600)
+def _get_mentions_cached(user_id: str, scope: str):
+    user = db.session.get(User, user_id)
+    if not user:
+        return []
 
     # Step 1: IDs der zugänglichen Collections als Python-Liste materialisieren.
     accessible_col_ids = db.session.execute(
@@ -125,7 +129,7 @@ def list_mentions():
     ).scalars().all()
 
     if not accessible_col_ids:
-        return json_response({"mentions": []})
+        return []
 
     # Step 2: Aggregation mit EXISTS-Check über den neuen composite Index.
     accessible_cs_sq = (
@@ -149,22 +153,40 @@ def list_mentions():
                 accessible_cs_sq,
                 Mention.owner_user_id == user.id if scope == "my" else Mention.owner_user_id != user.id if scope == "shared" else db.true(),
                 Snipsel.deleted_at.is_(None),
-                Mention.name.ilike(f"%{q}%") if q else db.true(),
             )
             .group_by(Mention.name)
             .order_by(db.func.count(SnipselMention.snipsel_id).desc(), Mention.name.asc())
-            .limit(100)
+            .limit(1000)
         ).all()
     )
-    return json_response(
-        {
-            "mentions": [
-                {"name": name, "count": int(count)}
-                for name, count in rows
-                if name and name[:1].isalpha()
-            ]
-        }
-    )
+    return [
+        {"name": name, "count": int(count)}
+        for name, count in rows
+        if name and name[:1].isalpha()
+    ]
+
+
+@search_bp.get("/mentions")
+@require_auth
+def list_mentions():
+    user = current_user()
+    scope = (request.args.get("scope") or "my").strip().lower()
+    q = (request.args.get("q") or "").strip().lower()
+    if scope not in {"my", "shared", "all"}:
+        raise api_error(400, "invalid_input", "scope must be my, shared or all")
+
+    mentions = _get_mentions_cached(user.id, scope)
+    if q:
+        filtered = [m for m in mentions if q in m["name"].lower()]
+        return json_response({"mentions": filtered[:100]})
+
+    return json_response({"mentions": mentions[:100]})
+
+
+def clear_search_cache(user_id: str):
+    for scope in ["my", "shared", "all"]:
+        cache.delete_memoized(_get_tags_cached, user_id, scope)
+        cache.delete_memoized(_get_mentions_cached, user_id, scope)
 
 
 @search_bp.get("/search")
