@@ -11,8 +11,14 @@
 	let items = $state<SearchSnipselHit[]>([]);
 	let showDone = $state(false);
 	let scope = $state<'my' | 'shared'>('my');
-	let saveStatuses = $state<Record<string, 'success' | 'error' | null>>({});
+  let titleFilter = $state('');
+  
+  type SortKey = 'modified' | 'name' | 'reminder';
+  type SortDir = 'asc' | 'desc';
+  let sortKey = $state<SortKey>('reminder');
+  let sortDir = $state<SortDir>('asc');
 
+	let saveStatuses = $state<Record<string, 'success' | 'error' | null>>({});
 
   const DEFAULT_ACCENT = '#4f46e5';
   type Rgb = { r: number; g: number; b: number };
@@ -96,18 +102,43 @@
 				task_done: showDone,
 				scope: scope,
 			});
-			items = res.snipsels.sort((a, b) => {
-				if (a.reminder_at && b.reminder_at) {
-					return new Date(a.reminder_at).getTime() - new Date(b.reminder_at).getTime();
-				}
-				if (a.reminder_at) return -1;
-				if (b.reminder_at) return 1;
-				return 0;
-			});
+			items = res.snipsels;
 		} finally {
 			isLoading.set(false);
 		}
 	}
+
+  const sorted = $derived.by(() => {
+    let list = [...items];
+    if (titleFilter.trim()) {
+      const q = titleFilter.toLowerCase();
+      list = list.filter(t => (t.content_markdown ?? '').toLowerCase().includes(q));
+    }
+    
+    list.sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      if (sortKey === 'name') {
+        const ta = (a.content_markdown ?? '').toLowerCase();
+        const tb = (b.content_markdown ?? '').toLowerCase();
+        return ta.localeCompare(tb) * dir;
+      }
+      if (sortKey === 'modified') {
+        const da = new Date(a.modified_at).getTime();
+        const db = new Date(b.modified_at).getTime();
+        return (da - db) * dir;
+      }
+      // reminder (default)
+      if (a.reminder_at && b.reminder_at) {
+        return (new Date(a.reminder_at).getTime() - new Date(b.reminder_at).getTime()) * dir;
+      }
+      if (a.reminder_at) return -1 * dir;
+      if (b.reminder_at) return 1 * dir;
+      return 0;
+    });
+    return list;
+  });
+
+  const visible = $derived(sorted.slice(0, 100));
 
 	$effect(() => {
 		const uname = ($currentUser?.username || '').trim();
@@ -160,10 +191,12 @@
 </script>
 
 <div class="space-y-4">
-	<h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
-    <SquareCheck label="" size={24} className="text-slate-700 dark:text-slate-300" />
-    <span>Todos</span>
-	</h2>
+  <div class="flex items-center justify-between">
+    <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
+      <SquareCheck label="" size={24} className="text-slate-700 dark:text-slate-300" />
+      <span>Todos</span>
+    </h2>
+  </div>
 
 	<div class="flex items-center gap-2">
 		<div class="flex flex-1 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10" role="tablist">
@@ -174,7 +207,7 @@
 				class="flex-1 px-4 py-3 text-base font-medium transition-colors {!showDone
 					? 'text-slate-900 dark:text-white'
 					: 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
-				onclick={() => (showDone = false)}
+				onclick={() => { showDone = false; }}
 				style={!showDone ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
 			>
 				Open
@@ -186,7 +219,7 @@
 				class="flex-1 border-l border-black/5 px-4 py-3 text-base font-medium transition-colors dark:border-white/5 {showDone
 					? 'text-slate-900 dark:text-white'
 					: 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
-				onclick={() => (showDone = true)}
+				onclick={() => { showDone = true; }}
 				style={showDone ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
 			>
 				Done
@@ -221,11 +254,76 @@
 		</div>
 	</div>
 
+  <div class="flex items-center gap-3">
+    <input
+      class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-base shadow-sm outline-none ring-1 ring-black/5 transition-all focus:ring-2 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100"
+      style={`--tw-ring-color: ${getAccent()}33; --accent: ${getAccent()}`}
+      onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
+      onblur={(e) => (e.currentTarget.style.borderColor = '')}
+      type="search"
+      placeholder="Filter tasks"
+      bind:value={titleFilter}
+    />
+
+    <div class="ml-auto flex items-center gap-2">
+      <div class="overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900">
+        <div class="flex">
+          <button
+            class="px-4 py-2 text-sm font-medium {sortKey === 'reminder'
+              ? 'text-slate-900 dark:text-white'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+            type="button"
+            onclick={() => (sortKey = 'reminder')}
+            style={sortKey === 'reminder' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+          >
+            Reminder
+          </button>
+          <button
+            class="border-l border-black/5 px-4 py-2 text-sm font-medium {sortKey === 'modified'
+              ? 'text-slate-900 dark:text-white'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+            type="button"
+            onclick={() => (sortKey = 'modified')}
+            style={sortKey === 'modified' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+          >
+            Modified
+          </button>
+          <button
+            class="border-l border-black/5 px-4 py-2 text-sm font-medium {sortKey === 'name'
+              ? 'text-slate-900 dark:text-white'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+            type="button"
+            onclick={() => (sortKey = 'name')}
+            style={sortKey === 'name' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+          >
+            Name
+          </button>
+        </div>
+      </div>
+
+      <button
+        class="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-lg text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-all dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-white/5"
+        type="button"
+        aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
+        title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
+        onclick={() => (sortDir = sortDir === 'asc' ? 'desc' : 'asc')}
+      >
+        {sortDir === 'asc' ? '↑' : '↓'}
+      </button>
+    </div>
+  </div>
+
 	{#if items.length === 0}
-		<div class="py-8 text-center text-sm text-slate-500" in:fade={{ duration: 200 }}>No {showDone ? 'done' : 'open'} tasks</div>
+		<div class="py-8 text-center text-sm text-slate-500" in:fade={{ duration: 200 }}>
+      No {showDone ? 'done' : 'open'} tasks found.
+    </div>
+  {:else if visible.length === 0}
+		<div class="py-8 text-center text-sm text-slate-500" in:fade={{ duration: 200 }}>
+      No tasks match your filter.
+    </div>
 	{:else}
     <div class="space-y-2">
-		{#each items as t (t.id)}
+		{#each visible as t (t.id)}
 			{@const hasAccess = t.has_collection_access !== false}
 			{@const canToggle = t.can_toggle_task_done === true}
 			<div class="flex w-full items-center gap-3 px-1 py-2" in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 150 }}>
@@ -297,6 +395,13 @@
           </div>
         </div>
       {/each}
+      
+      {#if sorted.length > visible.length}
+        <div class="py-6 text-center text-sm text-slate-500 font-medium bg-slate-50/50 rounded-xl border border-slate-200/50 dark:bg-slate-900/30 dark:border-white/5">
+          Showing <span class="font-bold text-slate-700 dark:text-slate-300">100</span> of <span class="font-bold text-slate-700 dark:text-slate-300">{sorted.length}</span> tasks.<br/>
+          Use the filter above to find more.
+        </div>
+      {/if}
     </div>
   {/if}
 </div>

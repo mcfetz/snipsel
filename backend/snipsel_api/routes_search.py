@@ -221,25 +221,6 @@ def search():
     if q_len > 0 and q_len < 3 and not has_filters:
         return json_response({"items": [], "total": 0, "limit": 200, "offset": 0})
 
-    accessible_collection_ids = (
-        db.session.execute(
-            db.select(Collection.id)
-            .outerjoin(
-                CollectionShare,
-                db.and_(
-                    CollectionShare.collection_id == Collection.id,
-                    CollectionShare.shared_with_user_id == user.id,
-                ),
-            )
-            .where(
-                Collection.deleted_at.is_(None),
-                db.or_(Collection.owner_user_id == user.id, CollectionShare.permission.in_(["read", "write"])),
-            )
-        )
-        .scalars()
-        .all()
-    )
-
     writable_collection_ids = (
         db.session.execute(
             db.select(Collection.id)
@@ -270,9 +251,20 @@ def search():
         )
         .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
         .join(Collection, Collection.id == CollectionSnipsel.collection_id)
+        .outerjoin(
+            CollectionShare,
+            db.and_(
+                CollectionShare.collection_id == Collection.id,
+                CollectionShare.shared_with_user_id == user.id,
+            ),
+        )
         .where(
             Snipsel.deleted_at.is_(None),
-            CollectionSnipsel.collection_id.in_(accessible_collection_ids) if accessible_collection_ids else db.false(),
+            Collection.deleted_at.is_(None),
+            db.or_(
+                Collection.owner_user_id == user.id,
+                CollectionShare.permission.in_(["read", "write"]),
+            ),
         )
         .options(joinedload(Snipsel.reactions))
         .distinct()
@@ -362,7 +354,7 @@ def search():
                 ~has_user_mention_sq,
             )
 
-    accessible_rows = db.session.execute(stmt.order_by(Snipsel.modified_at.desc()).limit(200)).unique().all()
+    accessible_rows = db.session.execute(stmt.order_by(Snipsel.modified_at.desc()).limit(100)).unique().all()
 
     hits_by_id: dict[str, tuple[Snipsel, str | None, int | None, str | None, str | None, bool, bool, bool]] = {}
     for s, collection_id, position, collection_title, collection_icon in accessible_rows:
@@ -399,7 +391,7 @@ def search():
             .distinct()
         )
 
-        mentioned_rows = db.session.execute(m_stmt.order_by(Snipsel.modified_at.desc()).limit(200)).unique().all()
+        mentioned_rows = db.session.execute(m_stmt.order_by(Snipsel.modified_at.desc()).limit(100)).unique().all()
         for (s,) in mentioned_rows:
             if s.id in hits_by_id:
                 continue
@@ -414,7 +406,7 @@ def search():
                 bool(s.type == "task"),
             )
 
-    rows = sorted(hits_by_id.values(), key=lambda r: r[0].modified_at, reverse=True)[:200]
+    rows = sorted(hits_by_id.values(), key=lambda r: r[0].modified_at, reverse=True)[:100]
 
     collection_hits = []
     if q:
