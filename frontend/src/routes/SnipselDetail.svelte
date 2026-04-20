@@ -573,7 +573,7 @@
           </div>
         {/if}
 
-        <div class="prose prose-sm max-w-none text-lg prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words">
+        <div class="prose prose-sm max-w-none text-lg prose-p:mt-0 prose-p:mb-2 last:prose-p:mb-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words">
           {@html highlightTokens(stripMediaLinks(snipsel.content_markdown))}
         </div>
 

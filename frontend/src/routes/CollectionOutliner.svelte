@@ -2132,7 +2132,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       )
       .replace(/==([^=]+)==/g, `<mark style="background-color:${tokenBg}; border-radius: 0.25rem; padding: 0 0.125rem">$1</mark>`)
       .replace(/<a /g, `<a style="color:${tokenFg}; text-decoration:underline" target="_blank" rel="noopener noreferrer" `)
-      .replace(/<blockquote>/g, `<blockquote style="border-left: 3px solid ${tokenFg}; background-color:${tokenBg}; margin: 0.25rem 0; padding: 0.25rem 0.75rem; border-radius: 0 0.25rem 0.25rem 0; opacity: 0.9;">`);
+      .replace(/<blockquote>/g, `<blockquote style="border-left: 3px solid ${tokenFg}; background-color:${tokenBg}; margin: 0.25rem 0; padding: 0.25rem 0.75rem; border-radius: 0 0.25rem 0.25rem 0; opacity: 0.9;">`)
+      .replace(/>\s+</g, '><');
   }
 
   function renderWithWikiLinks(content: string, refs: Array<{title: string; collection_id: string}> | undefined): string {
@@ -2696,7 +2697,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
                   <div class="flex items-start gap-2">
-                    <div class="prose prose-sm max-w-none text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
+                    <div class="prose prose-sm max-w-none text-lg prose-p:mt-0 prose-p:mb-2 last:prose-p:mb-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
                       {@html renderMarkdown(stripMediaLinks(snip.content_markdown))}
                     </div>
 
@@ -3024,7 +3025,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
                   <div class="flex items-start gap-2">
                     <div
-                      class="prose prose-sm max-w-none text-lg prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words"
+                      class="prose prose-sm max-w-none text-lg prose-p:mt-0 prose-p:mb-2 last:prose-p:mb-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words"
                       style="--accent-light: {getToolboxBg()}"
                     >
                       {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown) : item.snipsel.content_markdown, item.collection_refs)}
@@ -3254,7 +3255,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
                   <div class="flex items-start gap-2">
-                    <div class="prose prose-sm max-w-none text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
+                    <div class="prose prose-sm max-w-none text-lg prose-p:mt-0 prose-p:mb-2 last:prose-p:mb-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
                       {@html renderMarkdown(stripMediaLinks(snip.content_markdown))}
                     </div>
 
