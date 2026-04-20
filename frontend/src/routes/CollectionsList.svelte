@@ -399,7 +399,7 @@
           <button class="flex flex-1 items-center gap-3 text-left transition-all hover:translate-x-0.5" type="button" onclick={() => openCollection(c)}>
             <span class="text-3xl transition-transform duration-200 group-hover:scale-110">{c.icon}</span>
             <div class="min-w-0 flex-1">
-              <div class="truncate text-lg font-medium text-slate-800 dark:text-slate-200">{c.title}</div>
+              <div class="truncate text-lg font-medium text-slate-800 dark:text-slate-200">{c.title.length > 50 ? c.title.slice(0, 47) + '...' : c.title}</div>
               <div class="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                 {#if c.access_level === 'read' || c.access_level === 'write'}
                   <span class="rounded-full px-2 py-0.5 font-medium border border-black/5 dark:border-white/10" style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}
