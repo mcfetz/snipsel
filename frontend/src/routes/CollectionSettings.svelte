@@ -6,7 +6,6 @@
   import Link from '@animated-color-icons/lucide-svelte/Link.svelte';
   import X from '@animated-color-icons/lucide-svelte/X.svelte';
   import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
-  import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
   import UnsplashSearchModal from '../lib/UnsplashSearchModal.svelte';
   import { api, type Collection, type CollectionShare, type UserLite, type CollectionBacklink } from '../lib/api';
   import { collectionAnchor, collections, currentCollection, currentView, isLoading } from '../lib/stores';
