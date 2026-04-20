@@ -33,6 +33,8 @@ class Settings:
     oidc_scope: str
     oidc_provider_name: str
     oidc_disable_password_login: bool
+    unsplash_access_key: str | None
+    unsplash_secret_key: str | None
 
     @staticmethod
     def from_env() -> "Settings":
@@ -78,6 +80,8 @@ class Settings:
         oidc_disable_password_login = (
             os.environ.get("SNIPSEL_OIDC_DISABLE_PASSWORD_LOGIN", "0") == "1"
         )
+        unsplash_access_key = os.environ.get("SNIPSEL_UNSPLASH_ACCESS_KEY")
+        unsplash_secret_key = os.environ.get("SNIPSEL_UNSPLASH_SECRET_KEY")
 
         return Settings(
             secret_key=secret_key,
@@ -107,4 +111,6 @@ class Settings:
             oidc_scope=oidc_scope,
             oidc_provider_name=oidc_provider_name,
             oidc_disable_password_login=oidc_disable_password_login,
+            unsplash_access_key=unsplash_access_key,
+            unsplash_secret_key=unsplash_secret_key,
         )

@@ -6,6 +6,8 @@
   import Link from '@animated-color-icons/lucide-svelte/Link.svelte';
   import X from '@animated-color-icons/lucide-svelte/X.svelte';
   import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
+  import Search from '@animated-color-icons/lucide-svelte/Search.svelte';
+  import UnsplashSearchModal from '../lib/UnsplashSearchModal.svelte';
   import { api, type Collection, type CollectionShare, type UserLite, type CollectionBacklink } from '../lib/api';
   import { collectionAnchor, collections, currentCollection, currentView, isLoading } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -35,6 +37,7 @@
   let showDeleteModal = $state(false);
   let showBulkDeleteModal = $state(false);
   let showBulkResetModal = $state(false);
+  let showUnsplashModal = $state(false);
   let errorModal = $state<{ title: string; message: string } | null>(null);
   let uploadProgress = $state<{ filename: string; percent: number } | null>(null);
 
@@ -513,6 +516,15 @@
                   Upload
                   <input type="file" accept="image/*" class="hidden" onchange={onFileSelected} disabled={saving} />
                 </label>
+                <button
+                  class="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 flex items-center gap-1.5"
+                  type="button"
+                  onclick={() => (showUnsplashModal = true)}
+                  disabled={saving}
+                >
+                  <Search size={12} label="" />
+                  Search
+                </button>
               </div>
 
               {#if headerImageUrl}
@@ -828,5 +840,13 @@
     title={errorModal.title}
     message={errorModal.message}
     onClose={() => (errorModal = null)}
+  />
+{/if}
+
+{#if showUnsplashModal}
+  <UnsplashSearchModal
+    initialQuery={title}
+    onSelect={(url) => { headerImageUrl = url; save(); }}
+    onClose={() => (showUnsplashModal = false)}
   />
 {/if}

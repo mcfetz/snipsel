@@ -1196,4 +1196,10 @@ export const api = {
         body: JSON.stringify(input),
       }),
   },
+  proxy: {
+    unsplashSearch: (query: string, page = 1) =>
+      requestJson<{ results: any[]; total: number; total_pages: number }>(
+        `/api/proxy/unsplash/search?query=${encodeURIComponent(query)}&page=${page}`
+      ),
+  },
 };

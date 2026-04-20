@@ -8,7 +8,7 @@ from urllib import parse as urllib_parse
 from urllib.error import URLError, HTTPError
 
 import requests
-from flask import Blueprint, request
+from flask import Blueprint, request, current_app
 from snipsel_api.auth_session import json_response, require_auth
 from snipsel_api.errors import api_error
 from functools import lru_cache
@@ -374,3 +374,50 @@ def proxy_youtube():
         )
     except Exception as e:
         raise api_error(500, "internal_error", str(e))
+
+
+@proxy_bp.route("/unsplash/search", methods=["GET"])
+@require_auth
+def proxy_unsplash_search():
+    """Proxy requests to Unsplash Search API."""
+    query = request.args.get("query")
+    page = request.args.get("page", "1")
+    per_page = request.args.get("per_page", "20")
+
+    if not query:
+        raise api_error(400, "invalid_input", "query is required")
+
+    access_key = current_app.config.get("UNSPLASH_ACCESS_KEY")
+    if not access_key:
+        raise api_error(
+            503,
+            "external_error",
+            "Unsplash API is not configured (SNIPSEL_UNSPLASH_ACCESS_KEY is missing)."
+        )
+
+    search_url = (
+        f"https://api.unsplash.com/search/photos?query={urllib_parse.quote(query)}"
+        f"&page={page}&per_page={per_page}"
+    )
+
+    try:
+        resp = requests.get(
+            search_url,
+            headers={"Authorization": f"Client-ID {access_key}", "Accept-Version": "v1"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return json_response(resp.json())
+    except requests.exceptions.HTTPError as e:
+        status_code = resp.status_code if "resp" in locals() else 500
+        error_data = {"error": str(e)}
+        try:
+            error_data = resp.json()
+        except Exception:
+            pass
+        return json_response(error_data, status=status_code)
+    except Exception as e:
+        raise api_error(
+            502, "external_error", f"Failed to connect to Unsplash: {str(e)}"
+        )
+

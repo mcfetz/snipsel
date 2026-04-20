@@ -78,6 +78,8 @@ def create_app() -> Flask:
         CACHE_TYPE="FileSystemCache",
         CACHE_DIR=str(Path(app.instance_path) / "flask_cache"),
         CACHE_DEFAULT_TIMEOUT=300,
+        UNSPLASH_ACCESS_KEY=settings.unsplash_access_key,
+        UNSPLASH_SECRET_KEY=settings.unsplash_secret_key,
     )
     upload_dir = settings.upload_dir
     if "SNIPSEL_UPLOAD_DIR" not in os.environ:
