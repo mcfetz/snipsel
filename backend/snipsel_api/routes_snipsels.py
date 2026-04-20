@@ -986,15 +986,35 @@ def _sync_tags_mentions(
     for m in m_by_name.values():
         db.session.add(SnipselMention(snipsel_id=snipsel.id, mention_id=m.id))
 
+    # Check if this snipsel is in an active daily collection
+    is_in_daily = (
+        db.session.execute(
+            db.select(db.func.count())
+            .select_from(CollectionSnipsel)
+            .join(Collection, Collection.id == CollectionSnipsel.collection_id)
+            .where(
+                CollectionSnipsel.snipsel_id == snipsel.id,
+                Collection.list_for_day.is_not(None),
+                Collection.deleted_at.is_(None),
+            )
+        ).scalar()
+        or 0
+    ) > 0
+
     for name in set(mention_names):
         if name not in old_mention_names or newly_became_task:
             mentioned_user = db.session.execute(
                 db.select(User).where(User.username == name)
             ).scalar_one_or_none()
             if mentioned_user and mentioned_user.id != user_id:
-                if snipsel.type == "task" or can_read_snipsel_via_collections(
+                # Notifications are sent if:
+                # 1. It's a task (assignment)
+                # 2. It's in a daily collection (the system shares these mentions by default)
+                # 3. The user already has collection access
+                can_see = is_in_daily or can_read_snipsel_via_collections(
                     mentioned_user.id, snipsel.id
-                ):
+                )
+                if snipsel.type == "task" or can_see:
                     author = db.session.get(User, user_id)
                     author_name = author.username if author else "Someone"
                     if snipsel.type == "task":
@@ -1005,7 +1025,12 @@ def _sync_tags_mentions(
                             else f"{author_name} assigned a task to you."
                         )
                     else:
-                        msg = f"{author_name} mentioned you in a snipsel."
+                        preview = _get_task_preview(snipsel.content_markdown or "")
+                        msg = (
+                            f"{author_name} mentioned you: {preview}"
+                            if preview
+                            else f"{author_name} mentioned you."
+                        )
                     if not _is_snipsel_muted(snipsel.id):
                         n = Notification(
                             user_id=mentioned_user.id,
