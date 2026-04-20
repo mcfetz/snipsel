@@ -410,12 +410,33 @@ def proxy_unsplash_search():
         return json_response(resp.json())
     except requests.exceptions.HTTPError as e:
         status_code = resp.status_code if "resp" in locals() else 500
-        error_data = {"error": str(e)}
+        
+        # Unsplash rate limiting is usually 403 (for Demo apps) or 429
+        if status_code in (403, 429):
+            # Check for Unsplash errors in body
+            try:
+                data = resp.json()
+                if "errors" in data and data["errors"]:
+                    msg = data["errors"][0]
+                    if "rate limit" in msg.lower():
+                        raise api_error(429, "rate_limit_exceeded", "Unsplash rate limit reached. Please try again later.")
+                    raise api_error(status_code, "external_error", f"Unsplash error: {msg}")
+            except (ValueError, KeyError, ApiError) as ex:
+                if isinstance(ex, ApiError): raise ex
+
+            # Fallback for rate limit
+            raise api_error(429, "rate_limit_exceeded", "Unsplash rate limit reached. Please try again later.")
+
+        # Generic error handling
+        error_msg = f"Unsplash API error ({status_code})"
         try:
-            error_data = resp.json()
+            data = resp.json()
+            if "errors" in data and data["errors"]:
+                error_msg = data["errors"][0]
         except Exception:
             pass
-        return json_response(error_data, status=status_code)
+            
+        raise api_error(status_code, "external_error", error_msg)
     except Exception as e:
         raise api_error(
             502, "external_error", f"Failed to connect to Unsplash: {str(e)}"
