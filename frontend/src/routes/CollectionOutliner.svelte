@@ -2614,8 +2614,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             {#each throwbackLists as tb}
               <button
                 type="button"
-                class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white border border-slate-200 shadow-sm transition-all hover:border-indigo-300 hover:text-indigo-600 hover:shadow-md active:scale-95 dark:bg-slate-800 dark:border-white/10 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
-                style="--hover-color: {getHeaderColor()}"
+                class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white border border-slate-200 shadow-sm transition-all hover:shadow-md active:scale-95 dark:bg-slate-800 dark:border-white/10 dark:text-slate-300 throwback-chip"
+                style="--accent-color: {getHeaderColor()}"
                 onclick={() => currentView.set({ type: 'collection', id: tb.id })}
               >
                 {tb.year}
@@ -3985,5 +3985,19 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       transform: translateX(0) rotate(0deg);
       opacity: 1;
     }
+  }
+
+  .throwback-chip {
+    transition: all 0.2s ease;
+  }
+
+  .throwback-chip:hover {
+    color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    background-color: rgba(from var(--accent-color) r g b / 0.05);
+  }
+
+  :global(.dark) .throwback-chip:hover {
+    background-color: rgba(from var(--accent-color) r g b / 0.1);
   }
 </style>
