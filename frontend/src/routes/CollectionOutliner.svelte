@@ -77,7 +77,7 @@ import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
 
-  const md = new MarkdownIt({ html: false, linkify: true, breaks: false });
+  const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
   let textareaRef: HTMLTextAreaElement | undefined = $state();
   let editContainerRef: HTMLDivElement | undefined = $state();

@@ -30,7 +30,7 @@
     onReload?: () => void;
   }>();
 
-  const md = new MarkdownIt({ html: false, linkify: true, breaks: false });
+  const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
   let expandedSnipsels = $state<Set<string>>(new Set());
   let modalImages = $state<Array<{ id: string; filename: string }>>([]);
