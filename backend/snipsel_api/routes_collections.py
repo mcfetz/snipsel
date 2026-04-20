@@ -323,10 +323,38 @@ def get_today_collection():
     day_str = request.args.get("day")
     day = date.fromisoformat(day_str) if day_str else date.today()
 
+    c = _get_or_create_daily_collection(user_id=user.id, day=day)
+
+    j = _collection_json(c)
+    j["is_favorite"] = (
+        db.session.execute(
+            db.select(CollectionFavorite).where(
+                CollectionFavorite.user_id == user.id,
+                CollectionFavorite.collection_id == c.id,
+            )
+        )
+        .scalars()
+        .first()
+        is not None
+    )
+    j["access_level"] = "owner"
+    
+    # Commit changes from helper if any (creation, carry-overs)
+    db.session.commit()
+    
+    return json_response({"collection": j})
+
+
+def _get_or_create_daily_collection(user_id: str, day: date) -> Collection:
+    """Finds or creates a daily collection for a user. Refactored from get_today_collection."""
+    user = db.session.get(User, user_id)
+    if not user:
+        raise ValueError(f"User {user_id} not found")
+
     existing = (
         db.session.execute(
             db.select(Collection).where(
-                Collection.owner_user_id == user.id,
+                Collection.owner_user_id == user_id,
                 Collection.list_for_day == day,
                 Collection.deleted_at.is_(None),
             )
@@ -336,25 +364,12 @@ def get_today_collection():
     )
     if existing:
         _maybe_carry_over_open_tasks(user=user, today_collection=existing, day=day)
-        j = _collection_json(existing)
-        j["is_favorite"] = (
-            db.session.execute(
-                db.select(CollectionFavorite).where(
-                    CollectionFavorite.user_id == user.id,
-                    CollectionFavorite.collection_id == existing.id,
-                )
-            )
-            .scalars()
-            .first()
-            is not None
-        )
-        j["access_level"] = "owner"
-        return json_response({"collection": j})
+        return existing
 
     conflict_deleted = (
         db.session.execute(
             db.select(Collection).where(
-                Collection.owner_user_id == user.id,
+                Collection.owner_user_id == user_id,
                 Collection.list_for_day == day,
                 Collection.deleted_at.is_not(None),
             )
@@ -364,15 +379,15 @@ def get_today_collection():
     )
     if conflict_deleted:
         conflict_deleted.list_for_day = None
-        db.session.commit()
+        db.session.flush()
 
     c = Collection(
-        owner_user_id=user.id,
+        owner_user_id=user_id,
         title=day.isoformat(),
         icon="📅",
         list_for_day=day,
-        created_by_id=user.id,
-        modified_by_id=user.id,
+        created_by_id=user_id,
+        modified_by_id=user_id,
     )
 
     tpl_id = getattr(user, "day_collection_template_id", None)
@@ -381,7 +396,7 @@ def get_today_collection():
         if (
             tpl
             and tpl.deleted_at is None
-            and tpl.owner_user_id == user.id
+            and tpl.owner_user_id == user_id
             and getattr(tpl, "is_template", False)
         ):
             c.icon = tpl.icon
@@ -394,12 +409,7 @@ def get_today_collection():
             if tpl.default_snipsel_type:
                 c.default_snipsel_type = tpl.default_snipsel_type
     db.session.add(c)
-
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        raise api_error(409, "conflict", "Day collection could not be created")
+    db.session.flush()
 
     _maybe_carry_over_open_tasks(user=user, today_collection=c, day=day)
 
@@ -407,10 +417,8 @@ def get_today_collection():
         _maybe_copy_template_contents(
             user=user, template_collection_id=tpl_id, target_collection=c
         )
-    j = _collection_json(c)
-    j["is_favorite"] = False
-    j["access_level"] = "owner"
-    return json_response({"collection": j}, status=201)
+    
+    return c
 
 
 def _maybe_copy_template_contents(

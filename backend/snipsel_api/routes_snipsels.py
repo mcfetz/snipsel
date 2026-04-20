@@ -987,19 +987,16 @@ def _sync_tags_mentions(
         db.session.add(SnipselMention(snipsel_id=snipsel.id, mention_id=m.id))
 
     # Check if this snipsel is in an active daily collection
-    is_in_daily = (
-        db.session.execute(
-            db.select(db.func.count())
-            .select_from(CollectionSnipsel)
-            .join(Collection, Collection.id == CollectionSnipsel.collection_id)
-            .where(
-                CollectionSnipsel.snipsel_id == snipsel.id,
-                Collection.list_for_day.is_not(None),
-                Collection.deleted_at.is_(None),
-            )
-        ).scalar()
-        or 0
-    ) > 0
+    mention_day = db.session.execute(
+        db.select(Collection.list_for_day)
+        .join(CollectionSnipsel, Collection.id == CollectionSnipsel.collection_id)
+        .where(
+            CollectionSnipsel.snipsel_id == snipsel.id,
+            Collection.list_for_day.is_not(None),
+            Collection.deleted_at.is_(None),
+        )
+    ).scalars().first()
+    is_in_daily = mention_day is not None
 
     for name in set(mention_names):
         if name not in old_mention_names or newly_became_task:
@@ -1031,11 +1028,19 @@ def _sync_tags_mentions(
                             if preview
                             else f"{author_name} mentioned you."
                         )
+                    
+                    notification_collection_id = None
+                    if is_in_daily:
+                        from snipsel_api.routes_collections import _get_or_create_daily_collection
+                        dest_col = _get_or_create_daily_collection(mentioned_user.id, mention_day)
+                        notification_collection_id = dest_col.id
+
                     if not _is_snipsel_muted(snipsel.id):
                         n = Notification(
                             user_id=mentioned_user.id,
                             message=msg,
                             snipsel_id=snipsel.id,
+                            collection_id=notification_collection_id,
                         )
                         db.session.add(n)
 

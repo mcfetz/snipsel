@@ -1,7 +1,7 @@
 <script lang="ts">
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import { api, type Notification } from '../lib/api';
-  import { notificationsStore, currentView } from '../lib/stores';
+  import { notificationsStore, currentView, collectionAnchor } from '../lib/stores';
   import { currentUser } from '../lib/session';
 
   let viewMode: 'unread' | 'read' = $state('unread');
@@ -81,7 +81,10 @@
       );
     }
 
-    if (n.snipsel_id) {
+    if (n.collection_id && n.snipsel_id) {
+      collectionAnchor.set({ collectionId: n.collection_id, snipselId: n.snipsel_id });
+      currentView.set({ type: 'collection', id: n.collection_id });
+    } else if (n.snipsel_id) {
       currentView.set({ type: 'snipsel', id: n.snipsel_id });
     } else if (n.collection_id) {
       currentView.set({ type: 'collection', id: n.collection_id });
