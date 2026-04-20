@@ -366,10 +366,10 @@ def get_throwback_collections():
             Collection.list_for_day.is_not(None),
             extract("month", Collection.list_for_day) == target_day.month,
             extract("day", Collection.list_for_day) == target_day.day,
-            extract("year", Collection.list_for_day) < target_day.year,
+            Collection.list_for_day != target_day,
             Collection.deleted_at.is_(None),
         )
-        .order_by(Collection.list_for_day.desc())
+        .order_by(Collection.list_for_day.asc())
     )
 
     items = db.session.execute(q).scalars().all()
