@@ -78,6 +78,7 @@ Process your notes with a built-in AI assistant. Configure your own OpenAI-compa
 
 ### 📅 Daily Journal
 A built-in **daily collection** auto-created for each day. Open tasks from the past 30 days are automatically **carried over** so nothing falls through the cracks.
+- **Throwback** — Quickly jump between years! View and navigate daily lists from the same day in past or future years directly from the header.
 
 ### 🔒 Security-first
 - **OIDC** — Single Sign-On via your identity provider (Google, Microsoft, Authentik, etc.)
