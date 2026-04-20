@@ -2605,23 +2605,22 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         </div>
       </div>
       {#if throwbackLists.length > 0}
-        <div class="mt-2 flex items-center gap-2 px-1 text-[11px] text-slate-400 group/throwback" in:fade={{ duration: 300 }}>
-          <div class="flex items-center gap-1.5 ml-[1.625rem]">
-            <span class="text-slate-400/80">
-              <RotateCcw label="" size={12} strokeWidth={2.5} />
-            </span>
-            <div class="flex items-center gap-1">
-              {#each throwbackLists as tb, i}
-                {#if i > 0}<span class="text-slate-300 dark:text-slate-700 mx-0.5">|</span>{/if}
-                <button
-                  type="button"
-                  class="font-medium hover:text-indigo-500 transition-colors dark:hover:text-indigo-400"
-                  onclick={() => currentView.set({ type: 'collection', id: tb.id })}
-                >
-                  {tb.year}
-                </button>
-              {/each}
-            </div>
+        <div class="mt-2 flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200/60 bg-slate-50/50 dark:border-white/10 dark:bg-white/5 transition-all hover:bg-slate-50 dark:hover:bg-white/10" in:fade={{ duration: 300 }}>
+          <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <RotateCcw label="" size={14} strokeWidth={2.5} className="opacity-80" />
+            <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Throwback</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            {#each throwbackLists as tb}
+              <button
+                type="button"
+                class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white border border-slate-200 shadow-sm transition-all hover:border-indigo-300 hover:text-indigo-600 hover:shadow-md active:scale-95 dark:bg-slate-800 dark:border-white/10 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+                style="--hover-color: {getHeaderColor()}"
+                onclick={() => currentView.set({ type: 'collection', id: tb.id })}
+              >
+                {tb.year}
+              </button>
+            {/each}
           </div>
         </div>
       {/if}
