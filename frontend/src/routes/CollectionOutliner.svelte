@@ -33,6 +33,7 @@
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
 import Share from '@animated-color-icons/lucide-svelte/Share.svelte';
 import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
+import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
 
   import MarkdownIt from 'markdown-it';
   import { api, type Attachment, type CollectionItem, type SearchSnipselHit } from '../lib/api';
@@ -223,6 +224,20 @@ import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
 
   let showInfoModalFlag = $state(false);
   let infoModalItem: CollectionItem | null = $state(null);
+
+  let throwbackLists = $state<Array<{ id: string; year: number; title: string; icon: string }>>([]);
+
+  async function loadThrowback() {
+    throwbackLists = [];
+    const day = $currentCollection?.list_for_day;
+    if (!day) return;
+    try {
+      const res = await api.collections.throwback(day);
+      throwbackLists = res.collections;
+    } catch (err) {
+      console.error('Failed to load throwback collections:', err);
+    }
+  }
 
   function offsetDate(dateStr: string, days: number): string {
     const d = new Date(dateStr + 'T12:00:00'); // noon to avoid DST issues
@@ -2236,6 +2251,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
       loadItems();
       loadIncomingMentions();
+      loadThrowback();
     }
   });
 
@@ -2588,6 +2604,27 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           {/if}
         </div>
       </div>
+      {#if throwbackLists.length > 0}
+        <div class="mt-2 flex items-center gap-2 px-1 text-[11px] text-slate-400 group/throwback" in:fade={{ duration: 300 }}>
+          <div class="flex items-center gap-1.5 ml-[1.625rem]">
+            <span class="text-slate-400/80">
+              <RotateCcw label="" size={12} strokeWidth={2.5} />
+            </span>
+            <div class="flex items-center gap-1">
+              {#each throwbackLists as tb, i}
+                {#if i > 0}<span class="text-slate-300 dark:text-slate-700 mx-0.5">|</span>{/if}
+                <button
+                  type="button"
+                  class="font-medium hover:text-indigo-500 transition-colors dark:hover:text-indigo-400"
+                  onclick={() => currentView.set({ type: 'collection', id: tb.id })}
+                >
+                  {tb.year}
+                </button>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/if}
     {/if}
 
     {#if $currentCollection}

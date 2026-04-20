@@ -686,6 +686,10 @@ export const api = {
     deleteTrashItem: (id: string) => requestJson<{ ok: true; deleted: number }>(`/api/collections/trash/${id}`, { method: 'DELETE' }),
     restore: (id: string) => requestJson<{ collection: Collection }>(`/api/collections/${id}/restore`, { method: 'POST' }),
     syncAll: () => requestJson<{ collections: Collection[]; items: Record<string, CollectionItem[]> }>('/api/collections/sync/all'),
+    throwback: (day: string) =>
+      requestJson<{ collections: Array<{ id: string; year: number; title: string; icon: string }> }>(
+        `/api/collections/throwback?day=${encodeURIComponent(day)}`
+      ),
   },
 
   users: {

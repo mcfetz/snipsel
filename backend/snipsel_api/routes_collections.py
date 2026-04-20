@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from sqlalchemy import extract
+
 import logging
 import uuid
 from datetime import date, datetime, timedelta
@@ -343,6 +345,45 @@ def get_today_collection():
     db.session.commit()
     
     return json_response({"collection": j})
+
+
+@collections_bp.get("/throwback")
+@require_auth
+def get_throwback_collections():
+    user = current_user()
+    day_str = request.args.get("day")
+    if not day_str:
+        raise api_error(400, "invalid_input", "day parameter is required")
+    try:
+        target_day = date.fromisoformat(day_str)
+    except ValueError:
+        raise api_error(400, "invalid_input", "day must be in YYYY-MM-DD format")
+
+    q = (
+        db.select(Collection)
+        .where(
+            Collection.owner_user_id == user.id,
+            Collection.list_for_day.is_not(None),
+            extract("month", Collection.list_for_day) == target_day.month,
+            extract("day", Collection.list_for_day) == target_day.day,
+            extract("year", Collection.list_for_day) < target_day.year,
+            Collection.deleted_at.is_(None),
+        )
+        .order_by(Collection.list_for_day.desc())
+    )
+
+    items = db.session.execute(q).scalars().all()
+    out = []
+    for c in items:
+        out.append(
+            {
+                "id": c.id,
+                "year": c.list_for_day.year,
+                "title": c.title,
+                "icon": c.icon,
+            }
+        )
+    return json_response({"collections": out})
 
 
 def _get_or_create_daily_collection(user_id: str, day: date) -> Collection:
