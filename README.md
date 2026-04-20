@@ -213,6 +213,13 @@ The frontend proxies `/api/*` to the backend in dev mode.
 | `SNIPSEL_OIDC_PROVIDER_NAME` | `OIDC` | Display name for the login button |
 | `SNIPSEL_OIDC_DISABLE_PASSWORD_LOGIN` | `0` | Set to `1` to disable password login when OIDC is enabled |
 
+**Optional Unsplash Integration (collection header images):**
+
+| Variable | Description |
+|---|---|
+| `SNIPSEL_UNSPLASH_ACCESS_KEY` | Unsplash API Access Key |
+| `SNIPSEL_UNSPLASH_SECRET_KEY` | Unsplash API Secret Key |
+
 ---
 
 ## 🛠️ Tech Stack
