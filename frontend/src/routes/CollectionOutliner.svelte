@@ -13,7 +13,7 @@
   import Plus from '@animated-color-icons/lucide-svelte/Plus.svelte';
   import ChevronDown from '@animated-color-icons/lucide-svelte/ChevronDown.svelte';
   import ChevronUp from '@animated-color-icons/lucide-svelte/ChevronUp.svelte';
-  import PlusCircle from '@animated-color-icons/lucide-svelte/PlusCircle.svelte';
+  import ListPlus from '@animated-color-icons/lucide-svelte/ListPlus.svelte';
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import Repeat from '@animated-color-icons/lucide-svelte/Repeat.svelte';
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
@@ -3652,7 +3652,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         oncontextmenu={lpInsert.oncontextmenu}
         disabled={!canWrite()}
       >
-          <PlusCircle label="" size={20} strokeWidth={2} />
+          <ListPlus label="" size={20} strokeWidth={2} />
       </button>
       <button
         class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
