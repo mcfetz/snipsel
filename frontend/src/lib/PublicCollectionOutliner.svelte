@@ -162,7 +162,8 @@
 
   function renderMarkdown(text: string | null): string {
     if (!text) return '';
-    const html = md.render(text.trim()).trim();
+    const preprocessed = text.trim().replace(/^[ \t]*$/gm, '\u00a0');
+    const html = md.render(preprocessed).trim();
     const tokenBg = getToolboxBg();
     const tokenFg = getHeaderColor();
     return html
@@ -416,7 +417,7 @@
             {/if}
 
             <div 
-              class="prose prose-sm max-w-none text-lg prose-p:mt-0 prose-p:mb-2 last:prose-p:mb-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words {item.snipsel.task_done ? 'line-through opacity-50' : ''}"
+              class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words {item.snipsel.task_done ? 'line-through opacity-50' : ''}"
             >
               {@html renderMarkdown(stripMediaLinks(item.snipsel.content_markdown))}
             </div>
