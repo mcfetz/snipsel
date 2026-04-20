@@ -844,7 +844,9 @@
 {#if showUnsplashModal}
   <UnsplashSearchModal
     initialQuery={title}
+    accentColor={getAccent()}
     onSelect={(url) => { headerImageUrl = url; save(); }}
     onClose={() => (showUnsplashModal = false)}
   />
 {/if}
+
