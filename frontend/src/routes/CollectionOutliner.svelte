@@ -13,6 +13,7 @@
   import Plus from '@animated-color-icons/lucide-svelte/Plus.svelte';
   import ChevronDown from '@animated-color-icons/lucide-svelte/ChevronDown.svelte';
   import ChevronUp from '@animated-color-icons/lucide-svelte/ChevronUp.svelte';
+  import PlusCircle from '@animated-color-icons/lucide-svelte/PlusCircle.svelte';
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import Repeat from '@animated-color-icons/lucide-svelte/Repeat.svelte';
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
@@ -1389,18 +1390,104 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       const reordered = next.map((i, index) => ({ ...i, position: index + 1 }));
       collectionItems.set(reordered);
 
-      // Mark mutation so any in-flight loadItems doesn't overwrite local optimistic state.
       itemsMutationSeq += 1;
-
       const payload = reordered.map((i) => ({ snipsel_id: i.snipsel_id, position: i.position, indent: i.indent }));
       await api.snipsels.reorder($currentCollection.id, payload);
 
       const createdItem = reordered.find((i) => i.snipsel_id === newId);
       if (createdItem) startEdit(createdItem);
+    } finally {
+      isLoading.set(false);
+    }
+  }
 
-      // Ensure we don't immediately auto-delete the newly created empty snipsel
-      // due to a focus-out save on the previous snipsel.
+  async function createSnipselAboveFirst() {
+    if (!$currentCollection || !canWrite() || selectedIds.size === 0) return;
+    const sorted = $sortedItems;
+    const selected = sorted.filter(i => selectedIds.has(i.snipsel_id));
+    if (selected.length === 0) return;
+    
+    const first = selected[0];
+    const firstIdx = sorted.findIndex(i => i.snipsel_id === first.snipsel_id);
+    
+    let targetPos: number;
+    if (firstIdx === 0) {
+      targetPos = sorted[0].position / 2;
+    } else {
+      targetPos = (sorted[firstIdx - 1].position + sorted[firstIdx].position) / 2;
+    }
+
+    await createSnipselAtPosition(targetPos, first.indent);
+  }
+
+  async function createSnipselBelowLast() {
+    if (!$currentCollection || !canWrite() || selectedIds.size === 0) return;
+    const sorted = $sortedItems;
+    const selected = sorted.filter(i => selectedIds.has(i.snipsel_id));
+    if (selected.length === 0) return;
+    
+    const last = selected[selected.length - 1];
+    const lastIdx = sorted.findIndex(i => i.snipsel_id === last.snipsel_id);
+    
+    let targetPos: number;
+    if (lastIdx === sorted.length - 1) {
+      targetPos = sorted[lastIdx].position + 100;
+    } else {
+      targetPos = (sorted[lastIdx].position + sorted[lastIdx + 1].position) / 2;
+    }
+
+    await createSnipselAtPosition(targetPos, last.indent);
+  }
+
+  async function createSnipselAtPosition(targetPos: number, indent: number, type?: 'text' | 'image' | 'attachment' | 'task') {
+    if (!$currentCollection) return;
+    isLoading.set(true);
+    try {
+      let geo:
+        | { geo_lat: number; geo_lng: number; geo_accuracy_m?: number }
+        | null = null;
+      try {
+        geo = await new Promise((resolve) => {
+          if (!('geolocation' in navigator)) return resolve(null);
+          navigator.geolocation.getCurrentPosition(
+            (pos) =>
+              resolve({
+                geo_lat: pos.coords.latitude,
+                geo_lng: pos.coords.longitude,
+                geo_accuracy_m: pos.coords.accuracy,
+              }),
+            () => resolve(null),
+            { enableHighAccuracy: false, maximumAge: 60_000, timeout: 1500 }
+          );
+        });
+      } catch {
+        geo = null;
+      }
+
+      const res = await api.snipsels.create($currentCollection.id, {
+        type: type || $currentCollection.default_snipsel_type || 'text',
+        indent: indent,
+        position: targetPos,
+        ...(geo ?? {}),
+      });
+
+      const newId = res.item.snipsel_id;
+      const list = [...$sortedItems];
+      
+      // Find insertion index based on position
+      let insertAt = list.findIndex(i => i.position > targetPos);
+      if (insertAt === -1) insertAt = list.length;
+      
+      const next = [...list.slice(0, insertAt), { ...res.item, indent }, ...list.slice(insertAt)];
+      const reordered = next.map((i, index) => ({ ...i, position: index + 1 }));
+      collectionItems.set(reordered);
+
       itemsMutationSeq += 1;
+      const payload = reordered.map((i) => ({ snipsel_id: i.snipsel_id, position: i.position, indent: i.indent }));
+      await api.snipsels.reorder($currentCollection.id, payload);
+
+      const createdItem = reordered.find((i) => i.snipsel_id === newId);
+      if (createdItem) startEdit(createdItem);
     } finally {
       isLoading.set(false);
     }
@@ -1964,6 +2051,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   const lpOutdentToZero = longPress(
     () => void setIndentSelected(0),
     () => void adjustIndentSelected(-1)
+  );
+  const lpInsert = longPress(
+    () => void createSnipselAboveFirst(),
+    () => void createSnipselBelowLast()
   );
 
   // Track shift key state globally for pointer events
@@ -2891,12 +2982,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 >
                   <ChevronDown label="" size={14} className="text-slate-400" strokeWidth={2} />
                 </button>
-              {:else}
-                <div 
-                  class="absolute top-1/2 -translate-y-1/2 h-1 w-1 rounded-full bg-slate-400" 
-                  style="left: calc(2.25rem + {item.indent * 1.25}rem)"
-                  aria-hidden="true"
-                ></div>
               {/if}
             {/if}
             <div
@@ -3548,6 +3633,21 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         disabled={selectedIds.size !== 1 || !canWrite()}
       >
           <CornerDownRight label="" size={20} strokeWidth={2} />
+      </button>
+      <button
+        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 select-none dark:bg-white/5 dark:hover:bg-white/10"
+        type="button"
+        aria-label="Insert snipsel"
+        title="Click: Below last, Long: Above first"
+        onclick={lpInsert.onclick}
+        onpointerdown={lpInsert.onpointerdown}
+        onpointerup={lpInsert.onpointerup}
+        onpointercancel={lpInsert.onpointercancel}
+        onpointerleave={lpInsert.onpointerleave}
+        oncontextmenu={lpInsert.oncontextmenu}
+        disabled={!canWrite()}
+      >
+          <PlusCircle label="" size={20} strokeWidth={2} />
       </button>
       <button
         class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
