@@ -173,8 +173,7 @@
       )
       .replace(/==([^=]+)==/g, `<mark style="background-color:${tokenBg}; border-radius: 0.25rem; padding: 0 0.125rem">$1</mark>`)
       .replace(/<a /g, `<a style="color:${tokenFg}; text-decoration:underline" target="_blank" rel="noopener noreferrer" `)
-      .replace(/<blockquote>/g, `<blockquote style="border-left: 3px solid ${tokenFg}; background-color:${tokenBg}; margin: 0.25rem 0; padding: 0.25rem 0.75rem; border-radius: 0 0.25rem 0.25rem 0; opacity: 0.9;">`)
-      .replace(/>\s+</g, '><');
+      .replace(/<blockquote>/g, `<blockquote style="border-left: 3px solid ${tokenFg}; background-color:${tokenBg}; margin: 0.25rem 0; padding: 0.25rem 0.75rem; border-radius: 0 0.25rem 0.25rem 0; opacity: 0.9;">`);
   }
 
   function isImageAttachment(a: any) {
@@ -375,11 +374,6 @@
             >
               <ChevronDown label="" size={14} className="text-slate-400" strokeWidth={2} />
             </button>
-          {:else if item.snipsel.type !== 'task'}
-            <div 
-              class="absolute top-1/2 -translate-y-1/2 h-1 w-1 rounded-full bg-slate-400" 
-              style="left: calc(2.25rem + {item.indent * 1.25}rem)"
-            ></div>
           {/if}
 
           {#if item.snipsel.type === 'task'}
@@ -421,7 +415,7 @@
             {/if}
 
             <div 
-              class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words {item.snipsel.task_done ? 'line-through opacity-50' : ''}"
+              class="prose prose-sm max-w-none text-lg prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words {item.snipsel.task_done ? 'line-through opacity-50' : ''}"
             >
               {@html renderMarkdown(stripMediaLinks(item.snipsel.content_markdown))}
             </div>
