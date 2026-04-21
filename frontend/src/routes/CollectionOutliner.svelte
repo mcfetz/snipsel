@@ -49,6 +49,7 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   import VideoModal from '../lib/VideoModal.svelte';
   import AiModal from '../lib/AiModal.svelte';
   import AttachmentCard from '../lib/AttachmentCard.svelte';
+  import FormattingToolbar from '../lib/FormattingToolbar.svelte';
 
   import {
     collectionItems,
@@ -2870,12 +2871,18 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           }
         >
           {#if item.snipsel_id === $editingSnipselId}
-            <div
-              bind:this={editContainerRef}
-              class="relative rounded-lg bg-slate-50 px-2 py-3 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
-              onfocusout={handleEditFocusOut}
-            >
-              <textarea
+              <div
+                bind:this={editContainerRef}
+                class="relative overflow-hidden rounded-lg bg-slate-50 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
+                onfocusout={handleEditFocusOut}
+              >
+                <FormattingToolbar 
+                  textarea={textareaRef} 
+                  onFormat={(content) => { editContent = content; handleEditInput(); }} 
+                  accentColor={getHeaderColor()} 
+                />
+                <div class="px-2 py-3">
+                  <textarea
                 bind:this={textareaRef}
                 class="w-full resize-none bg-transparent text-lg outline-none dark:text-slate-100"
                 rows="1"
@@ -2931,8 +2938,9 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {/each}
                 </div>
               {/if}
-            </div>
-          {:else}
+                </div>
+              </div>
+            {:else}
             {#if item.snipsel.type === 'task'}
               {#if hasChildren(item, $sortedItems)}
                 <button
