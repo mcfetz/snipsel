@@ -6,7 +6,6 @@
   import Code from '@animated-color-icons/lucide-svelte/Code.svelte';
   import Quote from '@animated-color-icons/lucide-svelte/Quote.svelte';
   import List from '@animated-color-icons/lucide-svelte/List.svelte';
-  import ListChecks from '@animated-color-icons/lucide-svelte/ListChecks.svelte';
 
   interface Props {
     textarea: HTMLTextAreaElement | undefined;
@@ -69,7 +68,6 @@
     { icon: Link, label: 'Link', prefix: '[', suffix: '](url)' },
     { icon: Quote, label: 'Quote', prefix: '> ', suffix: '' },
     { icon: List, label: 'List', prefix: '- ', suffix: '' },
-    { icon: ListChecks, label: 'Task', prefix: '- [ ] ', suffix: '' },
   ];
 </script>
 
