@@ -3096,6 +3096,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   return;
                 }
 
+                // Narrow click area: only activate edit mode if clicked in the middle 50%
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                if (x < rect.width * 0.25 || x > rect.width * 0.75) {
+                  return;
+                }
+
                 startEdit(item);
               }}
               onkeydown={(e) => e.key === 'Enter' && startEdit(item)}
