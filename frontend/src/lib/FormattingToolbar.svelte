@@ -118,4 +118,4 @@
   button:hover {
     color: var(--accent-color, #4f46e5);
   }
-</script>
+</style>
