@@ -2581,7 +2581,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     </div>
     {#if $currentCollection}
       <div class="mt-1 flex items-center justify-between px-1 text-[10px] text-slate-400">
-        <div class="flex items-center" style="padding-left: 1.625rem">
+        <div class="flex items-center" style="padding-left: 0.75rem">
           {#if collapsibleParentIds.size > 0}
             <button
               type="button"
@@ -2856,19 +2856,19 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       {#each visibleItems($sortedItems) as item (item.snipsel_id)}
         <div
           id={`snipsel-${item.snipsel_id}`}
-          class="group relative pr-10 {anchorHighlightId === item.snipsel_id ? 'ring-2 rounded-lg' : ''}"
+          class="group relative pr-4 {anchorHighlightId === item.snipsel_id ? 'ring-2 rounded-lg' : ''}"
           in:fly={{ y: -5, duration: 150 }}
           out:fade={{ duration: 100 }}
           style={
             anchorHighlightId === item.snipsel_id
-              ? `padding-left: calc(3.25rem + ${(item.snipsel_id === $editingSnipselId ? editIndent : item.indent) * 1.25}rem); --tw-ring-color: ${getHeaderColor()}`
-              : `padding-left: calc(3.25rem + ${(item.snipsel_id === $editingSnipselId ? editIndent : item.indent) * 1.25}rem)`
+              ? `padding-left: calc(1.5rem + ${(item.snipsel_id === $editingSnipselId ? editIndent : item.indent) * 1.25}rem); --tw-ring-color: ${getHeaderColor()}`
+              : `padding-left: calc(1.5rem + ${(item.snipsel_id === $editingSnipselId ? editIndent : item.indent) * 1.25}rem)`
           }
         >
           {#if item.snipsel_id === $editingSnipselId}
             <div
               bind:this={editContainerRef}
-              class="relative rounded-lg bg-slate-50 px-4 py-3 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
+              class="relative rounded-lg bg-slate-50 px-2 py-3 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
               onfocusout={handleEditFocusOut}
             >
               <textarea
@@ -2934,7 +2934,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 <button
                   type="button"
                   class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {expandedSnipsels.has(item.snipsel_id) ? '' : '-rotate-90'}"
-                  style="left: calc(0.125rem + {item.indent * 1.25}rem)"
+                  style="left: calc(0.25rem + {item.indent * 1.25}rem)"
                   onclick={(e) => {
                     e.stopPropagation();
                     toggleExpand(item.snipsel_id);
@@ -2953,7 +2953,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     e.stopPropagation();
                     toggleTaskDone(item);
                   }}
-                  style="left: calc(1.75rem + {item.indent * 1.25}rem); {item.snipsel.task_done
+                  style="left: calc(2.0rem + {item.indent * 1.25}rem); {item.snipsel.task_done
                     ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
                     : ''}"
                 >
@@ -3014,7 +3014,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 <button
                   type="button"
                   class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {expandedSnipsels.has(item.snipsel_id) ? '' : '-rotate-90'}"
-                  style="left: calc(1.625rem + {item.indent * 1.25}rem)"
+                  style="left: calc(0.25rem + {item.indent * 1.25}rem)"
                   onclick={(e) => {
                     e.stopPropagation();
                     toggleExpand(item.snipsel_id);
@@ -3026,7 +3026,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               {/if}
             {/if}
             <div
-              class="rounded px-4 py-3 {selectedIds.has(item.snipsel_id)
+              class="rounded py-3 {item.snipsel.type === 'task' ? 'pl-8 pr-2' : 'px-2'} {selectedIds.has(item.snipsel_id)
                 ? 'bg-slate-100 dark:bg-white/5'
                 : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'}"
               role="button"
@@ -3188,7 +3188,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
               {#if saveStatuses[item.snipsel_id]}
                 <div 
-                  class="absolute top-1/2 -translate-y-1/2 right-[2.5rem] h-2 w-2 rounded-full transition-opacity duration-500"
+                  class="absolute top-1/2 -translate-y-1/2 right-[1.0rem] h-2 w-2 rounded-full transition-opacity duration-500"
                   style="background-color: {saveStatuses[item.snipsel_id] === 'success' ? '#22c55e' : '#ef4444'}"
                   aria-hidden="true"
                 ></div>
