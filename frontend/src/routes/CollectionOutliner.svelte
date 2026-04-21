@@ -1305,9 +1305,17 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (creatingFromTripleEmptyLines) return;
     const related = e.relatedTarget as Node | null;
     if (related && editContainerRef?.contains(related)) return;
-    showAutocomplete = false;
-    suggestions = [];
-    if (!saving) saveEdit();
+    
+    // On many mobile browsers, relatedTarget is null when clicking non-focusable elements
+    // or when the focus shift is not yet complete. We wait a moment to check.
+    setTimeout(() => {
+      if (!$editingSnipselId) return;
+      if (document.activeElement && editContainerRef?.contains(document.activeElement)) return;
+      
+      showAutocomplete = false;
+      suggestions = [];
+      if (!saving) saveEdit();
+    }, 100);
   }
 
   async function createSnipsel() {
