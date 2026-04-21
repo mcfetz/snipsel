@@ -76,7 +76,7 @@ def _get_share_permission(user_id: str, collection_id: str) -> str | None:
 @require_auth
 def list_collections():
     user = current_user()
-    include_archived = request.args.get("include_archived") == "1" or True
+    include_archived = request.args.get("include_archived") == "1"
     owned_ids = db.select(Collection.id).where(
         Collection.owner_user_id == user.id, Collection.deleted_at.is_(None)
     )

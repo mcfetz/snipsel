@@ -133,7 +133,7 @@
   async function loadCollections() {
     isLoading.set(true);
     try {
-      const res = await api.collections.list();
+      const res = await api.collections.list(true);
       collections.set(res.collections);
     } finally {
       isLoading.set(false);

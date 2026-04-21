@@ -198,7 +198,7 @@ import UserManagement from './routes/UserManagement.svelte';
   async function openCollections() {
     isLoading.set(true);
     try {
-      const res = await api.collections.list();
+      const res = await api.collections.list(true);
       collections.set(res.collections);
       currentView.set({ type: 'collections' });
     } finally {
