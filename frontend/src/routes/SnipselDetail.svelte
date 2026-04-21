@@ -542,7 +542,7 @@
 					</div>
 					{#if snipsel.type === 'task' && snipsel.done_at}
 						<div>
-							<span class="font-medium">Done:</span>
+							<span class="font-medium">{snipsel.task_done === 2 ? 'Cancelled:' : 'Done:'}</span>
 							<span class="ml-1">{formatWhen(snipsel.done_at)}</span>
 							{#if snipsel.done_by_username}
 								<span class="ml-1 text-slate-500 dark:text-slate-500">by {snipsel.done_by_username}</span>
