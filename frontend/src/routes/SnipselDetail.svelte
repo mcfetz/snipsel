@@ -584,9 +584,8 @@
             if (tagTarget) {
               const tag = tagTarget.getAttribute('data-tag');
               if (tag) {
+                searchQuery.set('#' + tag);
                 currentView.set({ type: 'search' });
-                searchQuery.set('');
-                api.search({ tag }).then(searchResults.set).catch(() => searchError.set('Search failed'));
               }
               return;
             }
@@ -595,9 +594,8 @@
             if (mentionTarget) {
               const mention = mentionTarget.getAttribute('data-mention');
               if (mention) {
+                searchQuery.set('@' + mention);
                 currentView.set({ type: 'search' });
-                searchQuery.set('');
-                api.search({ mention }).then(searchResults.set).catch(() => searchError.set('Search failed'));
               }
               return;
             }
@@ -615,9 +613,8 @@
                 class="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider transition-colors hover:opacity-80"
                 style={`background-color: ${getAccentTint()}; color: ${getAccent()}; border: 1px solid rgba(0,0,0,0.05)`}
                 onclick={() => {
+                  searchQuery.set('#' + t);
                   currentView.set({ type: 'search' });
-                  searchQuery.set('');
-                  api.search({ tag: t }).then(searchResults.set).catch(() => searchError.set('Search failed'));
                 }}
               >
                 #{t}
@@ -629,9 +626,8 @@
                 class="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider transition-colors hover:opacity-80"
                 style={`background-color: rgba(255,255,255,0.92); color: ${getAccent()}; border: 1px solid rgba(0,0,0,0.05)`}
                 onclick={() => {
+                  searchQuery.set('@' + m);
                   currentView.set({ type: 'search' });
-                  searchQuery.set('');
-                  api.search({ mention: m }).then(searchResults.set).catch(() => searchError.set('Search failed'));
                 }}
               >
                 @{m}

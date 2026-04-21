@@ -3073,9 +3073,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   e.stopPropagation();
                   const tag = tagTarget.getAttribute('data-tag');
                   if (tag) {
+                    searchQuery.set('#' + tag);
                     currentView.set({ type: 'search' });
-                    searchQuery.set('');
-                    api.search({ tag }).then(searchResults.set).catch(() => searchError.set('Search failed'));
                   }
                   return;
                 }
@@ -3086,9 +3085,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   e.stopPropagation();
                   const mention = mentionTarget.getAttribute('data-mention');
                   if (mention) {
+                    searchQuery.set('@' + mention);
                     currentView.set({ type: 'search' });
-                    searchQuery.set('');
-                    api.search({ mention }).then(searchResults.set).catch(() => searchError.set('Search failed'));
                   }
                   return;
                 }
