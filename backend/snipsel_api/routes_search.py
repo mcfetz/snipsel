@@ -266,9 +266,12 @@ def search():
                 CollectionShare.permission.in_(["read", "write"]),
             ),
         )
-        .options(joinedload(Snipsel.reactions))
-        .distinct()
     )
+    if not include_archived:
+        stmt = stmt.where(Collection.archived_at.is_(None))
+    
+    stmt = stmt.options(joinedload(Snipsel.reactions)).distinct()
+
     if snipsel_type:
         stmt = stmt.where(Snipsel.type == snipsel_type)
     if snipsel_type == "task":
