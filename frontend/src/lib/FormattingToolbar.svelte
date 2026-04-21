@@ -7,6 +7,10 @@
   import Quote from '@animated-color-icons/lucide-svelte/Quote.svelte';
   import List from '@animated-color-icons/lucide-svelte/List.svelte';
   import Terminal from '@animated-color-icons/lucide-svelte/Terminal.svelte';
+  import Heading1 from '@animated-color-icons/lucide-svelte/Heading1.svelte';
+  import Heading2 from '@animated-color-icons/lucide-svelte/Heading2.svelte';
+  import ListOrdered from '@animated-color-icons/lucide-svelte/ListOrdered.svelte';
+  import Table from '@animated-color-icons/lucide-svelte/Table.svelte';
 
   interface Props {
     textarea: HTMLTextAreaElement | undefined;
@@ -61,33 +65,52 @@
     }, 0);
   }
 
-  const buttons = [
-    { icon: Bold, label: 'Bold', prefix: '**', suffix: '**' },
-    { icon: Italic, label: 'Italic', prefix: '*', suffix: '*' },
-    { icon: Strikethrough, label: 'Strikethrough', prefix: '~~', suffix: '~~' },
-    { icon: Code, label: 'Code', prefix: '`', suffix: '`' },
-    { icon: Link, label: 'Link', prefix: '[', suffix: '](url)' },
-    { icon: Quote, label: 'Quote', prefix: '> ', suffix: '' },
-    { icon: List, label: 'List', prefix: '- ', suffix: '' },
-    { icon: Terminal, label: 'Code Block', prefix: '```\n', suffix: '\n```' },
+  const groups = [
+    [
+      { icon: Bold, label: 'Bold', prefix: '**', suffix: '**' },
+      { icon: Italic, label: 'Italic', prefix: '*', suffix: '*' },
+      { icon: Strikethrough, label: 'Strikethrough', prefix: '~~', suffix: '~~' },
+    ],
+    [
+      { icon: Heading1, label: 'H1', prefix: '# ', suffix: '' },
+      { icon: Heading2, label: 'H2', prefix: '## ', suffix: '' },
+    ],
+    [
+      { icon: List, label: 'Bullet List', prefix: '- ', suffix: '' },
+      { icon: ListOrdered, label: 'Ordered List', prefix: '1. ', suffix: '' },
+    ],
+    [
+      { icon: Code, label: 'Inline Code', prefix: '`', suffix: '`' },
+      { icon: Terminal, label: 'Code Block', prefix: '```\n', suffix: '\n```' },
+    ],
+    [
+      { icon: Link, label: 'Link', prefix: '[', suffix: '](url)' },
+      { icon: Quote, label: 'Quote', prefix: '> ', suffix: '' },
+      { icon: Table, label: 'Table', prefix: '| Header | Header |\n| --- | --- |\n| Cell | Cell |', suffix: '' },
+    ],
   ];
 </script>
 
 <div 
-  class="flex items-center gap-0.5 rounded-t-lg border-b border-slate-200 bg-white/50 p-1 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/50"
+  class="flex flex-wrap items-center gap-0.5 rounded-t-lg border-b border-slate-200 bg-white/50 p-1 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/50"
   style="--accent-color: {accentColor}"
 >
-  {#each buttons as btn}
-    {@const Icon = btn.icon}
-    <button
-      type="button"
-      class="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
-      onclick={() => applyFormat(btn.prefix, btn.suffix)}
-      title={btn.label}
-      aria-label={btn.label}
-    >
-      <Icon size={16} strokeWidth={2.5} />
-    </button>
+  {#each groups as group, gi}
+    {#if gi > 0}
+      <div class="mx-1 h-4 w-px bg-slate-200 dark:bg-white/10"></div>
+    {/if}
+    {#each group as btn}
+      {@const Icon = btn.icon}
+      <button
+        type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+        onclick={() => applyFormat(btn.prefix, btn.suffix)}
+        title={btn.label}
+        aria-label={btn.label}
+      >
+        <Icon size={16} strokeWidth={2.5} />
+      </button>
+    {/each}
   {/each}
 </div>
 
@@ -95,4 +118,4 @@
   button:hover {
     color: var(--accent-color, #4f46e5);
   }
-</style>
+</script>
