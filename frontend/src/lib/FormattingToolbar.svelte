@@ -104,6 +104,7 @@
       <button
         type="button"
         class="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+        onpointerdown={(e) => e.preventDefault()}
         onclick={() => applyFormat(btn.prefix, btn.suffix)}
         title={btn.label}
         aria-label={btn.label}
