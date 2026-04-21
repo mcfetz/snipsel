@@ -115,6 +115,10 @@
       list = list.filter(t => (t.content_markdown ?? '').toLowerCase().includes(q));
     }
     
+    if (sortKey === 'reminder') {
+      list = list.filter(t => !!t.reminder_at);
+    }
+    
     list.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       if (sortKey === 'name') {
