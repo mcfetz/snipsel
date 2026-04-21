@@ -294,6 +294,7 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   }
 
   function handleSwipeTouchStart(e: TouchEvent) {
+    if ($editingSnipselId) return;
     const t = e.touches[0];
     swipeTouchStartX = t.clientX;
     swipeTouchStartY = t.clientY;
@@ -307,7 +308,7 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   }
 
   function handleSwipeTouchMove(e: TouchEvent) {
-    if (pullReloading) return;
+    if ($editingSnipselId || pullReloading) return;
     const t = e.touches[0];
     const dy = t.clientY - pullStartY;
     // Only activate pull if dragging downward from the top
@@ -327,6 +328,7 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   }
 
   async function handleSwipeTouchEnd(e: TouchEvent) {
+    if ($editingSnipselId) return;
     // Pull-to-reload release
     if (pullActive) {
       if (pullTriggered && !pullReloading) {
