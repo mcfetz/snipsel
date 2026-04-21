@@ -760,7 +760,7 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
                         CollectionSnipsel.collection_id == src.id,
                         Snipsel.deleted_at.is_(None),
                         Snipsel.type == "task",
-                        Snipsel.task_done == False,
+                        Snipsel.task_done == 0,
                     )
                     .order_by(CollectionSnipsel.position.asc())
                     .with_for_update(
@@ -837,7 +837,7 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
                     Snipsel.owner_user_id == user.id,
                     Snipsel.deleted_at.is_(None),
                     Snipsel.type == "task",
-                    Snipsel.task_done == False,
+                    Snipsel.task_done == 0,
                     ~Snipsel.id.in_(db.select(CollectionSnipsel.snipsel_id)),
                 )
             )

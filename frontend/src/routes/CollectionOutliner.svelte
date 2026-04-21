@@ -808,15 +808,19 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
     if (!canWrite()) return;
     if (item.snipsel.type !== 'task') return;
 
-    const nextDone = !item.snipsel.task_done;
+    // Cycle: 0 (Open) -> 1 (Done) -> 2 (Cancelled) -> 0 (Open)
+    const nextDone = (item.snipsel.task_done + 1) % 3;
+    const oldVal = item.snipsel.task_done;
+    
     try {
       await api.snipsels.update(item.snipsel_id, { task_done: nextDone });
       collectionItems.update((items) =>
         items.map((i) => (i.snipsel_id === item.snipsel_id ? { ...i, snipsel: { ...i.snipsel, task_done: nextDone } } : i))
       );
       
-      // If we marked as done, reload to show potential new recurring tasks
-      if (nextDone) {
+      // If we marked as done (1), reload to show potential new recurring tasks
+      // (Cancelled tasks (2) do not trigger recurrence)
+      if (nextDone === 1) {
         await loadItems();
       }
       
@@ -2189,7 +2193,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   }
 
   function isDoneTask(item: CollectionItem): boolean {
-    return item.snipsel.type === 'task' && Boolean(item.snipsel.task_done);
+    return item.snipsel.type === 'task' && item.snipsel.task_done > 0;
   }
 
   function visibleItems(items: CollectionItem[]): CollectionItem[] {
@@ -2287,7 +2291,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   function taskProgress() {
     const tasks = $sortedItems.filter((i) => i.snipsel.type === 'task');
     const total = tasks.length;
-    const done = tasks.filter((i) => Boolean(i.snipsel.task_done)).length;
+    const done = tasks.filter((i) => i.snipsel.task_done > 0).length;
     return { total, done, ratio: total > 0 ? done / total : 0 };
   }
 
@@ -2945,20 +2949,22 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 </button>
               {/if}
 
-<button
+                <button
                   type="button"
-                  aria-label={item.snipsel.task_done ? 'Mark task not done' : 'Mark task done'}
+                  aria-label={item.snipsel.task_done ? 'Toggle task status' : 'Mark task done'}
                   class="absolute top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800"
                   onclick={(e) => {
                     e.stopPropagation();
                     toggleTaskDone(item);
                   }}
-                  style="left: calc(2.0rem + {item.indent * 1.25}rem); {item.snipsel.task_done
+                  style="left: calc(2.0rem + {item.indent * 1.25}rem); {item.snipsel.task_done > 0
                     ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
                     : ''}"
                 >
-                  {#if item.snipsel.task_done}
+                  {#if item.snipsel.task_done === 1}
                     <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
+                  {:else if item.snipsel.task_done === 2}
+                    <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
                   {/if}
                 </button>
 

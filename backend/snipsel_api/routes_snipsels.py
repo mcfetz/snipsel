@@ -558,31 +558,43 @@ def update_snipsel(snipsel_id: str):
     if "content_markdown" in data and has_write_access:
         s.content_markdown = data.get("content_markdown")
     if "task_done" in data:
-        done = bool(data.get("task_done"))
-        old_done = s.task_done
-        s.task_done = done
-        if done:
+        val = data.get("task_done")
+        if isinstance(val, bool):
+            status = 1 if val else 0
+        else:
+            try:
+                status = int(val)
+            except (ValueError, TypeError):
+                status = 0
+        
+        old_status = int(s.task_done)
+        s.task_done = status
+        
+        if status in {1, 2}:
             s.done_at = datetime.utcnow()
             s.done_by_id = user.id
-            if not old_done and user.id != s.created_by_id and s.created_by_id:
-                task_preview = _get_task_preview(s.content_markdown or "")
-                msg = (
-                    f"{user.username} completed a task you created: {task_preview}"
-                    if task_preview
-                    else f"{user.username} completed a task you created."
-                )
-                if not _is_snipsel_muted(s.id):
-                    n = Notification(
-                        user_id=s.created_by_id, message=msg, snipsel_id=s.id
+            
+            # Completion notification and recurrence only for status 1 (Done)
+            if status == 1 and old_status == 0:
+                if user.id != s.created_by_id and s.created_by_id:
+                    task_preview = _get_task_preview(s.content_markdown or "")
+                    msg = (
+                        f"{user.username} completed a task you created: {task_preview}"
+                        if task_preview
+                        else f"{user.username} completed a task you created."
                     )
-                    db.session.add(n)
+                    if not _is_snipsel_muted(s.id):
+                        n = Notification(
+                            user_id=s.created_by_id, message=msg, snipsel_id=s.id
+                        )
+                        db.session.add(n)
 
-            # Handle recurrence: Create a copy if it has an rrule
-            if not old_done and s.reminder_rrule and s.reminder_at:
-                try:
-                    rr = rrule.rrulestr(s.reminder_rrule, dtstart=s.reminder_at)
-                    next_at = rr.after(s.reminder_at)
-                    if next_at:
+                # Handle recurrence: Create a copy if it has an rrule
+                if s.reminder_rrule and s.reminder_at:
+                    try:
+                        rr = rrule.rrulestr(s.reminder_rrule, dtstart=s.reminder_at)
+                        next_at = rr.after(s.reminder_at)
+                        if next_at:
                         # Create new snipsel
                         new_s = Snipsel(
                             type=s.type,
@@ -827,7 +839,7 @@ def delete_completed_tasks(collection_id: str):
         .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
         .where(
             CollectionSnipsel.collection_id == collection_id,
-            Snipsel.task_done.is_(True),
+            Snipsel.task_done.in_([1, 2]),
             Snipsel.deleted_at.is_(None),
         )
     )
@@ -889,7 +901,7 @@ def reset_completed_tasks(collection_id: str):
         .join(CollectionSnipsel, CollectionSnipsel.snipsel_id == Snipsel.id)
         .where(
             CollectionSnipsel.collection_id == collection_id,
-            Snipsel.task_done.is_(True),
+            Snipsel.task_done.in_([1, 2]),
             Snipsel.deleted_at.is_(None),
         )
     )
@@ -899,7 +911,7 @@ def reset_completed_tasks(collection_id: str):
     now = datetime.utcnow()
 
     for s in snipsels:
-        s.task_done = False
+        s.task_done = 0
         s.done_at = None
         s.done_by_id = None
         s.modified_at = now

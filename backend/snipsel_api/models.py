@@ -290,7 +290,7 @@ class Snipsel(db.Model):
 
     __table_args__ = (
         CheckConstraint(
-            "(task_done = 0) OR (task_done = 1)",
+            "(task_done = 0) OR (task_done = 1) OR (task_done = 2)",
             name="ck_snipsels_task_done_bool",
         ),
     )

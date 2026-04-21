@@ -202,15 +202,15 @@ def search():
 
     snipsel_type = (request.args.get("type") or "").strip() or None
     task_done_raw = (request.args.get("task_done") or "").strip()
-    task_done_filter: bool | None
+    # 0 = Open, 1 = Done/Cancelled (Finished), 2 = explicitly Cancelled
+    task_done_filter: int | None
     if task_done_raw == "":
         task_done_filter = None
-    elif task_done_raw == "1":
-        task_done_filter = True
-    elif task_done_raw == "0":
-        task_done_filter = False
     else:
-        raise api_error(400, "invalid_input", "task_done must be 0 or 1")
+        try:
+            task_done_filter = int(task_done_raw)
+        except (ValueError, TypeError):
+            raise api_error(400, "invalid_input", "task_done must be 0, 1, or 2")
     include_archived = request.args.get("include_archived") == "1"
     day = request.args.get("day")
     day_parsed = date.fromisoformat(day) if day else None
@@ -272,8 +272,15 @@ def search():
     if snipsel_type:
         stmt = stmt.where(Snipsel.type == snipsel_type)
     if snipsel_type == "task":
-        done_val = task_done_filter if task_done_filter is not None else False
-        stmt = stmt.where(Snipsel.task_done.is_(done_val))
+        if task_done_filter == 0:
+            stmt = stmt.where(Snipsel.task_done == 0)
+        elif task_done_filter == 1:
+            stmt = stmt.where(Snipsel.task_done.in_([1, 2]))
+        elif task_done_filter == 2:
+            stmt = stmt.where(Snipsel.task_done == 2)
+        elif task_done_filter is None:
+            # Default to open tasks if no filter specified for "task" type
+            stmt = stmt.where(Snipsel.task_done == 0)
     if q:
         # Split search query into terms and require ALL terms to match (AND search)
         # Also replace + with space to handle URL-encoded spaces
@@ -374,7 +381,13 @@ def search():
 
     if mentions_me and snipsel_type == "task" and getattr(user, "username", None):
         uname = str(user.username).casefold()
-        done_val = task_done_filter if task_done_filter is not None else False
+        # Similar logic for mentions_me
+        m_task_done_q = Snipsel.task_done == 0
+        if task_done_filter == 1:
+            m_task_done_q = Snipsel.task_done.in_([1, 2])
+        elif task_done_filter == 2:
+            m_task_done_q = Snipsel.task_done == 2
+        
         m_stmt = (
             db.select(
                 Snipsel,
@@ -384,7 +397,7 @@ def search():
             .where(
                 Snipsel.deleted_at.is_(None),
                 Snipsel.type == "task",
-                Snipsel.task_done.is_(done_val),
+                m_task_done_q,
                 Mention.name == uname,
             )
             .options(joinedload(Snipsel.reactions))

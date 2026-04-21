@@ -148,10 +148,12 @@
 		load();
 	});
 
-	async function toggleDone(id: string, current: boolean) {
+	async function toggleDone(id: string, current: number) {
 		collectionAnchor.set(null);
 		try {
-			await api.snipsels.update(id, { task_done: !current });
+      // Cycle: 0 (Open) -> 1 (Done) -> 2 (Cancelled) -> 0 (Open)
+      const next = (current + 1) % 3;
+			await api.snipsels.update(id, { task_done: next });
 			saveStatuses[id] = 'success';
 			setTimeout(() => { if (saveStatuses[id] === 'success') saveStatuses[id] = null; }, 5000);
 			await load();
@@ -330,14 +332,16 @@
 				<button
 					class="grid h-8 w-8 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 dark:border-white/20 dark:bg-slate-900"
 					type="button"
-					aria-label={t.task_done ? 'Mark open' : 'Mark done'}
-					title={t.task_done ? 'Open' : 'Done'}
+					aria-label={t.task_done > 0 ? 'Toggle task status' : 'Mark done'}
+					title={t.task_done === 1 ? 'Done' : t.task_done === 2 ? 'Cancelled' : 'Open'}
 					disabled={!canToggle}
 					style={canToggle ? `border-color: ${getAccent()}` : undefined}
 					onclick={() => toggleDone(t.id, t.task_done)}
 				>
-					{#if t.task_done}
+					{#if t.task_done === 1}
 						<span in:scale={{ start: 0.5, duration: 150 }} class="text-sm font-semibold" style={`color: ${getAccent()}`}>✓</span>
+					{:else if t.task_done === 2}
+						<span in:scale={{ start: 0.5, duration: 150 }} class="text-sm font-semibold" style={`color: ${getAccent()}`}>✕</span>
 					{/if}
 				</button>
 

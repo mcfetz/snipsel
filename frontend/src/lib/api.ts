@@ -113,7 +113,7 @@ export type Snipsel = {
   type: string;
   card_view: boolean;
   content_markdown: string | null;
-  task_done: boolean;
+  task_done: number;
   done_at: string | null;
   done_by_id: string | null;
   done_by_username?: string | null;
@@ -175,7 +175,7 @@ export type SearchSnipselHit = {
   id: string;
   type: string;
   content_markdown: string | null;
-  task_done: boolean;
+  task_done: number;
   done_at: string | null;
   external_url: string | null;
   external_label: string | null;
