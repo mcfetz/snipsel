@@ -230,7 +230,7 @@ class Snipsel(db.Model):
     geo_lng: Mapped[Optional[float]] = mapped_column(nullable=True, index=True)
     geo_accuracy_m: Mapped[Optional[float]] = mapped_column(nullable=True)
 
-    task_done: Mapped[bool] = mapped_column(default=False, nullable=False)
+    task_done: Mapped[int] = mapped_column(default=0, nullable=False)
     done_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     done_by_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("users.id"), nullable=True
