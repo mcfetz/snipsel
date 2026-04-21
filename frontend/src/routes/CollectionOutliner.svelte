@@ -3026,7 +3026,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               {/if}
             {/if}
             <div
-              class="rounded py-3 {item.snipsel.type === 'task' ? 'pl-8 pr-2' : 'px-2'} {selectedIds.has(item.snipsel_id)
+              class="rounded py-3 {item.snipsel.type === 'task' ? 'pl-10 pr-2' : 'px-2'} {selectedIds.has(item.snipsel_id)
                 ? 'bg-slate-100 dark:bg-white/5'
                 : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'}"
               role="button"
