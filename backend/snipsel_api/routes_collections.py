@@ -1065,6 +1065,8 @@ def update_collection(collection_id: str):
         c.show_completed_tasks = bool(data.get("show_completed_tasks"))
     if "mute_notifications" in data:
         c.mute_notifications = bool(data.get("mute_notifications"))
+    if "exclude_from_todo_list" in data:
+        c.exclude_from_todo_list = bool(data.get("exclude_from_todo_list"))
 
     c.modified_by_id = user.id
     db.session.commit()
@@ -1322,6 +1324,7 @@ def _collection_json(c: Collection) -> dict:
         "is_passcode_protected": bool(c.is_passcode_protected),
         "show_completed_tasks": bool(c.show_completed_tasks),
         "mute_notifications": bool(c.mute_notifications),
+        "exclude_from_todo_list": bool(c.exclude_from_todo_list),
         "list_for_day": c.list_for_day.isoformat() if c.list_for_day else None,
         "created_at": c.created_at.isoformat() + "Z",
         "modified_at": c.modified_at.isoformat() + "Z",

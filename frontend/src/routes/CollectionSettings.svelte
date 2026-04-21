@@ -32,6 +32,7 @@
   let defaultSnipselType = $state('');
   let showCompletedTasks = $state(true);
   let muteNotifications = $state(false);
+  let excludeFromTodoList = $state(false);
   let saving = $state(false);
   let showDeleteModal = $state(false);
   let showBulkDeleteModal = $state(false);
@@ -124,6 +125,7 @@
       defaultSnipselType = collection.default_snipsel_type ?? '';
       showCompletedTasks = collection.show_completed_tasks ?? true;
       muteNotifications = collection.mute_notifications ?? false;
+      excludeFromTodoList = collection.exclude_from_todo_list ?? false;
 
       const [uRes, sRes, blRes] = await Promise.all([
         api.users.list(),
@@ -185,6 +187,7 @@
         default_snipsel_type: defaultSnipselType.trim() || null,
         show_completed_tasks: showCompletedTasks,
         mute_notifications: muteNotifications,
+        exclude_from_todo_list: excludeFromTodoList,
       });
       collection = res.collection;
       collections.update((list) => list.map((c) => (c.id === res.collection.id ? res.collection : c)));
@@ -619,6 +622,21 @@
               <div class="absolute left-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
             </div>
             <span class="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200">Show completed tasks by default</span>
+          </label>
+          
+          <label class="flex items-center gap-3 cursor-pointer group">
+            <div class="relative inline-flex h-6 w-11 items-center">
+              <input type="checkbox" class="peer sr-only" bind:checked={excludeFromTodoList} />
+              <div 
+                class="h-6 w-11 rounded-full bg-slate-200 transition-colors dark:bg-slate-700"
+                style={excludeFromTodoList ? `background-color: ${getAccent()}` : undefined}
+              ></div>
+              <div class="absolute left-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100">Exclude from Todo list</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400">Hide open tasks from this collection in the global Todo view</span>
+            </div>
           </label>
 
           <div class="flex flex-wrap gap-2">

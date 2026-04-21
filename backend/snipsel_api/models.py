@@ -118,6 +118,7 @@ class Collection(db.Model):
     is_passcode_protected: Mapped[bool] = mapped_column(default=False, nullable=False)
     show_completed_tasks: Mapped[bool] = mapped_column(default=True, nullable=False)
     mute_notifications: Mapped[bool] = mapped_column(default=False, nullable=False)
+    exclude_from_todo_list: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     default_snipsel_type: Mapped[Optional[str]] = mapped_column(
         String(32), nullable=True
