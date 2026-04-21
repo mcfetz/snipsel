@@ -300,8 +300,12 @@
 
     return escaped.replace(
       /(^|[^\p{L}\p{N}_])(#[A-Za-z\p{L}][\p{L}\p{N}_-]*|@[A-Za-z\p{L}][\p{L}\p{N}_-]*)/gu,
-      (m, p1, token) =>
-        `${p1}<mark class="snip-token" style="background-color:${tokenBg}; color:${accent}">${token}</mark>`
+      (m, p1, token) => {
+        const isTag = token.startsWith('#');
+        const value = token.slice(1);
+        const attr = isTag ? `data-tag="${value}"` : `data-mention="${value}"`;
+        return `${p1}<mark class="snip-token cursor-pointer" ${attr} style="background-color:${tokenBg}; color:${accent}">${token}</mark>`;
+      }
     );
   }
 
@@ -573,7 +577,33 @@
           </div>
         {/if}
 
-        <div class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words">
+        <div 
+          class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words"
+          onclick={(e) => {
+            const tagTarget = (e.target as HTMLElement).closest('[data-tag]');
+            if (tagTarget) {
+              const tag = tagTarget.getAttribute('data-tag');
+              if (tag) {
+                currentView.set({ type: 'search' });
+                searchQuery.set('');
+                api.search({ tag }).then(searchResults.set).catch(() => searchError.set('Search failed'));
+              }
+              return;
+            }
+
+            const mentionTarget = (e.target as HTMLElement).closest('[data-mention]');
+            if (mentionTarget) {
+              const mention = mentionTarget.getAttribute('data-mention');
+              if (mention) {
+                currentView.set({ type: 'search' });
+                searchQuery.set('');
+                api.search({ mention }).then(searchResults.set).catch(() => searchError.set('Search failed'));
+              }
+              return;
+            }
+          }}
+          role="presentation"
+        >
           {@html highlightTokens(stripMediaLinks(snipsel.content_markdown))}
         </div>
 

@@ -2159,8 +2159,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     return html
       .replace(
         /(^|[^\p{L}\p{N}_])(#[A-Za-z\p{L}][\p{L}\p{N}_-]*|@[A-Za-z\p{L}][\p{L}\p{N}_-]*)/gu,
-        (m, p1, token) =>
-          `${p1}<mark class="snip-token" style="background-color:${tokenBg}; color:${tokenFg}">${token}</mark>`
+        (m, p1, token) => {
+          const isTag = token.startsWith('#');
+          const value = token.slice(1);
+          const attr = isTag ? `data-tag="${value}"` : `data-mention="${value}"`;
+          return `${p1}<mark class="snip-token cursor-pointer" ${attr} style="background-color:${tokenBg}; color:${tokenFg}">${token}</mark>`;
+        }
       )
       .replace(/==([^=]+)==/g, `<mark style="background-color:${tokenBg}; border-radius: 0.25rem; padding: 0 0.125rem">$1</mark>`)
       .replace(/<a /g, `<a style="color:${tokenFg}; text-decoration:underline" target="_blank" rel="noopener noreferrer" `)
@@ -3054,14 +3058,41 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               role="button"
               tabindex="0"
               onclick={(e) => {
-                const target = (e.target as HTMLElement).closest('[data-collection-id]');
-                if (target) {
+                const colTarget = (e.target as HTMLElement).closest('[data-collection-id]');
+                if (colTarget) {
                   e.preventDefault();
                   e.stopPropagation();
-                  const id = target.getAttribute('data-collection-id');
+                  const id = colTarget.getAttribute('data-collection-id');
                   if (id) currentView.set({ type: 'collection', id });
                   return;
                 }
+
+                const tagTarget = (e.target as HTMLElement).closest('[data-tag]');
+                if (tagTarget) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const tag = tagTarget.getAttribute('data-tag');
+                  if (tag) {
+                    currentView.set({ type: 'search' });
+                    searchQuery.set('');
+                    api.search({ tag }).then(searchResults.set).catch(() => searchError.set('Search failed'));
+                  }
+                  return;
+                }
+
+                const mentionTarget = (e.target as HTMLElement).closest('[data-mention]');
+                if (mentionTarget) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const mention = mentionTarget.getAttribute('data-mention');
+                  if (mention) {
+                    currentView.set({ type: 'search' });
+                    searchQuery.set('');
+                    api.search({ mention }).then(searchResults.set).catch(() => searchError.set('Search failed'));
+                  }
+                  return;
+                }
+
                 startEdit(item);
               }}
               onkeydown={(e) => e.key === 'Enter' && startEdit(item)}
