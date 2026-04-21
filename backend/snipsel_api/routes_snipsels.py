@@ -595,70 +595,70 @@ def update_snipsel(snipsel_id: str):
                         rr = rrule.rrulestr(s.reminder_rrule, dtstart=s.reminder_at)
                         next_at = rr.after(s.reminder_at)
                         if next_at:
-                        # Create new snipsel
-                        new_s = Snipsel(
-                            type=s.type,
-                            card_view=s.card_view,
-                            content_markdown=s.content_markdown,
-                            owner_user_id=s.owner_user_id,
-                            created_by_id=user.id,
-                            modified_by_id=user.id,
-                            external_url=s.external_url,
-                            external_label=s.external_label,
-                            internal_target_snipsel_id=s.internal_target_snipsel_id,
-                            reminder_at=next_at,
-                            reminder_rrule=s.reminder_rrule,
-                            geo_lat=s.geo_lat,
-                            geo_lng=s.geo_lng,
-                            geo_accuracy_m=s.geo_accuracy_m,
-                        )
-                        db.session.add(new_s)
-                        db.session.flush()  # Get new_s.id
+                            # Create new snipsel
+                            new_s = Snipsel(
+                                type=s.type,
+                                card_view=s.card_view,
+                                content_markdown=s.content_markdown,
+                                owner_user_id=s.owner_user_id,
+                                created_by_id=user.id,
+                                modified_by_id=user.id,
+                                external_url=s.external_url,
+                                external_label=s.external_label,
+                                internal_target_snipsel_id=s.internal_target_snipsel_id,
+                                reminder_at=next_at,
+                                reminder_rrule=s.reminder_rrule,
+                                geo_lat=s.geo_lat,
+                                geo_lng=s.geo_lng,
+                                geo_accuracy_m=s.geo_accuracy_m,
+                            )
+                            db.session.add(new_s)
+                            db.session.flush()  # Get new_s.id
 
-                        # Copy tags and mentions
-                        for t in s.tags:
-                            db.session.add(
-                                SnipselTag(snipsel_id=new_s.id, tag_id=t.tag_id)
-                            )
-                        for m in s.mentions:
-                            db.session.add(
-                                SnipselMention(
-                                    snipsel_id=new_s.id, mention_id=m.mention_id
+                            # Copy tags and mentions
+                            for t in s.tags:
+                                db.session.add(
+                                    SnipselTag(snipsel_id=new_s.id, tag_id=t.tag_id)
                                 )
+                            for m in s.mentions:
+                                db.session.add(
+                                    SnipselMention(
+                                        snipsel_id=new_s.id, mention_id=m.mention_id
+                                    )
+                                )
+
+                            # Insert into same collections at position + 1
+                            placements = (
+                                db.session.execute(
+                                    db.select(CollectionSnipsel).where(
+                                        CollectionSnipsel.snipsel_id == s.id
+                                    )
+                                )
+                                .scalars()
+                                .all()
                             )
 
-                        # Insert into same collections at position + 1
-                        placements = (
-                            db.session.execute(
-                                db.select(CollectionSnipsel).where(
-                                    CollectionSnipsel.snipsel_id == s.id
+                            for p in placements:
+                                # Shift others
+                                db.session.execute(
+                                    db.update(CollectionSnipsel)
+                                    .where(
+                                        CollectionSnipsel.collection_id == p.collection_id,
+                                        CollectionSnipsel.position > p.position,
+                                    )
+                                    .values(position=CollectionSnipsel.position + 1)
                                 )
-                            )
-                            .scalars()
-                            .all()
-                        )
-
-                        for p in placements:
-                            # Shift others
-                            db.session.execute(
-                                db.update(CollectionSnipsel)
-                                .where(
-                                    CollectionSnipsel.collection_id == p.collection_id,
-                                    CollectionSnipsel.position > p.position,
+                                # Add new placement
+                                new_p = CollectionSnipsel(
+                                    collection_id=p.collection_id,
+                                    snipsel_id=new_s.id,
+                                    position=p.position + 1,
+                                    indent=p.indent,
                                 )
-                                .values(position=CollectionSnipsel.position + 1)
-                            )
-                            # Add new placement
-                            new_p = CollectionSnipsel(
-                                collection_id=p.collection_id,
-                                snipsel_id=new_s.id,
-                                position=p.position + 1,
-                                indent=p.indent,
-                            )
-                            db.session.add(new_p)
-                except Exception as e:
-                    # Log error but don't fail completion
-                    print(f"Error handling recurrence for snipsel {s.id}: {e}")
+                                db.session.add(new_p)
+                    except Exception as e:
+                        # Log error but don't fail completion
+                        print(f"Error handling recurrence for snipsel {s.id}: {e}")
         else:
             s.done_at = None
             s.done_by_id = None
