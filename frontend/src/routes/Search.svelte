@@ -210,7 +210,7 @@
         {:else}
           <div class="space-y-2">
             {#each $searchResults.snipsels as s (s.id)}
-              <div class="flex w-full items-center gap-3 px-1 py-2">
+              <div class="flex w-full items-center gap-3 px-1 py-2 {s.type === 'task' && s.task_done > 0 ? 'task-faded' : ''}">
                 <button class="min-w-0 flex flex-1 items-start gap-3 text-left" type="button" onclick={() => openSnipsel(s)}>
                   <div class="min-w-0 flex-1">
                     {#if getDeezerLink(s.content_markdown)}

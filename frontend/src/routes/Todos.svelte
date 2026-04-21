@@ -328,7 +328,7 @@
 		{#each visible as t (t.id)}
 			{@const hasAccess = t.has_collection_access !== false}
 			{@const canToggle = t.can_toggle_task_done === true}
-			<div class="flex w-full items-center gap-3 px-1 py-2" in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 150 }}>
+			<div class="flex w-full items-center gap-3 px-1 py-2 {t.task_done > 0 ? 'task-faded' : ''}" in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 150 }}>
 				<button
 					class="grid h-8 w-8 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 dark:border-white/20 dark:bg-slate-900"
 					type="button"

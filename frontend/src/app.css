@@ -19,6 +19,7 @@
   --border-default: #e2e8f0;
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(255, 255, 255, 0.3);
+  --text-faded: #cbd5e1;
 }
 
 .dark {
@@ -30,6 +31,7 @@
   --border-default: #1e293b;
   --glass-bg: rgba(15, 23, 42, 0.8);
   --glass-border: rgba(255, 255, 255, 0.1);
+  --text-faded: #334155;
 }
 
 html,
@@ -216,3 +218,14 @@ body {
 .al-anim-spin { transform-origin: 12px 12px; }
 .al-icon-wrapper:hover .al-anim-spin { animation: al-spin 700ms cubic-bezier(0.4, 0, 0.2, 1) var(--al-delay, 0ms) both !important; }
 @keyframes al-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.task-faded {
+  color: var(--text-faded) !important;
+  transition: color 0.3s ease;
+}
+
+.task-faded .snip-token {
+  opacity: 0.6;
+  filter: grayscale(0.5);
+  transition: all 0.3s ease;
+}
