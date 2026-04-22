@@ -142,6 +142,7 @@ export type Snipsel = {
   tags?: string[];
   mentions?: string[];
   reactions?: ReactionSummary[];
+  collection_refs?: Array<{ title: string; collection_id: string }>;
 };
 
 export type SnipselDetailResponse = {
@@ -801,6 +802,21 @@ export const api = {
       await idbSaveCollectionItem(item);
       mutationSeq++;
       const syncPayload = { ...input, _tempId: tempId, position: finalPosition };
+      
+      if (typeof window !== 'undefined' && navigator.onLine) {
+        try {
+          const res = await requestJson<{ item: CollectionItem }>(
+            `/api/collections/${collectionId}/snipsels`,
+            { method: 'POST', body: JSON.stringify(syncPayload) }
+          );
+          // Sync with IDB
+          await import('./db').then(m => m.idbReplaceTempCollectionItem(tempId, res.item));
+          return res;
+        } catch (err) {
+          console.error("Online create failed, falling back to offline", err);
+        }
+      }
+
       await idbEnqueueSync('POST', `/api/collections/${collectionId}/snipsels`, syncPayload);
       return { item };
     },
@@ -820,6 +836,19 @@ export const api = {
     ) => {
       await idbUpdateSnipselData(snipselId, input);
       mutationSeq++;
+      
+      if (typeof window !== 'undefined' && navigator.onLine) {
+        try {
+          const res = await requestJson<{ snipsel: Snipsel }>(
+            `/api/snipsels/${snipselId}`,
+            { method: 'PATCH', body: JSON.stringify(input) }
+          );
+          return res;
+        } catch (err) {
+          console.error("Online update failed, falling back to offline", err);
+        }
+      }
+
       await idbEnqueueSync('PATCH', `/api/snipsels/${snipselId}`, input);
       return { snipsel: { id: snipselId, ...input } as unknown as Snipsel };
     },

@@ -1038,7 +1038,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         return;
       }
 
-      await api.snipsels.update(snipselId, { content_markdown: isEmpty ? null : editContent });
+      const res = await api.snipsels.update(snipselId, { content_markdown: isEmpty ? null : editContent });
 
       // Surgically update the store instead of calling loadItems().
       // loadItems() would fire a background GET that races with our PATCH,
@@ -1057,7 +1057,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         collectionItems.update((items) =>
           items.map((i, idx) =>
             i.snipsel_id === snipselId
-              ? { ...i, position: idx + 1, indent: editIndent, snipsel: { ...i.snipsel, content_markdown: contentToStore } }
+              ? { 
+                  ...i, 
+                  position: idx + 1, 
+                  indent: editIndent, 
+                  snipsel: res.snipsel,
+                  collection_refs: res.snipsel.collection_refs ?? i.collection_refs 
+                }
               : { ...i, position: idx + 1 }
           )
         );
@@ -1066,7 +1072,11 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         collectionItems.update((items) =>
           items.map((i) =>
             i.snipsel_id === snipselId
-              ? { ...i, snipsel: { ...i.snipsel, content_markdown: contentToStore } }
+              ? { 
+                  ...i, 
+                  snipsel: res.snipsel,
+                  collection_refs: res.snipsel.collection_refs ?? i.collection_refs
+                }
               : i
           )
         );

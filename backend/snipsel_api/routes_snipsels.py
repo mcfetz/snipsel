@@ -1157,6 +1157,21 @@ def _is_snipsel_muted(snipsel_id: str) -> bool:
 
 
 def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
+    from sqlalchemy.orm import joinedload
+    refs = (
+        db.session.execute(
+            db.select(SnipselCollectionRef)
+            .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
+            .options(joinedload(SnipselCollectionRef.collection))
+            .where(
+                SnipselCollectionRef.snipsel_id == s.id,
+                Collection.deleted_at.is_(None),
+            )
+        )
+        .scalars()
+        .all()
+    )
+
     return {
         "id": s.id,
         "type": s.type,
@@ -1190,6 +1205,10 @@ def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
                 "has_thumbnail": a.thumbnail_path is not None,
             }
             for a in s.attachments
+        ],
+        "collection_refs": [
+            {"title": r.collection.title, "collection_id": r.collection_id}
+            for r in refs
         ],
     }
 
