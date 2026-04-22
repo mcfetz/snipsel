@@ -344,7 +344,7 @@ async function startImport() {
           <label class="flex cursor-pointer items-center gap-3">
             <div 
               class="flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all"
-              style={overwrite ? `background-color: ${getAccent()}; border-color: ${getAccent()}` : 'border-color: #475569; background-color: transparent'}
+              style={overwrite ? `background-color: ${getAccent()}; border-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : 'border-color: #475569; background-color: transparent'}
             >
               <input
                 type="checkbox"
@@ -352,7 +352,7 @@ async function startImport() {
                 class="sr-only"
               />
               {#if overwrite}
-                <Check label="" size={14} className="text-white" strokeWidth={3} />
+                <Check label="" size={14} style={`color: ${getContrastColor(getAccent())}`} strokeWidth={3} />
               {/if}
             </div>
             <span class="text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -376,7 +376,7 @@ async function startImport() {
             <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
               {#if isSearching}
                 <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-500 dark:border-white/20 dark:border-t-white/60"></div>
-              {:else}
+              {#else}
                 <Search label="" size={16} />
               {/if}
             </div>
@@ -414,10 +414,10 @@ async function startImport() {
               >
                 <div 
                   class="flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all"
-                  style={selectedLists.has(list.id) ? `background-color: ${getAccent()}; border-color: ${getAccent()}` : 'border-color: #475569; background-color: transparent'}
+                  style={selectedLists.has(list.id) ? `background-color: ${getAccent()}; border-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : 'border-color: #475569; background-color: transparent'}
                 >
                   {#if selectedLists.has(list.id)}
-                    <Check label="" size={14} className="text-white" strokeWidth={3} />
+                   <Check label="" size={14} style={`color: ${getContrastColor(getAccent())}`} strokeWidth={3} />
                   {/if}
                 </div>
                 <div class="flex-1 min-w-0">

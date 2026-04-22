@@ -610,8 +610,8 @@
           {/if}
           
           <button
-            class="relative flex w-full items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
-            style={`background-color: ${getAccent()}`}
+            class="relative flex w-full items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             type="button"
             onclick={updateAccount}
             disabled={isBusy || (!newEmail && !newPassword) || !currentPasswordConfirm || showAccountSaved}
@@ -780,8 +780,8 @@
 
       <div class="mt-6 flex justify-end">
         <button
-          class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
-          style={`background-color: ${getAccent()}`}
+          class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+          style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
           type="button"
           onclick={saveAppearanceSettings}
           disabled={isBusy || showAppearanceSaved}
@@ -820,8 +820,8 @@
             {/each}
           </select>
           <button
-            class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
-            style={`background-color: ${getAccent()}`}
+            class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             type="button"
             onclick={saveDayTemplate}
             disabled={isBusy || showDayTemplateSaved}
@@ -853,7 +853,7 @@
         <button
           type="button"
           class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50"
-          style={Boolean($currentUser?.carry_over_open_tasks ?? true) ? `background-color: ${getAccent()}` : 'background-color: #cbd5e1'}
+          style={Boolean($currentUser?.carry_over_open_tasks ?? true) ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : 'background-color: #cbd5e1'}
           role="switch"
           aria-checked={Boolean($currentUser?.carry_over_open_tasks ?? true)}
           onclick={toggleCarryOver}
@@ -877,7 +877,7 @@
         <button
           type="button"
           class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50"
-          style={hasPushEnabled ? `background-color: ${getAccent()}` : 'background-color: #cbd5e1'}
+          style={hasPushEnabled ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : 'background-color: #cbd5e1'}
           role="switch"
           aria-checked={hasPushEnabled}
           onclick={togglePush}
@@ -968,8 +968,8 @@
         </div>
         <div class="flex justify-end pt-2">
           <button
-            class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
-            style={`background-color: ${getAccent()}`}
+            class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
             type="button"
             onclick={saveAiSettings}
             disabled={isBusy || showAiSaved}
@@ -1049,8 +1049,8 @@
             
             <div class="flex items-center gap-2 pt-2">
               <button
-                class="relative flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
-                style={`background-color: ${getAccent()}`}
+                class="relative flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
                 type="button"
                 onclick={savePasscode}
                 disabled={isBusy || passcode.length < 4 || !passcodeConfirmPassword || showPasscodeSaved}
@@ -1185,8 +1185,8 @@
 
             <div class="flex gap-2">
               <button
-                class="flex-1 rounded-full px-4 py-2 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
-                style={`background-color: ${getAccent()}`}
+                class="flex-1 rounded-full px-4 py-2 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
                 type="button"
                 onclick={enableOtp}
                 disabled={isBusy || otpCodeInput.length < 6 || !otpSetupConfirmPassword}
@@ -1246,8 +1246,8 @@
 
             <div class="flex gap-2">
               <button
-                class="flex-1 rounded-full px-4 py-2 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
-                style={`background-color: ${getAccent()}`}
+                class="flex-1 rounded-full px-4 py-2 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
                 type="button"
                 onclick={addPasskey}
                 disabled={isBusy || !newPasskeyName}
@@ -1362,8 +1362,8 @@
 
               <div class="flex gap-2">
                 <button
-                  class="relative flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
-                  style={`background-color: ${getAccent()}`}
+                  class="relative flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                  style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
                   type="button"
                   onclick={createApiKey}
                   disabled={isBusy || !newApiKeyName || showApiKeySaved}
