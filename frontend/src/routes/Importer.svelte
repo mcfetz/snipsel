@@ -376,7 +376,7 @@ async function startImport() {
             <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
               {#if isSearching}
                 <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-500 dark:border-white/20 dark:border-t-white/60"></div>
-              {#else}
+              {:else}
                 <Search label="" size={16} />
               {/if}
             </div>
