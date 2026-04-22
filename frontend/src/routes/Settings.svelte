@@ -9,6 +9,7 @@
   import Key from '@animated-color-icons/lucide-svelte/Key.svelte';
   import Upload from '@animated-color-icons/lucide-svelte/Upload.svelte';
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
+  import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import ChevronRight from '@animated-color-icons/lucide-svelte/ChevronRight.svelte';
   import Users from '@animated-color-icons/lucide-svelte/Users.svelte';
   import { api, type Collection, type UserStats, type ApiKey } from '../lib/api';
@@ -77,6 +78,14 @@
   let syncStatus = $state<'idle' | 'syncing' | 'success' | 'error'>('idle');
   let syncError = $state('');
   let lastFullSync = $state<number | null>(null);
+
+  // Success Feedback states
+  let showAccountSaved = $state(false);
+  let showAppearanceSaved = $state(false);
+  let showDayTemplateSaved = $state(false);
+  let showAiSaved = $state(false);
+  let showPasscodeSaved = $state(false);
+  let showApiKeySaved = $state(false);
 
   const DEFAULT_ACCENT = '#4f46e5';
   type Rgb = { r: number; g: number; b: number };
@@ -252,6 +261,8 @@
     try {
       const res = await api.apiKeys.create(newApiKeyName);
       newApiKeyValue = res.api_key.key;
+      showApiKeySaved = true;
+      setTimeout(() => showApiKeySaved = false, 2000);
       await loadApiKeys();
     } catch (e: any) {
       apiKeyError = e.error?.message || 'Failed to create API key';
@@ -295,6 +306,8 @@
         dark_background_color: darkBackgroundColor.trim() || null,
       });
       currentUser.set(res.user);
+      showAppearanceSaved = true;
+      setTimeout(() => showAppearanceSaved = false, 2000);
     } finally {
       isBusy = false;
     }
@@ -322,6 +335,8 @@
       const id = dayTemplateId.trim() || null;
       const res = await api.updateMe({ day_collection_template_id: id });
       currentUser.set(res.user);
+      showDayTemplateSaved = true;
+      setTimeout(() => showDayTemplateSaved = false, 2000);
     } finally {
       isBusy = false;
     }
@@ -338,7 +353,8 @@
       await api.passcode.set({ passcode, password_confirm: passcodeConfirmPassword });
       const res = await api.me();
       currentUser.set(res.user);
-      showPasscodeForm = false;
+      showPasscodeSaved = true;
+      setTimeout(() => { showPasscodeSaved = false; showPasscodeForm = false; }, 2000);
       passcode = '';
       passcodeConfirmPassword = '';
     } catch (e: any) {
@@ -385,11 +401,11 @@
         current_password: currentPasswordConfirm
       });
       currentUser.set(res.user);
-      accountUpdateSuccess = 'Account updated successfully';
+      showAccountSaved = true;
+      setTimeout(() => { showAccountSaved = false; showAccountForm = false; }, 2000);
       newEmail = '';
       newPassword = '';
       currentPasswordConfirm = '';
-      showAccountForm = false;
     } catch (e: any) {
       accountUpdateError = e.error?.message || 'Failed to update account';
     } finally {
@@ -406,6 +422,8 @@
         ai_api_key: aiApiKey.trim() || null,
       });
       currentUser.set(res.user);
+      showAiSaved = true;
+      setTimeout(() => showAiSaved = false, 2000);
       aiApiKey = '';
     } finally {
       isBusy = false;
@@ -532,7 +550,8 @@
         </div>
         <div class="flex gap-2">
             <button 
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700" 
+              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5" 
+              style={`color: ${getAccent()}`}
               type="button" 
               onclick={() => { showAccountForm = !showAccountForm; accountUpdateError = ''; accountUpdateSuccess = ''; }}
               disabled={isBusy}
@@ -540,7 +559,7 @@
               {showAccountForm ? 'Cancel' : 'Edit'}
             </button>
             <button 
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-red-600 shadow-sm ring-1 ring-black/5 hover:bg-red-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-red-950/30" 
+              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-black/5 hover:bg-red-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-red-950/30" 
               type="button" 
               onclick={logout}
               disabled={isBusy}
@@ -591,12 +610,23 @@
           {/if}
           
           <button
-            class="w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all bg-slate-900 dark:bg-white dark:text-slate-900"
+            class="relative flex w-full items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+            style={`background-color: ${getAccent()}`}
             type="button"
             onclick={updateAccount}
-            disabled={isBusy || (!newEmail && !newPassword) || !currentPasswordConfirm}
+            disabled={isBusy || (!newEmail && !newPassword) || !currentPasswordConfirm || showAccountSaved}
           >
-            Save Account Changes
+            {#if isBusy}
+              <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+              <span>Saving...</span>
+            {:else if showAccountSaved}
+              <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
+                <Check label="" size={18} strokeWidth={3} />
+                <span>Saved!</span>
+              </div>
+            {:else}
+              <span>Save Account Changes</span>
+            {/if}
           </button>
         </div>
       {/if}
@@ -750,13 +780,23 @@
 
       <div class="mt-6 flex justify-end">
         <button
-          class="rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
-          style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
+          class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+          style={`background-color: ${getAccent()}`}
           type="button"
           onclick={saveAppearanceSettings}
-          disabled={isBusy}
+          disabled={isBusy || showAppearanceSaved}
         >
-          Save Appearance
+          {#if isBusy}
+            <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+            <span>Saving...</span>
+          {:else if showAppearanceSaved}
+            <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
+              <Check label="" size={18} strokeWidth={3} />
+              <span>Saved!</span>
+            </div>
+          {:else}
+            <span>Save Appearance</span>
+          {/if}
         </button>
       </div>
     </div>
@@ -780,13 +820,23 @@
             {/each}
           </select>
           <button
-            class="rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
-            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
+            class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+            style={`background-color: ${getAccent()}`}
             type="button"
             onclick={saveDayTemplate}
-            disabled={isBusy}
+            disabled={isBusy || showDayTemplateSaved}
           >
-            Save
+            {#if isBusy}
+              <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+              <span>Saving...</span>
+            {:else if showDayTemplateSaved}
+              <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
+                <Check label="" size={18} strokeWidth={3} />
+                <span>Saved!</span>
+              </div>
+            {:else}
+              <span>Save</span>
+            {/if}
           </button>
         </div>
       </div>
@@ -910,13 +960,23 @@
         </div>
         <div class="flex justify-end pt-2">
           <button
-            class="rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
-            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
+            class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+            style={`background-color: ${getAccent()}`}
             type="button"
             onclick={saveAiSettings}
-            disabled={isBusy}
+            disabled={isBusy || showAiSaved}
           >
-            Save AI Settings
+            {#if isBusy}
+              <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+              <span>Saving...</span>
+            {:else if showAiSaved}
+              <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
+                <Check label="" size={18} strokeWidth={3} />
+                <span>Saved!</span>
+              </div>
+            {:else}
+              <span>Save AI Settings</span>
+            {/if}
           </button>
         </div>
       </div>
@@ -940,7 +1000,8 @@
               </div>
             </div>
             <button
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+              style={`color: ${getAccent()}`}
               type="button"
               onclick={() => { showPasscodeForm = true; passcodeError = ''; }}
               disabled={isBusy}
@@ -980,15 +1041,27 @@
             
             <div class="flex items-center gap-2 pt-2">
               <button
-                class="flex-1 rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all bg-slate-900 dark:bg-white dark:text-slate-900"
+                class="relative flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                style={`background-color: ${getAccent()}`}
                 type="button"
                 onclick={savePasscode}
-                disabled={isBusy || passcode.length < 4 || !passcodeConfirmPassword}
+                disabled={isBusy || passcode.length < 4 || !passcodeConfirmPassword || showPasscodeSaved}
               >
-                Save Passcode
+                {#if isBusy}
+                  <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                  <span>Saving...</span>
+                {:else if showPasscodeSaved}
+                  <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
+                    <Check label="" size={18} strokeWidth={3} />
+                    <span>Saved!</span>
+                  </div>
+                {:else}
+                  <span>Save Passcode</span>
+                {/if}
               </button>
               <button
-                class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                style={`color: ${getAccent()}`}
                 type="button"
                 onclick={() => { showPasscodeForm = false; passcode = ''; passcodeConfirmPassword = ''; }}
                 disabled={isBusy}
@@ -1011,7 +1084,8 @@
           </div>
           {#if $currentUser?.otp_enabled}
             <button
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all dark:border-white/10 dark:bg-slate-800 dark:hover:bg-slate-700 {isOtpDisableActive ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}"
+              class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5 {isOtpDisableActive ? 'text-red-600 dark:text-red-400' : ''}"
+              style={isOtpDisableActive ? '' : `color: ${getAccent()}`}
               type="button"
               onclick={() => {
                 isOtpDisableActive = !isOtpDisableActive;
@@ -1024,7 +1098,8 @@
             </button>
           {:else}
             <button
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+              style={`color: ${getAccent()}`}
               type="button"
               onclick={startOtpSetup}
               disabled={isBusy}
@@ -1102,15 +1177,17 @@
 
             <div class="flex gap-2">
               <button
-                class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50 bg-slate-900 dark:bg-white dark:text-slate-900"
+                class="flex-1 rounded-full px-4 py-2 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                style={`background-color: ${getAccent()}`}
                 type="button"
                 onclick={enableOtp}
                 disabled={isBusy || otpCodeInput.length < 6 || !otpSetupConfirmPassword}
               >
-                Enable 2FA
+                {isBusy ? 'Enabling...' : 'Enable 2FA'}
               </button>
               <button
-                class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                style={`color: ${getAccent()}`}
                 type="button"
                 onclick={() => { isOtpSetupActive = false; otpCodeInput = ''; otpSetupConfirmPassword = ''; }}
                 disabled={isBusy}
@@ -1132,7 +1209,8 @@
             </div>
           </div>
           <button
-            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+            style={`color: ${getAccent()}`}
             type="button"
             onclick={() => { isPasskeyAddActive = true; passkeyError = ''; loadPasskeys(); }}
             disabled={isBusy}
@@ -1160,15 +1238,17 @@
 
             <div class="flex gap-2">
               <button
-                class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50 bg-slate-900 dark:bg-white dark:text-slate-900"
+                class="flex-1 rounded-full px-4 py-2 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                style={`background-color: ${getAccent()}`}
                 type="button"
                 onclick={addPasskey}
                 disabled={isBusy || !newPasskeyName}
               >
-                Continue
+                {isBusy ? 'Registering...' : 'Continue'}
               </button>
               <button
-                class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                style={`color: ${getAccent()}`}
                 type="button"
                 onclick={() => { isPasskeyAddActive = false; newPasskeyName = ''; }}
                 disabled={isBusy}
@@ -1211,7 +1291,8 @@
             </div>
           </div>
           <button
-            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+            style={`color: ${getAccent()}`}
             type="button"
             onclick={() => { isApiKeyAddActive = true; apiKeyError = ''; newApiKeyName = ''; newApiKeyValue = ''; }}
             disabled={isBusy}
@@ -1246,7 +1327,8 @@
                   </div>
                 </div>
                 <button
-                  class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  class="w-full rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                  style={`color: ${getAccent()}`}
                   type="button"
                   onclick={() => { isApiKeyAddActive = false; newApiKeyValue = ''; }}
                 >
@@ -1272,15 +1354,27 @@
 
               <div class="flex gap-2">
                 <button
-                  class="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50 bg-slate-900 dark:bg-white dark:text-slate-900"
+                  class="relative flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                  style={`background-color: ${getAccent()}`}
                   type="button"
                   onclick={createApiKey}
-                  disabled={isBusy || !newApiKeyName}
+                  disabled={isBusy || !newApiKeyName || showApiKeySaved}
                 >
-                  Create
+                  {#if isBusy}
+                    <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                    <span>Creating...</span>
+                  {:else if showApiKeySaved}
+                    <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
+                      <Check label="" size={18} strokeWidth={3} />
+                      <span>Saved!</span>
+                    </div>
+                  {:else}
+                    <span>Create</span>
+                  {/if}
                 </button>
                 <button
-                  class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                  style={`color: ${getAccent()}`}
                   type="button"
                   onclick={() => { isApiKeyAddActive = false; newApiKeyName = ''; }}
                   disabled={isBusy}
@@ -1402,7 +1496,8 @@
               </div>
             </div>
             <button
-              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 transition-all text-slate-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+              style={`color: ${getAccent()}`}
               type="button"
               onclick={performFullSync}
               disabled={isBusy || syncStatus === 'syncing'}
