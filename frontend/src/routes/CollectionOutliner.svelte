@@ -50,6 +50,7 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   import AiModal from '../lib/AiModal.svelte';
   import AttachmentCard from '../lib/AttachmentCard.svelte';
   import FormattingToolbar from '../lib/FormattingToolbar.svelte';
+  import CollectionLinkCard from '../lib/CollectionLinkCard.svelte';
 
   import {
     collectionItems,
@@ -2422,7 +2423,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     return null;
   }
 
-  function stripMediaLinks(text: string | null): string {
+  function stripMediaLinks(text: string | null, refs?: Array<{title: string; collection_id: string}>): string {
     if (!text) return '';
     let result = text;
     
@@ -2437,8 +2438,31 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     
     const gl = getGenericLink(text);
     if (gl) result = result.replace(gl.url, '');
+
+    const cid = getCollectionLink(text, refs);
+    if (cid) {
+      // If it's only a collection link, we return empty so the text area is empty (card only)
+      return '';
+    }
     
     return result.trim();
+  }
+
+  function getCollectionLink(text: string | null, refs: Array<{title: string; collection_id: string}> | undefined): string | null {
+    if (!text || !refs) return null;
+    const trimmed = text.trim();
+    const match = trimmed.match(/^\[\[([^\]]+)\]\]$/);
+    if (!match) return null;
+    
+    const title = match[1]
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+        
+    const ref = refs.find(r => r.title.toLowerCase() === title.toLowerCase());
+    return ref ? ref.collection_id : null;
   }
 </script>
 
@@ -2759,9 +2783,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     {@const gl = getGenericLink(snip.content_markdown)!}
                     <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
+                  {#if getCollectionLink(snip.content_markdown, snip.collection_refs)}
+                    {@const cid = getCollectionLink(snip.content_markdown, snip.collection_refs)!}
+                    <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
+                  {/if}
                   <div class="flex items-start gap-2">
                     <div class="prose prose-sm max-w-none text-lg prose-p:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
-                      {@html renderMarkdown(stripMediaLinks(snip.content_markdown))}
+                      {@html renderWithWikiLinks(snip.card_view !== false ? stripMediaLinks(snip.content_markdown, snip.collection_refs) : snip.content_markdown, snip.collection_refs)}
                     </div>
 
                     {#if snip.created_by_id !== $currentUser?.id && snip.created_by_username !== $currentUser?.username}
@@ -2930,6 +2958,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 {#if getGenericLink(editContent)}
                   {@const gl = getGenericLink(editContent)!}
                   <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+                {/if}
+                {#if getCollectionLink(editContent, $collectionItems.find(i => i.snipsel_id === $editingSnipselId)?.collection_refs)}
+                  {@const cid = getCollectionLink(editContent, $collectionItems.find(i => i.snipsel_id === $editingSnipselId)?.collection_refs)!}
+                  <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
                 {/if}
               {/if}
               {#if showAutocomplete && suggestions.length > 0}
@@ -3125,6 +3157,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                       {@const gl = getGenericLink(item.snipsel.content_markdown)!}
                       <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                     {/if}
+                    {#if getCollectionLink(item.snipsel.content_markdown, item.collection_refs)}
+                      {@const cid = getCollectionLink(item.snipsel.content_markdown, item.collection_refs)!}
+                      <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
+                    {/if}
                   {/if}
 
                   <div class="flex items-start gap-2">
@@ -3132,7 +3168,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                       class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words"
                       style="--accent-light: {getToolboxBg()}"
                     >
-                      {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown) : item.snipsel.content_markdown, item.collection_refs)}
+                      {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown, item.collection_refs) : item.snipsel.content_markdown, item.collection_refs)}
                     </div>
 
                     {#if item.snipsel.created_by_id !== $currentUser?.id}
@@ -3358,9 +3394,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     {@const gl = getGenericLink(snip.content_markdown)!}
                     <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
                   {/if}
+                  {#if getCollectionLink(snip.content_markdown, snip.collection_refs)}
+                    {@const cid = getCollectionLink(snip.content_markdown, snip.collection_refs)!}
+                    <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
+                  {/if}
                   <div class="flex items-start gap-2">
                     <div class="prose prose-sm max-w-none text-lg prose-p:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
-                      {@html renderMarkdown(stripMediaLinks(snip.content_markdown))}
+                      {@html renderWithWikiLinks(snip.card_view !== false ? stripMediaLinks(snip.content_markdown, snip.collection_refs) : snip.content_markdown, snip.collection_refs)}
                     </div>
 
                     {#if snip.created_by_id !== $currentUser?.id && snip.created_by_username !== $currentUser?.username}
