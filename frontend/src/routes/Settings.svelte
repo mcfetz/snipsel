@@ -1276,12 +1276,12 @@
                   <span class="text-sm font-medium">{pk.name}</span>
                 </div>
                 <button
-                  class="text-xs font-medium text-red-500 hover:text-red-600"
+                  class="rounded-full bg-red-600/10 px-3 py-1.5 text-xs font-bold text-red-600 transition-all hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
                   type="button"
                   onclick={() => removePasskey(pk.id)}
                   disabled={isBusy}
                 >
-                  Remove
+                  Delete
                 </button>
               </div>
             {/each}
@@ -1413,7 +1413,7 @@
                   </div>
                 </div>
                 <button
-                  class="text-xs font-medium text-red-500 hover:text-red-600 shrink-0 ml-2"
+                  class="shrink-0 ml-2 rounded-full bg-red-600/10 px-3 py-1.5 text-xs font-bold text-red-600 transition-all hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
                   type="button"
                   onclick={() => deleteApiKey(key.id)}
                   disabled={isBusy}
