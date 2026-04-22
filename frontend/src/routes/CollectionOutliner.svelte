@@ -3377,7 +3377,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       {/each}
 
       {#if incomingMentions.length > 0}
-        <div class="mt-6 border-t border-slate-200 pt-4">
+        <div class="mt-6 border-t border-slate-200 pt-4 transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
           <h3 class="mb-3 text-sm font-medium text-slate-500">
             Mentioned by others on this day
           </h3>
@@ -3529,6 +3529,9 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
       <button
         class="mt-6 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-base text-slate-400 transition-all hover:scale-[1.01] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-500 active:scale-[0.99] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+        class:blur-sm={$editingSnipselId}
+        class:opacity-40={$editingSnipselId}
+        class:pointer-events-none={$editingSnipselId}
         type="button"
         aria-label="Add new snipsel"
         onclick={() => {
@@ -3544,7 +3547,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       </button>
 
       {#if hideDoneTasks && hiddenDoneCount($sortedItems) > 0}
-        <div class="mt-3 text-center text-sm text-slate-500">
+        <div class="mt-3 text-center text-sm text-slate-500 transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId}>
           {hiddenDoneCount($sortedItems)} completed tasks hidden
         </div>
       {/if}
