@@ -2918,7 +2918,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           {#if item.snipsel_id === $editingSnipselId}
               <div
                 bind:this={editContainerRef}
-                class="relative overflow-hidden rounded-lg bg-slate-50 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
+                class="relative rounded-lg bg-slate-50 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
                 onfocusout={handleEditFocusOut}
               >
                 <FormattingToolbar 
@@ -2926,7 +2926,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   onFormat={(content) => { editContent = content; handleEditInput(); }} 
                   accentColor={getHeaderColor()} 
                 />
-                <div class="px-2 py-3">
+                <div class="px-2 py-3 rounded-b-lg">
                   <textarea
                 bind:this={textareaRef}
                 class="w-full resize-none bg-transparent text-lg outline-none dark:text-slate-100"
