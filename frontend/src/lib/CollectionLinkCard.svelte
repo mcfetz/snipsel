@@ -57,11 +57,9 @@
 {:else if error || !collection}
   <!-- Silent fallback -->
 {:else}
-  <button
-    type="button"
+  <div
     class="group relative mt-4 block w-full overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md dark:border-white/10 dark:bg-slate-900"
     style={`--accent: ${headerColor}`}
-    onclick={navigate}
     in:scale={{ start: 0.95, duration: 150 }}
   >
     <!-- Background Decorative Header Area -->
@@ -73,11 +71,13 @@
     <div class="absolute inset-0 z-0 opacity-0 transition-opacity group-hover:opacity-100" style={`background-color: ${headerColor}0a`}></div>
 
     <div class="relative flex items-center gap-4 p-4">
-      <div 
-        class="relative flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl bg-white text-3xl shadow-sm ring-1 ring-black/5 dark:bg-slate-800 dark:ring-white/5"
+      <button 
+        type="button"
+        class="relative flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl bg-white text-3xl shadow-sm ring-1 ring-black/5 transition-transform hover:scale-110 active:scale-95 dark:bg-slate-800 dark:ring-white/5"
+        onclick={navigate}
       >
         {collection.icon || '📝'}
-      </div>
+      </button>
 
       <div class="min-w-0 flex-1">
         <h4 class="truncate text-lg font-bold text-slate-900 group-hover:text-[var(--accent)] dark:text-slate-100">
@@ -88,9 +88,13 @@
         </div>
       </div>
 
-      <div class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 group-hover:text-[var(--accent)] active:scale-90 dark:bg-white/5 dark:hover:bg-white/10">
+      <button 
+        type="button"
+        onclick={navigate}
+        class="grid h-10 w-10 place-items-center rounded-full bg-slate-50 text-slate-400 transition-all duration-150 hover:scale-110 hover:bg-slate-100 group-hover:text-[var(--accent)] active:scale-90 dark:bg-white/5 dark:hover:bg-white/10"
+      >
         <ExternalLink label="" size={20} />
-      </div>
+      </button>
     </div>
-  </button>
+  </div>
 {/if}
