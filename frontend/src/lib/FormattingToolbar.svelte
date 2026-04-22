@@ -11,6 +11,8 @@
   import Heading2 from '@animated-color-icons/lucide-svelte/Heading2.svelte';
   import ListOrdered from '@animated-color-icons/lucide-svelte/ListOrdered.svelte';
   import Table from '@animated-color-icons/lucide-svelte/Table.svelte';
+  import SeparatorHorizontal from '@animated-color-icons/lucide-svelte/SeparatorHorizontal.svelte';
+
 
   interface Props {
     textarea: HTMLTextAreaElement | undefined;
@@ -87,6 +89,7 @@
       { icon: Link, label: 'Link', prefix: '[', suffix: '](url)' },
       { icon: Quote, label: 'Quote', prefix: '> ', suffix: '' },
       { icon: Table, label: 'Table', prefix: '| Header | Header |\n| --- | --- |\n| Cell | Cell |', suffix: '' },
+      { icon: SeparatorHorizontal, label: 'Horizontal Line', prefix: '\n\n---\n\n', suffix: '' },
     ],
   ];
 </script>
