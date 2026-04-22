@@ -177,7 +177,7 @@
                       tabindex="0"
                     >
                       <div class="flex-1 min-w-0">
-                        <div class="text-sm text-slate-700 dark:text-white truncate font-medium">{item.text}</div>
+                        <div class="text-sm text-slate-700 dark:text-white font-medium break-words">{item.text}</div>
                         <div class="flex items-center gap-1.5 mt-0.5">
                           <Clock label="" size={10} className="text-slate-400" />
                           <span class="text-[10px] text-slate-400">{new Date(item.last_used_at).toLocaleDateString()}</span>
