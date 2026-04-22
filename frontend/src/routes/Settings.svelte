@@ -722,7 +722,7 @@
 
       <div class="mt-6">
         <span class="block text-sm font-medium text-slate-700 dark:text-slate-300">Background colors</span>
-        <div class="mt-3 space-y-3">
+        <div class="mt-3 grid grid-cols-2 gap-4">
           <div>
             <label for="light-bg-color-picker" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Light mode</label>
             <div class="flex items-center gap-2">
