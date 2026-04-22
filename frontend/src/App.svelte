@@ -12,7 +12,7 @@
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
   import { initLiveUpdates, destroyLiveUpdates } from './lib/liveUpdates';
-import { collections, collectionAnchor, currentView, currentCollection, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest, newSnipselInCurrentCollectionRequest } from './lib/stores';
+import { collections, collectionAnchor, currentView, currentCollection, editingSnipselId, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest, newSnipselInCurrentCollectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
