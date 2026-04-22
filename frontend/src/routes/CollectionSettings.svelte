@@ -8,6 +8,7 @@
   import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
   import UnsplashSearchModal from '../lib/UnsplashSearchModal.svelte';
   import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
+  import Archive from '@animated-color-icons/lucide-svelte/Archive.svelte';
   import { api, type Collection, type CollectionShare, type UserLite, type CollectionBacklink } from '../lib/api';
   import { collectionAnchor, collections, currentCollection, currentView, isLoading } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -411,6 +412,16 @@
             <button
               class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
               type="button"
+              aria-label={collection?.archived ? 'Unarchive' : 'Archive'}
+              title={collection?.archived ? 'Archived' : 'Archive'}
+              onclick={toggleArchive}
+              style={collection?.archived ? `color: ${getAccent()}` : undefined}
+            >
+              <Archive label="" size={16} />
+            </button>
+            <button
+              class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5"
+              type="button"
               aria-label={collection?.is_template ? 'Unset template' : 'Mark as template'}
               title={collection?.is_template ? 'Template' : 'Not a template'}
               onclick={toggleTemplate}
@@ -810,23 +821,13 @@
           {/if}
         </button>
         
-        <div class="grid grid-cols-2 gap-2">
-          <button 
-            class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:ring-white/10 dark:hover:bg-slate-800" 
-            type="button" 
-            onclick={toggleArchive}
-          >
-            {collection.archived ? 'Unarchive' : 'Archive'}
-          </button>
-          
-          <button 
-            class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 shadow-sm ring-1 ring-black/5 hover:bg-red-50 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10 dark:hover:bg-red-900/20" 
-            type="button" 
-            onclick={deleteCollection}
-          >
-            Delete
-          </button>
-        </div>
+        <button 
+          class="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 shadow-sm ring-1 ring-black/5 hover:bg-red-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:ring-white/10 dark:hover:bg-red-900/20" 
+          type="button" 
+          onclick={deleteCollection}
+        >
+          Delete collection
+        </button>
       </div>
     </div>
   {/if}
