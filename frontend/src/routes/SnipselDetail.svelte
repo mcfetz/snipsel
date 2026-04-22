@@ -665,14 +665,14 @@
               </button>
             {/if}
             <button
-              class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] disabled:scale-95 disabled:opacity-70 disabled:grayscale-[0.5]"
-              style={`background-color: ${getAccent()}; shadow-color: ${getAccent()}40`}
+              class="relative flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+              style={`color: ${getAccent()}`}
               type="button"
               onclick={updateReminders}
               disabled={updatingReminders || showSavedFeedback}
             >
               {#if updatingReminders}
-                <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                <div class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent opacity-40"></div>
                 <span>Saving...</span>
               {:else if showSavedFeedback}
                 <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
