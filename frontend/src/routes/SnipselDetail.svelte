@@ -31,6 +31,7 @@
   let changingType = $state(false);
   let changingCardView = $state(false);
   let saveStatus = $state<'success' | 'error' | null>(null);
+  let showSavedFeedback = $state(false);
 
   let copied = $state(false);
   let reminderAt = $state<string | null>(null);
@@ -209,13 +210,11 @@
 				reminder_at: nextAt,
 				reminder_rrule: reminderRRule
 			});
-			saveStatus = 'success';
-			setTimeout(() => { if (saveStatus === 'success') saveStatus = null; }, 5000);
+			showSavedFeedback = true;
+			setTimeout(() => { showSavedFeedback = false; }, 2000);
 			await load();
 		} catch (err) {
 			console.error('Failed to update reminders:', err);
-			saveStatus = 'error';
-			setTimeout(() => { if (saveStatus === 'error') saveStatus = null; }, 5000);
 		} finally {
 			updatingReminders = false;
 		}
@@ -652,27 +651,37 @@
             <input
               id="reminder-at"
               type="datetime-local"
-              class="flex-1 rounded-md border border-slate-200 bg-white/50 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-white/10 dark:bg-slate-900/50"
+              class="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm ring-1 ring-black/5 focus:outline-none focus:ring-2 focus:ring-black/5 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100 dark:ring-white/10"
               bind:value={reminderAt}
             />
             {#if reminderAt}
               <button
                 type="button"
-                class="rounded-md px-3 py-2 text-xs font-medium shadow-sm transition-all hover:opacity-90"
-                style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
+                class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                style={`color: ${getAccent()}`}
                 onclick={() => { reminderAt = null; updateReminders(); }}
               >
                 Clear
               </button>
             {/if}
             <button
+              class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] disabled:scale-95 disabled:opacity-70 disabled:grayscale-[0.5]"
+              style={`background-color: ${getAccent()}; shadow-color: ${getAccent()}40`}
               type="button"
-              class="rounded-md px-3 py-2 text-xs font-medium shadow-sm transition-all hover:opacity-90"
-              style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
               onclick={updateReminders}
-              disabled={updatingReminders}
+              disabled={updatingReminders || showSavedFeedback}
             >
-              {updatingReminders ? 'Saving...' : 'Save'}
+              {#if updatingReminders}
+                <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                <span>Saving...</span>
+              {:else if showSavedFeedback}
+                <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
+                  <Check label="" size={18} strokeWidth={3} />
+                  <span>Saved!</span>
+                </div>
+              {:else}
+                <span>Save</span>
+              {/if}
             </button>
           </div>
         </div>
@@ -689,7 +698,8 @@
             />
             <button
               type="button"
-              class="rounded-md bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+              class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+              style={`color: ${getAccent()}`}
               onclick={() => { parseCurrentRRule(); showRRuleBuilder = !showRRuleBuilder; }}
             >
               {showRRuleBuilder ? 'Close' : 'Builder'}
@@ -745,8 +755,8 @@
               <div class="flex justify-end pt-1">
                 <button
                   type="button"
-                  class="rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-opacity hover:opacity-90"
-                  style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
+                  class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                  style={`color: ${getAccent()}`}
                   onclick={applyRRuleBuilder}
                 >
                   Apply
@@ -911,15 +921,16 @@
           readonly
           value={directLinkUrl()}
         />
-        <div class="flex items-center gap-1 rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-800/80">
+        <div class="flex items-center gap-1">
           <button
-            class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:text-slate-100"
+            class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+            style={`color: ${getAccent()}`}
             type="button"
             onclick={copyDirectLink}
             aria-label="Copy direct link"
             title="Copy"
           >
-            Copy
+            {copied ? 'Copied!' : 'Copy link'}
           </button>
         </div>
       </div>
