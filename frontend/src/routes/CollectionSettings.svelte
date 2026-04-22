@@ -7,6 +7,7 @@
   import X from '@animated-color-icons/lucide-svelte/X.svelte';
   import Copy from '@animated-color-icons/lucide-svelte/Copy.svelte';
   import UnsplashSearchModal from '../lib/UnsplashSearchModal.svelte';
+  import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import { api, type Collection, type CollectionShare, type UserLite, type CollectionBacklink } from '../lib/api';
   import { collectionAnchor, collections, currentCollection, currentView, isLoading } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -40,6 +41,7 @@
   let showUnsplashModal = $state(false);
   let errorModal = $state<{ title: string; message: string } | null>(null);
   let uploadProgress = $state<{ filename: string; percent: number } | null>(null);
+  let showSavedFeedback = $state(false);
 
   let users = $state<UserLite[]>([]);
   let shares = $state<CollectionShare[]>([]);
@@ -192,6 +194,11 @@
       collection = res.collection;
       collections.update((list) => list.map((c) => (c.id === res.collection.id ? res.collection : c)));
       currentCollection.update((c) => (c?.id === res.collection.id ? res.collection : c));
+      
+      showSavedFeedback = true;
+      setTimeout(() => {
+        showSavedFeedback = false;
+      }, 2000);
     } finally {
       saving = false;
     }
@@ -785,13 +792,22 @@
       <!-- Actions -->
       <div class="flex flex-col gap-2 pt-4">
         <button 
-          class="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-black/5 transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10 dark:hover:bg-slate-800" 
+          class="w-full relative overflow-hidden rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-black/5 transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10 dark:hover:bg-slate-800 flex items-center justify-center gap-2" 
           style={`color: ${getAccent()}`}
           type="button" 
           onclick={save} 
-          disabled={saving}
+          disabled={saving || showSavedFeedback}
         >
-          {saving ? 'Saving...' : 'Save changes'}
+          {#if saving}
+            <span class="animate-pulse">Saving...</span>
+          {:else if showSavedFeedback}
+            <div class="flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+              <Check size={20} strokeWidth={2.5} />
+              <span>Saved!</span>
+            </div>
+          {:else}
+            <span class="animate-in fade-in duration-200">Save changes</span>
+          {/if}
         </button>
         
         <div class="grid grid-cols-2 gap-2">
