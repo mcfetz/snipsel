@@ -2802,7 +2802,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   <button
                     type="button"
                     aria-label={snip.task_done ? 'Toggle task status' : 'Mark task done'}
-                    class="absolute top-4 left-3 grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
+                    class="absolute top-1/2 left-3 -translate-y-1/2 grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
                     onclick={(e) => {
                       e.stopPropagation();
                       if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
@@ -3436,7 +3436,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   <button
                     type="button"
                     aria-label={snip.task_done ? 'Toggle task status' : 'Mark task done'}
-                    class="absolute top-4 left-3 grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
+                    class="absolute top-1/2 left-3 -translate-y-1/2 grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
                     onclick={(e) => {
                       e.stopPropagation();
                       if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);

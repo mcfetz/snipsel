@@ -580,6 +580,8 @@ def get_incoming_day_mentions():
                         "reminder_rrule": s.reminder_rrule,
                         "attachments": attachments_by_snipsel.get(s.id, []),
                         "reactions": s.get_reaction_summary(user.id),
+                        "can_toggle_task_done": s.type == "task",
+                        "has_write_access": False,
                     }
                     for s, collection_id, position, owner_user_id, owner_username in rows
                 ]
