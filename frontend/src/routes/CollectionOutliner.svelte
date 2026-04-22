@@ -2510,7 +2510,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     aria-hidden="true"
   />
 
-  <div class="relative">
+  <div class="relative transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
     <div class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-slate-900">
       <div
         class="relative h-28 w-full rounded-t-[calc(0.75rem-1px)] overflow-hidden dark:brightness-75"
@@ -2681,7 +2681,9 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         </div>
       {/if}
     {/if}
+  </div>
 
+  <div class="transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
     {#if $currentCollection}
       {@const level = $currentCollection.access_level}
       {@const showSharedByYou = level === 'owner' && shareCount > 0}
@@ -2742,7 +2744,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   {#if $isLoading && $sortedItems.length === 0}
     <div class="py-8 text-center text-sm text-slate-500">Loading...</div>
   {:else if $sortedItems.length === 0}
-    <div class="flex flex-col">
+    <div class="flex flex-col transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
       <div class="py-8 text-center text-base text-slate-500">No snipsels yet</div>
       <button
         class="mt-2 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-base text-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -2916,7 +2918,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       {#each visibleItems($sortedItems) as item (item.snipsel_id)}
         <div
           id={`snipsel-${item.snipsel_id}`}
-          class="group relative pr-4 {anchorHighlightId === item.snipsel_id ? 'ring-2 rounded-lg' : ''}"
+          class="group relative pr-4 transition-all duration-500 {anchorHighlightId === item.snipsel_id ? 'ring-2 rounded-lg' : ''}"
+          class:blur-sm={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
+          class:opacity-40={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
+          class:pointer-events-none={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
           in:fly={{ y: -5, duration: 150 }}
           out:fade={{ duration: 100 }}
           style={
