@@ -3,6 +3,7 @@
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
   import Trash from '@animated-color-icons/lucide-svelte/Trash.svelte';
   import Undo from '@animated-color-icons/lucide-svelte/Undo.svelte';
+  import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import { api, type Collection, type Snipsel } from '../lib/api';
   import { currentView } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -55,12 +56,27 @@
     return rgba(mixed, 0.96);
   }
 
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 155;
+  }
+
+  function getContrastColor(bgColor: string): string {
+    return isLightColor(bgColor) ? '#1e293b' : 'white';
+  }
+
   let deletedCollections = $state<Collection[]>([]);
   let deletedSnipsels = $state<Snipsel[]>([]);
   let isBusy = $state(false);
   let errorMsg = $state('');
   let showEmptyConfirm = $state(false);
   let showDeleteConfirmId = $state<string | null>(null);
+  let showRestoreSuccess = $state(false);
+  let showEmptySuccess = $state(false);
   
   let activeTab: 'collections' | 'snipsels' = $state('collections');
 
@@ -87,6 +103,8 @@
     try {
       await api.collections.restore(id);
       deletedCollections = deletedCollections.filter(c => c.id !== id);
+      showRestoreSuccess = true;
+      setTimeout(() => showRestoreSuccess = false, 2000);
     } catch (err: any) {
       errorMsg = err.error?.message || 'Failed to restore collection';
     } finally {
@@ -98,10 +116,11 @@
     isBusy = true;
     errorMsg = '';
     try {
-      // Find today's collection ID to restore snipsel into
       const res = await api.collections.today();
       await api.snipsels.restore(id, res.collection.id);
       deletedSnipsels = deletedSnipsels.filter(s => s.id !== id);
+      showRestoreSuccess = true;
+      setTimeout(() => showRestoreSuccess = false, 2000);
     } catch (err: any) {
       errorMsg = err.error?.message || 'Failed to restore snipsel';
     } finally {
@@ -121,6 +140,8 @@
         await api.snipsels.emptyTrash();
         deletedSnipsels = [];
       }
+      showEmptySuccess = true;
+      setTimeout(() => showEmptySuccess = false, 2000);
     } catch (err: any) {
       errorMsg = err.error?.message || `Failed to empty ${activeTab}`;
     } finally {
@@ -164,67 +185,71 @@
   });
 </script>
 
-<div class="space-y-4">
-  <div class="flex items-center gap-2">
-    <button
-      class="al-icon-wrapper rounded-full p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
-      onclick={() => currentView.set({ type: 'settings' })}
-      title="Back to Settings"
-      aria-label="Back to Settings"
-    >
-      <ArrowLeft label="" size={20} />
-    </button>
-    <h2 class="flex items-center gap-2 text-2xl font-semibold">
-      <Trash2 label="" size={24} className="text-slate-700 dark:text-slate-300" />
-      <span>Recycle Bin</span>
-    </h2>
+<div class="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6 pb-20">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <button
+        class="al-icon-wrapper grid h-10 w-10 place-items-center rounded-full bg-slate-100/80 text-slate-600 shadow-sm ring-1 ring-black/5 backdrop-blur-sm transition-all hover:bg-slate-200 dark:bg-slate-800/80 dark:text-slate-400 dark:ring-white/10 dark:hover:bg-slate-700"
+        onclick={() => currentView.set({ type: 'settings' })}
+        title="Back to Settings"
+      >
+        <ArrowLeft label="" size={20} strokeWidth={2.5} />
+      </button>
+      <div>
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Trash2 label="" size={24} className="text-slate-500" />
+          Recycle Bin
+        </h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Permanently delete or restore your content</p>
+      </div>
+    </div>
+
+    {#if showRestoreSuccess || showEmptySuccess}
+      <div class="flex items-center gap-2 rounded-full bg-green-500/10 px-4 py-2 text-sm font-bold text-green-600 animate-in fade-in zoom-in duration-300 dark:bg-green-500/20 dark:text-green-400">
+        <Check size={18} strokeWidth={3} />
+        <span>Action Successful!</span>
+      </div>
+    {/if}
   </div>
 
   {#if errorMsg}
-    <div class="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+    <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600 shadow-sm dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400">
       {errorMsg}
     </div>
   {/if}
 
-  <div class="flex items-center justify-between gap-4">
-    <div class="flex items-center gap-2 flex-1">
-      <div class="flex flex-1 overflow-hidden rounded-full border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'collections'}
-          class="flex-1 px-4 py-3 text-base font-medium transition-colors {activeTab === 'collections'
-            ? 'text-slate-900'
-            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
-          style={activeTab === 'collections' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
-          onclick={() => activeTab = 'collections'}
-        >
-          Collections ({deletedCollections.length})
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'snipsels'}
-          class="flex-1 border-l border-black/5 px-4 py-3 text-base font-medium transition-colors dark:border-white/5 {activeTab === 'snipsels'
-            ? 'text-slate-900'
-            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
-          style={activeTab === 'snipsels' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
-          onclick={() => activeTab = 'snipsels'}
-        >
-          Snipsels ({deletedSnipsels.length})
-        </button>
-      </div>
+  <div class="sticky top-0 z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2 bg-slate-50/50 backdrop-blur-md dark:bg-slate-950/50">
+    <div class="flex items-center p-1 rounded-full border border-slate-200 bg-white/50 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/50 dark:ring-white/10 w-full sm:w-80">
+      <button
+        type="button"
+        class="flex-1 rounded-full px-4 py-2 text-sm font-bold transition-all duration-300"
+        style={activeTab === 'collections' 
+          ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; shadow: 0 4px 12px ${getAccent()}40` 
+          : 'color: #64748b'}
+        onclick={() => activeTab = 'collections'}
+      >
+        Collections <span class="ml-1 opacity-70">({deletedCollections.length})</span>
+      </button>
+      <button
+        type="button"
+        class="flex-1 rounded-full px-4 py-2 text-sm font-bold transition-all duration-300"
+        style={activeTab === 'snipsels' 
+          ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; shadow: 0 4px 12px ${getAccent()}40` 
+          : 'color: #64748b'}
+        onclick={() => activeTab = 'snipsels'}
+      >
+        Snipsels <span class="ml-1 opacity-70">({deletedSnipsels.length})</span>
+      </button>
     </div>
     
     {#if (activeTab === 'collections' && deletedCollections.length > 0) || (activeTab === 'snipsels' && deletedSnipsels.length > 0)}
       <button
-        class="al-icon-wrapper flex shrink-0 h-12 w-12 sm:w-auto sm:px-4 items-center justify-center gap-2 rounded-full border border-red-200 bg-white text-sm font-medium text-red-600 shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:border-red-900/30 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-900/20"
+        class="flex items-center justify-center gap-2 rounded-full border border-red-200 bg-white/80 px-6 py-2.5 text-sm font-bold text-red-600 shadow-sm ring-1 ring-black/5 transition-all hover:bg-red-600 hover:text-white disabled:opacity-50 dark:border-red-900/30 dark:bg-slate-900/80 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
         onclick={() => showEmptyConfirm = true}
         disabled={isBusy}
-        title="Empty {activeTab}"
       >
-        <Trash label="" size={20} />
-        <span class="hidden sm:inline">Empty {activeTab === 'collections' ? 'Collections' : 'Snipsels'}</span>
+        <Trash label="" size={18} strokeWidth={2.5} />
+        <span>Empty All {activeTab === 'collections' ? 'Collections' : 'Snipsels'}</span>
       </button>
     {/if}
   </div>
@@ -232,36 +257,43 @@
   <div class="mt-4">
     {#if activeTab === 'collections'}
       {#if deletedCollections.length === 0}
-        <div class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">No deleted collections found.</div>
+        <div class="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
+          <div class="mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-slate-50 text-slate-300 dark:bg-white/5 dark:text-slate-700">
+            <Trash2 size={32} />
+          </div>
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400">No deleted collections found.</p>
+        </div>
       {:else}
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="grid gap-4 sm:grid-cols-2">
           {#each deletedCollections as col (col.id)}
-            <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div class="min-w-0 flex-1 pl-2">
-                <div class="flex items-center gap-2">
-                  <span class="text-xl">{col.icon}</span>
-                  <span class="truncate font-medium text-slate-900 dark:text-slate-100">{col.title}</span>
-                </div>
-                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Deleted: {formatDate((col as any).deleted_at)}
+            <div class="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:scale-[1.01] hover:bg-white/90 dark:border-white/10 dark:bg-slate-900/70 dark:ring-white/10 dark:hover:bg-slate-900/90">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl transition-transform group-hover:scale-110">{col.icon}</span>
+                  <div class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-bold text-slate-900 dark:text-slate-100">{col.title}</span>
+                    <span class="mt-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Deleted: {formatDate((col as any).deleted_at)}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div class="ml-3 flex items-center gap-1 shrink-0">
+              <div class="ml-4 flex items-center gap-2 shrink-0">
                 <button
-                  class="al-icon-wrapper flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors"
+                  class="al-icon-wrapper flex h-9 w-9 items-center justify-center rounded-full bg-slate-100/50 text-slate-600 shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:text-slate-900 dark:bg-white/5 dark:text-slate-400 dark:ring-white/10 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   onclick={() => restoreCollection(col.id)}
                   disabled={isBusy}
                   title="Restore Collection"
                 >
-                  <Undo label="" size={16} />
+                  <Undo size={18} strokeWidth={2.5} />
                 </button>
                 <button
-                  class="al-icon-wrapper flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors"
+                  class="al-icon-wrapper flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10 text-red-600 shadow-sm ring-1 ring-black/5 transition-all hover:bg-red-600 hover:text-white dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
                   onclick={() => showDeleteConfirmId = col.id}
                   disabled={isBusy}
                   title="Permanently Delete"
                 >
-                  <Trash label="" size={16} />
+                  <Trash size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -270,36 +302,43 @@
       {/if}
     {:else}
       {#if deletedSnipsels.length === 0}
-        <div class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">No deleted snipsels found.</div>
+        <div class="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
+          <div class="mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-slate-50 text-slate-300 dark:bg-white/5 dark:text-slate-700">
+            <Trash2 size={32} />
+          </div>
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400">No deleted snipsels found.</p>
+        </div>
       {:else}
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="grid gap-4 sm:grid-cols-2">
           {#each deletedSnipsels as snip (snip.id)}
-            <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div class="min-w-0 flex-1 pl-2">
-                <div class="line-clamp-2 text-sm text-slate-900 dark:text-slate-100">
-                  {snip.content_markdown || '(Empty)'}
+            <div class="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all hover:scale-[1.01] hover:bg-white/90 dark:border-white/10 dark:bg-slate-900/70 dark:ring-white/10 dark:hover:bg-slate-900/90">
+              <div class="min-w-0 flex-1">
+                <div class="line-clamp-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {snip.content_markdown || '(Empty Snipsel)'}
                 </div>
-                <div class="mt-1 flex gap-2 text-xs text-slate-500 dark:text-slate-400">
-                  <span class="uppercase tracking-wide">[{snip.type}]</span>
-                  <span>Deleted: {formatDate((snip as any).deleted_at)}</span>
+                <div class="mt-2 flex items-center gap-2">
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">{snip.type}</span>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Deleted: {formatDate((snip as any).deleted_at)}
+                  </span>
                 </div>
               </div>
-              <div class="ml-3 flex items-center gap-1 shrink-0">
+              <div class="ml-4 flex items-center gap-2 shrink-0">
                 <button
-                  class="al-icon-wrapper flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors"
+                  class="al-icon-wrapper flex h-9 w-9 items-center justify-center rounded-full bg-slate-100/50 text-slate-600 shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:text-slate-900 dark:bg-white/5 dark:text-slate-400 dark:ring-white/10 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   onclick={() => restoreSnipsel(snip.id)}
                   disabled={isBusy}
                   title="Restores to Today's collection"
                 >
-                  <Undo label="" size={16} />
+                  <Undo size={18} strokeWidth={2.5} />
                 </button>
                 <button
-                  class="al-icon-wrapper flex h-8 w-8 items-center justify-center rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors"
+                  class="al-icon-wrapper flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10 text-red-600 shadow-sm ring-1 ring-black/5 transition-all hover:bg-red-600 hover:text-white dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
                   onclick={() => showDeleteConfirmId = snip.id}
                   disabled={isBusy}
                   title="Permanently Delete"
                 >
-                  <Trash label="" size={16} />
+                  <Trash size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
