@@ -219,23 +219,27 @@
   {/if}
 
   <div class="sticky top-0 z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2 bg-slate-50/50 backdrop-blur-md dark:bg-slate-950/50">
-    <div class="flex items-center gap-2 w-full sm:w-auto">
+    <div class="flex flex-1 overflow-hidden rounded-full border border-slate-200 bg-white/50 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/50 dark:ring-white/10 w-full sm:max-w-xs" role="tablist">
       <button
         type="button"
-        class="rounded-full px-5 py-2 text-sm font-bold transition-all duration-300 shadow-sm ring-1 ring-black/5"
-        style={activeTab === 'collections' 
-          ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; transform: translateY(-1px); shadow: 0 4px 12px ${getAccent()}40` 
-          : 'background-color: rgba(255,255,255,0.8); color: #64748b; border: 1px solid #e2e8f0;'}
+        role="tab"
+        aria-selected={activeTab === 'collections'}
+        class="flex-1 px-4 py-3 text-sm font-bold transition-all duration-300 {activeTab === 'collections'
+          ? ''
+          : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+        style={activeTab === 'collections' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         onclick={() => activeTab = 'collections'}
       >
         Collections <span class="ml-1 opacity-70">({deletedCollections.length})</span>
       </button>
       <button
         type="button"
-        class="rounded-full px-5 py-2 text-sm font-bold transition-all duration-300 shadow-sm ring-1 ring-black/5"
-        style={activeTab === 'snipsels' 
-          ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; transform: translateY(-1px); shadow: 0 4px 12px ${getAccent()}40` 
-          : 'background-color: rgba(255,255,255,0.8); color: #64748b; border: 1px solid #e2e8f0;'}
+        role="tab"
+        aria-selected={activeTab === 'snipsels'}
+        class="flex-1 border-l border-black/5 px-4 py-3 text-sm font-bold transition-all duration-300 dark:border-white/5 {activeTab === 'snipsels'
+          ? ''
+          : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+        style={activeTab === 'snipsels' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
         onclick={() => activeTab = 'snipsels'}
       >
         Snipsels <span class="ml-1 opacity-70">({deletedSnipsels.length})</span>
@@ -244,12 +248,13 @@
     
     {#if (activeTab === 'collections' && deletedCollections.length > 0) || (activeTab === 'snipsels' && deletedSnipsels.length > 0)}
       <button
-        class="flex items-center justify-center gap-2 rounded-full border border-red-200 bg-white/80 px-6 py-2 text-sm font-bold text-red-600 shadow-sm ring-1 ring-black/5 transition-all hover:bg-red-600 hover:text-white disabled:opacity-50 dark:border-red-900/30 dark:bg-slate-900/80 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
+        class="flex items-center justify-center gap-2 rounded-full border border-red-200 bg-white/80 px-6 py-2.5 text-sm font-bold text-red-600 shadow-sm ring-1 ring-black/5 transition-all hover:bg-red-600 hover:text-white disabled:opacity-50 dark:border-red-900/30 dark:bg-slate-900/80 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
         onclick={() => showEmptyConfirm = true}
         disabled={isBusy}
       >
         <Trash label="" size={18} strokeWidth={2.5} />
-        <span>Empty All {activeTab === 'collections' ? 'Collections' : 'Snipsels'}</span>
+        <span class="hidden sm:inline">Empty All {activeTab === 'collections' ? 'Collections' : 'Snipsels'}</span>
+        <span class="sm:hidden">Empty All</span>
       </button>
     {/if}
   </div>
