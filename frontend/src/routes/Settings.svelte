@@ -851,13 +851,17 @@
           <div class="text-xs text-slate-500 dark:text-slate-400">Move unfinished tasks from the last 30 days into today.</div>
         </div>
         <button
-          class="rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-700 {Boolean($currentUser?.carry_over_open_tasks ?? true) ? '' : 'border-slate-300 bg-white dark:border-white/10 dark:bg-slate-800'}"
-          style={Boolean($currentUser?.carry_over_open_tasks ?? true) ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; border-color: ${getAccent()}` : undefined}
           type="button"
+          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50"
+          style={Boolean($currentUser?.carry_over_open_tasks ?? true) ? `background-color: ${getAccent()}` : 'background-color: #cbd5e1'}
+          role="switch"
+          aria-checked={Boolean($currentUser?.carry_over_open_tasks ?? true)}
           onclick={toggleCarryOver}
           disabled={isBusy}
         >
-          {Boolean($currentUser?.carry_over_open_tasks ?? true) ? 'On' : 'Off'}
+          <span
+            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {Boolean($currentUser?.carry_over_open_tasks ?? true) ? 'translate-x-5' : 'translate-x-0'}"
+          ></span>
         </button>
       </div>
     </div>
@@ -871,13 +875,17 @@
           <div class="text-xs text-slate-500 dark:text-slate-400">Receive alerts on this device for reminders.</div>
         </div>
         <button
-          class="rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-700 {hasPushEnabled ? '' : 'border-slate-300 bg-white dark:border-white/10 dark:bg-slate-800'}"
-          style={hasPushEnabled ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}; border-color: ${getAccent()}` : undefined}
           type="button"
+          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50"
+          style={hasPushEnabled ? `background-color: ${getAccent()}` : 'background-color: #cbd5e1'}
+          role="switch"
+          aria-checked={hasPushEnabled}
           onclick={togglePush}
           disabled={isBusy}
         >
-          {hasPushEnabled ? 'Enabled' : 'Disabled'}
+          <span
+            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {hasPushEnabled ? 'translate-x-5' : 'translate-x-0'}"
+          ></span>
         </button>
       </div>
 
