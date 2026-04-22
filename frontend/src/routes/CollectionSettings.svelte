@@ -531,13 +531,15 @@
                   placeholder="https://..."
                 />
                 <label
-                  class="cursor-pointer rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  class="cursor-pointer rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                  style={`color: ${getAccent()}`}
                 >
                   Upload
                   <input type="file" accept="image/*" class="hidden" onchange={onFileSelected} disabled={saving} />
                 </label>
                 <button
-                  class="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+                  style={`color: ${getAccent()}`}
                   type="button"
                   onclick={() => (showUnsplashModal = true)}
                   disabled={saving}
