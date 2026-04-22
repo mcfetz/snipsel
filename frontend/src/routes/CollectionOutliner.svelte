@@ -2796,28 +2796,9 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <div class="space-y-2">
             {#each incomingMentions as snip (snip.id)}
               <div
-                class="relative rounded-lg border border-slate-200 bg-slate-50 py-3 dark:border-white/10 dark:bg-white/5 {snip.type === 'task' ? 'pl-10 pr-4' : 'px-4'}"
+                class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5"
               >
-                {#if snip.type === 'task'}
-                  <button
-                    type="button"
-                    aria-label={snip.task_done ? 'Toggle task status' : 'Mark task done'}
-                    class="absolute top-1/2 left-3 -translate-y-1/2 grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
-                    }}
-                    style={snip.task_done > 0
-                      ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
-                      : ''}
-                  >
-                    {#if snip.task_done === 1}
-                      <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
-                    {:else if snip.task_done === 2}
-                      <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
-                    {/if}
-                  </button>
-                {/if}
+
                 {#if snip.created_by_username}
                   <div class="mb-1 text-xs font-medium text-slate-500">
                     @{snip.created_by_username}
@@ -2845,7 +2826,27 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     {@const cid = getCollectionLink(snip.content_markdown, snip.collection_refs)!}
                     <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
                   {/if}
-                  <div class="flex items-start gap-2">
+                  <div class="flex items-start gap-3">
+                    {#if snip.type === 'task'}
+                      <button
+                        type="button"
+                        aria-label={snip.task_done ? 'Toggle task status' : 'Mark task done'}
+                        class="shrink-0 mt-[5px] grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
+                        }}
+                        style={snip.task_done > 0
+                          ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
+                          : ''}
+                      >
+                        {#if snip.task_done === 1}
+                          <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
+                        {:else if snip.task_done === 2}
+                          <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
+                        {/if}
+                      </button>
+                    {/if}
                     <div class="prose prose-sm max-w-none text-lg prose-p:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
                       {@html renderWithWikiLinks(snip.card_view !== false ? stripMediaLinks(snip.content_markdown, snip.collection_refs) : snip.content_markdown, snip.collection_refs)}
                     </div>
@@ -3430,28 +3431,9 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <div class="space-y-2">
             {#each incomingMentions as snip (snip.id)}
               <div
-                class="relative rounded-lg border border-slate-200 bg-slate-50 py-3 dark:border-white/10 dark:bg-white/5 {snip.type === 'task' ? 'pl-10 pr-4' : 'px-4'}"
+                class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5"
               >
-                {#if snip.type === 'task'}
-                  <button
-                    type="button"
-                    aria-label={snip.task_done ? 'Toggle task status' : 'Mark task done'}
-                    class="absolute top-1/2 left-3 -translate-y-1/2 grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
-                    }}
-                    style={snip.task_done > 0
-                      ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
-                      : ''}
-                  >
-                    {#if snip.task_done === 1}
-                      <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
-                    {:else if snip.task_done === 2}
-                      <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
-                    {/if}
-                  </button>
-                {/if}
+
                 {#if snip.created_by_username}
                   <div class="mb-1 text-xs font-medium text-slate-500">
                     @{snip.created_by_username}
@@ -3479,7 +3461,27 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     {@const cid = getCollectionLink(snip.content_markdown, snip.collection_refs)!}
                     <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
                   {/if}
-                  <div class="flex items-start gap-2">
+                  <div class="flex items-start gap-3">
+                    {#if snip.type === 'task'}
+                      <button
+                        type="button"
+                        aria-label={snip.task_done ? 'Toggle task status' : 'Mark task done'}
+                        class="shrink-0 mt-[5px] grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
+                        }}
+                        style={snip.task_done > 0
+                          ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
+                          : ''}
+                      >
+                        {#if snip.task_done === 1}
+                          <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
+                        {:else if snip.task_done === 2}
+                          <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
+                        {/if}
+                      </button>
+                    {/if}
                     <div class="prose prose-sm max-w-none text-lg prose-p:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
                       {@html renderWithWikiLinks(snip.card_view !== false ? stripMediaLinks(snip.content_markdown, snip.collection_refs) : snip.content_markdown, snip.collection_refs)}
                     </div>
