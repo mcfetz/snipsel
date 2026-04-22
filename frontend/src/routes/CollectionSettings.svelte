@@ -659,7 +659,7 @@
 
           <div class="flex flex-wrap gap-2">
             <button
-              class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 shadow-sm hover:bg-red-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-red-900/20"
+              class="rounded-lg bg-red-600/90 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600"
               type="button"
               onclick={deleteCompletedTasks}
               disabled={saving}
@@ -822,7 +822,7 @@
         </button>
         
         <button 
-          class="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 shadow-sm ring-1 ring-black/5 hover:bg-red-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:ring-white/10 dark:hover:bg-red-900/20" 
+          class="w-full rounded-xl bg-red-600/90 px-4 py-3 text-base font-semibold text-white shadow-sm transition-all hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600" 
           type="button" 
           onclick={deleteCollection}
         >
