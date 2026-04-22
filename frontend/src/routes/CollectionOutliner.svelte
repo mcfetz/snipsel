@@ -845,6 +845,32 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
       }, 5000);
     }
   }
+
+  async function toggleIncomingMentionTaskDone(snip: SearchSnipselHit) {
+    if (snip.type !== 'task' || !snip.can_toggle_task_done) return;
+
+    // Cycle: 0 (Open) -> 1 (Done) -> 2 (Cancelled) -> 0 (Open)
+    const nextDone = (snip.task_done + 1) % 3;
+
+    try {
+      await api.snipsels.update(snip.id, { task_done: nextDone });
+      incomingMentions = incomingMentions.map(m => m.id === snip.id ? { ...m, task_done: nextDone } : m);
+
+      // Set success indicator
+      saveStatuses[snip.id] = 'success';
+      setTimeout(() => {
+        if (saveStatuses[snip.id] === 'success') saveStatuses[snip.id] = null;
+      }, 5000);
+    } catch (err) {
+      console.error('Failed to toggle incoming mention task:', err);
+      // Set error indicator
+      saveStatuses[snip.id] = 'error';
+      setTimeout(() => {
+        if (saveStatuses[snip.id] === 'error') saveStatuses[snip.id] = null;
+      }, 5000);
+    }
+  }
+
   
   function formatSize(bytes: number) {
     if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
@@ -2770,8 +2796,28 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <div class="space-y-2">
             {#each incomingMentions as snip (snip.id)}
               <div
-                class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5"
+                class="relative rounded-lg border border-slate-200 bg-slate-50 py-3 dark:border-white/10 dark:bg-white/5 {snip.type === 'task' ? 'pl-10 pr-4' : 'px-4'}"
               >
+                {#if snip.type === 'task'}
+                  <button
+                    type="button"
+                    aria-label={snip.task_done ? 'Toggle task status' : 'Mark task done'}
+                    class="absolute top-4 left-3 grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
+                    }}
+                    style={snip.task_done > 0
+                      ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
+                      : ''}
+                  >
+                    {#if snip.task_done === 1}
+                      <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
+                    {:else if snip.task_done === 2}
+                      <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
+                    {/if}
+                  </button>
+                {/if}
                 {#if snip.created_by_username}
                   <div class="mb-1 text-xs font-medium text-slate-500">
                     @{snip.created_by_username}
@@ -3384,8 +3430,28 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <div class="space-y-2">
             {#each incomingMentions as snip (snip.id)}
               <div
-                class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5"
+                class="relative rounded-lg border border-slate-200 bg-slate-50 py-3 dark:border-white/10 dark:bg-white/5 {snip.type === 'task' ? 'pl-10 pr-4' : 'px-4'}"
               >
+                {#if snip.type === 'task'}
+                  <button
+                    type="button"
+                    aria-label={snip.task_done ? 'Toggle task status' : 'Mark task done'}
+                    class="absolute top-4 left-3 grid h-5 w-5 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800 {snip.can_toggle_task_done ? '' : 'opacity-50 cursor-not-allowed'}"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
+                    }}
+                    style={snip.task_done > 0
+                      ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
+                      : ''}
+                  >
+                    {#if snip.task_done === 1}
+                      <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
+                    {:else if snip.task_done === 2}
+                      <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
+                    {/if}
+                  </button>
+                {/if}
                 {#if snip.created_by_username}
                   <div class="mb-1 text-xs font-medium text-slate-500">
                     @{snip.created_by_username}
