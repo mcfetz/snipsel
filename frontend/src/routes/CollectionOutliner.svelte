@@ -3262,7 +3262,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     </div>
                   {/if}
 
-              {:else}
+              {:else if !item.snipsel.attachments || !item.snipsel.attachments.length}
                 <span class="text-sm italic text-slate-400 dark:text-slate-500">Empty snipsel</span>
               {/if}
 
