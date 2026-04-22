@@ -218,7 +218,7 @@
     </div>
   {/if}
 
-  <div class="sticky top-0 z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2 bg-slate-50/50 backdrop-blur-md dark:bg-slate-950/50">
+  <div class="sticky top-0 z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2">
     <div class="flex flex-1 overflow-hidden rounded-full border border-slate-200 bg-white/50 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/50 dark:ring-white/10 w-full sm:max-w-xs" role="tablist">
       <button
         type="button"
