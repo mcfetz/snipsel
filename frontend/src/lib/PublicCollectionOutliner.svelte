@@ -1,5 +1,7 @@
 <script lang="ts">
   import MarkdownIt from 'markdown-it';
+  import mermaid from 'mermaid';
+  import { tick } from 'svelte';
   import { api, type Attachment, type CollectionItem } from './api';
   import ImageModal from './ImageModal.svelte';
   import VideoModal from './VideoModal.svelte';
@@ -31,6 +33,59 @@
   }>();
 
   const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
+
+  const defaultRender = md.renderer.rules.fence || function (tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options);
+  };
+
+  md.renderer.rules.fence = function (tokens, idx, options, env, self) {
+    const token = tokens[idx];
+    const info = token.info ? token.info.trim() : '';
+
+    if (info.toLowerCase().startsWith('mermaid')) {
+      return `<div class="mermaid-unprocessed" data-mermaid="${md.utils.escapeHtml(token.content)}"></div>\n`;
+    }
+
+    return defaultRender(tokens, idx, options, env, self);
+  };
+
+  $effect(() => {
+    // Process mermaid diagrams when data changes
+    const _items = sortedItems;
+
+    tick().then(async () => {
+      const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+      mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' });
+
+      // Check if we are in browser to prevent SSR errors
+      if (typeof document !== 'undefined') {
+        const containers = document.querySelectorAll('.mermaid-unprocessed');
+        for (const el of Array.from(containers)) {
+          try {
+            let content = el.getAttribute('data-mermaid');
+            if (content) {
+              el.className = 'mermaid my-4'; 
+              
+              content = content
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'");
+
+              const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+              const { svg } = await mermaid.render(id, content);
+              el.innerHTML = svg;
+            }
+          } catch (err) {
+            console.error("Mermaid error", err);
+            el.className = 'mermaid-error my-4';
+            el.innerHTML = `<pre style="color:#ef4444;font-size:12px;background:rgba(239,68,68,0.1);padding:10px;border-radius:4px;overflow-x:auto;">Mermaid syntax error:\n${err}</pre>`;
+          }
+        }
+      }
+    });
+  });
 
   let expandedSnipsels = $state<Set<string>>(new Set());
   let modalImages = $state<Array<{ id: string; filename: string }>>([]);

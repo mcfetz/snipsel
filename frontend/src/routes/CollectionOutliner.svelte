@@ -95,7 +95,7 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
     const token = tokens[idx];
     const info = token.info ? token.info.trim() : '';
 
-    if (info === 'mermaid') {
+    if (info.toLowerCase().startsWith('mermaid')) {
       return `<div class="mermaid-unprocessed" data-mermaid="${md.utils.escapeHtml(token.content)}"></div>\n`;
     }
 
@@ -140,9 +140,18 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
       const containers = document.querySelectorAll('.mermaid-unprocessed');
       for (const el of Array.from(containers)) {
         try {
-          const content = el.getAttribute('data-mermaid');
+          let content = el.getAttribute('data-mermaid');
           if (content) {
             el.className = 'mermaid my-4'; // remove unprocessed class to prevent rerun
+            
+            // Unescape the HTML entities for Mermaid parser
+            content = content
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'");
+
             const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
             const { svg } = await mermaid.render(id, content);
             el.innerHTML = svg;
