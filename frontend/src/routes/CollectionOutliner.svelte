@@ -2804,7 +2804,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
       {#if dicedSnipsel}
         <div class="mt-2 group relative overflow-hidden rounded-xl border border-slate-200/60 bg-white/40 dark:border-white/10 dark:bg-white/5 backdrop-blur-sm px-4 py-3 transition-all hover:bg-white/60 dark:hover:bg-white/10" in:fade={{ duration: 400 }}>
-          <div class="flex items-center justify-between gap-2 mb-2">
+          <div class="flex items-center justify-between gap-2 mb-2 relative z-20">
             <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                <Dices label="" size={14} strokeWidth={2.5} className="opacity-80" />
                <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Diced Moment</span>
@@ -2812,7 +2812,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             <div class="flex items-center gap-1">
               <button 
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10"
+                  class="opacity-40 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10"
                   onclick={(e) => {
                      e.stopPropagation();
                      api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
@@ -2823,7 +2823,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               </button>
               <button 
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20"
+                  class="opacity-40 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20"
                   onclick={async (e) => {
                      e.stopPropagation();
                      if (dicedSnipsel && confirm(`Never show this snipsel in Diced Moments again?\n\n"${dicedSnipsel.content_markdown.substring(0, 100)}..."`)) {
