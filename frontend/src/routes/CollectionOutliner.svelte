@@ -2814,25 +2814,25 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             <div class="flex items-center gap-2">
               <button 
                   type="button"
-                  class="flex items-center justify-center p-2 rounded-full bg-slate-100 dark:bg-white/10 active:scale-95 transition-all"
+                  class="group/roll flex items-center justify-center p-2 rounded-full bg-slate-100 dark:bg-white/10 active:scale-95 hover:scale-110 hover:bg-slate-200 dark:hover:bg-white/20 transition-all duration-300"
                   onclick={(e) => {
                      e.stopPropagation();
                      api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
                   }}
                   title="Roll again"
               >
-                 <RotateCcw label="" size={14} strokeWidth={2.5} className="text-slate-500 dark:text-slate-400" />
+                 <RotateCcw label="" size={14} strokeWidth={2.5} className="text-slate-500 dark:text-slate-400 group-hover/roll:rotate-[-180deg] transition-transform duration-500" />
               </button>
               <button 
                   type="button"
-                  class="flex items-center justify-center p-2 rounded-full bg-red-50 dark:bg-red-950/20 active:scale-95 transition-all"
+                  class="group/ban flex items-center justify-center p-2 rounded-full bg-red-50 dark:bg-red-950/20 active:scale-95 hover:scale-110 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all duration-300"
                   onclick={async (e) => {
                      e.stopPropagation();
                      showDicedBanModal = true;
                   }}
                   title="Never show again"
               >
-                 <Ban label="" size={14} strokeWidth={2.5} className="text-red-500 dark:text-red-400" />
+                 <Ban label="" size={14} strokeWidth={2.5} className="text-red-500 dark:text-red-400 group-hover/ban:scale-125 transition-transform duration-300" />
               </button>
             </div>
           </div>
