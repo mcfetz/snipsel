@@ -39,6 +39,13 @@ def _fetch_youtube_metadata(oembed_url: str) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
+@lru_cache(maxsize=1000)
+def _fetch_spotify_metadata(oembed_url: str) -> dict:
+    req = urllib_request.Request(oembed_url, headers={"User-Agent": "Snipsel/1.0"})
+    with urllib_request.urlopen(req, timeout=10) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
 DEEZER_API_BASE = "https://api.deezer.com"
 
 
@@ -371,6 +378,29 @@ def proxy_youtube():
     except URLError as e:
         raise api_error(
             502, "external_error", f"Failed to connect to YouTube: {str(e)}"
+        )
+    except Exception as e:
+        raise api_error(500, "internal_error", str(e))
+
+
+@proxy_bp.route("/spotify", methods=["GET"])
+@require_auth
+def proxy_spotify():
+    """Proxy requests to Spotify oEmbed API."""
+    spotify_url = request.args.get("url")
+    if not spotify_url:
+        raise api_error(400, "invalid_input", "url is required")
+
+    oembed_url = f"https://open.spotify.com/oembed?url={urllib_parse.quote(spotify_url)}"
+
+    try:
+        data = _fetch_spotify_metadata(oembed_url)
+        return json_response(data)
+    except HTTPError as e:
+        return json_response({"error": str(e)}, status=e.code)
+    except URLError as e:
+        raise api_error(
+            502, "external_error", f"Failed to connect to Spotify: {str(e)}"
         )
     except Exception as e:
         raise api_error(500, "internal_error", str(e))

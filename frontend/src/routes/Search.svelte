@@ -5,6 +5,7 @@
   import { getCurrentUrl } from '../lib/router';
   import { currentUser } from '../lib/session';
   import DeezerCard from '../lib/DeezerCard.svelte';
+  import SpotifyCard from '../lib/SpotifyCard.svelte';
   import YouTubeCard from '../lib/YouTubeCard.svelte';
 
   const DEFAULT_ACCENT = '#4f46e5';
@@ -99,6 +100,15 @@
     return null;
   }
 
+  function getSpotifyLink(text: string | null) {
+    if (!text) return null;
+    const match = text.match(/https?:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/[a-zA-Z0-9]+/);
+    if (match) return { url: match[0] };
+    const shortMatch = text.match(/https?:\/\/spotify\.link\/[a-zA-Z0-9]+/);
+    if (shortMatch) return { url: shortMatch[0] };
+    return null;
+  }
+
   function getYouTubeLink(text: string | null) {
     if (!text) return null;
     const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[^\s\)]*)/);
@@ -113,6 +123,8 @@
     let result = text;
     const dz = getDeezerLink(text);
     if (dz) result = result.replace(dz.url, '');
+    const sp = getSpotifyLink(text);
+    if (sp) result = result.replace(sp.url, '');
     const yt = getYouTubeLink(text);
     if (yt) result = result.replace(yt.url, '');
     return result.trim();
@@ -215,7 +227,11 @@
                   <div class="min-w-0 flex-1">
                     {#if getDeezerLink(s.content_markdown)}
                       {@const dz = getDeezerLink(s.content_markdown)!}
-                      <DeezerCard url={dz.url} type={null} id={null} />
+                      <DeezerCard url={dz.url} type={null} id={null} accentColor={getHeaderColor()} />
+                    {/if}
+                    {#if getSpotifyLink(s.content_markdown)}
+                      {@const sp = getSpotifyLink(s.content_markdown)!}
+                      <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
                     {/if}
                     {#if getYouTubeLink(s.content_markdown)}
                       {@const yt = getYouTubeLink(s.content_markdown)!}

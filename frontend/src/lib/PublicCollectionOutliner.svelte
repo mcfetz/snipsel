@@ -6,6 +6,7 @@
   import ImageModal from './ImageModal.svelte';
   import VideoModal from './VideoModal.svelte';
   import DeezerCard from './DeezerCard.svelte';
+  import SpotifyCard from './SpotifyCard.svelte';
   import YouTubeCard from './YouTubeCard.svelte';
   import HyperlinkCard from './HyperlinkCard.svelte';
   import MapCard from './MapCard.svelte';
@@ -278,6 +279,15 @@
     return null;
   }
 
+  function getSpotifyLink(text: string | null) {
+    if (!text) return null;
+    const match = text.match(/https?:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/[a-zA-Z0-9]+/);
+    if (match) return { url: match[0] };
+    const shortMatch = text.match(/https?:\/\/spotify\.link\/[a-zA-Z0-9]+/);
+    if (shortMatch) return { url: shortMatch[0] };
+    return null;
+  }
+
   function getYouTubeLink(text: string | null) {
     if (!text) return null;
     const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[^\s\)]*)/);
@@ -331,6 +341,7 @@
   function getGenericLink(text: string | null) {
     if (!text) return null;
     if (getDeezerLink(text)) return null;
+    if (getSpotifyLink(text)) return null;
     if (getYouTubeLink(text)) return null;
     if (getMapLink(text)) return null;
     const trimmed = text.trim();
@@ -344,6 +355,8 @@
     let result = text;
     const dz = getDeezerLink(text);
     if (dz) result = result.replace(dz.url, '');
+    const sp = getSpotifyLink(text);
+    if (sp) result = result.replace(sp.url, '');
     const yt = getYouTubeLink(text);
     if (yt) result = result.replace(yt.url, '');
     const ml = getMapLink(text);
@@ -457,7 +470,11 @@
           >
             {#if getDeezerLink(item.snipsel.content_markdown)}
               {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
-              <DeezerCard type={dz.type} id={dz.id} url={dz.url} />
+              <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
+            {/if}
+            {#if getSpotifyLink(item.snipsel.content_markdown)}
+              {@const sp = getSpotifyLink(item.snipsel.content_markdown)!}
+              <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
             {/if}
             {#if getYouTubeLink(item.snipsel.content_markdown)}
               {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}

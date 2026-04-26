@@ -44,6 +44,7 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   import InfoModal from '../lib/InfoModal.svelte';
   import ProgressModal from '../lib/ProgressModal.svelte';
   import DeezerCard from '../lib/DeezerCard.svelte';
+  import SpotifyCard from '../lib/SpotifyCard.svelte';
   import YouTubeCard from '../lib/YouTubeCard.svelte';
   import HyperlinkCard from '../lib/HyperlinkCard.svelte';
   import MapCard from '../lib/MapCard.svelte';
@@ -2464,6 +2465,19 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     return null;
   }
 
+  function getSpotifyLink(text: string | null) {
+    if (!text) return null;
+    const match = text.match(/https?:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/[a-zA-Z0-9]+/);
+    if (match) {
+      return { url: match[0] };
+    }
+    const shortMatch = text.match(/https?:\/\/spotify\.link\/[a-zA-Z0-9]+/);
+    if (shortMatch) {
+      return { url: shortMatch[0] };
+    }
+    return null;
+  }
+
   function getYouTubeLink(text: string | null) {
     if (!text) return null;
     const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[^\s\)]*)/);
@@ -2519,6 +2533,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   function getGenericLink(text: string | null) {
     if (!text) return null;
     if (getDeezerLink(text)) return null;
+    if (getSpotifyLink(text)) return null;
     if (getYouTubeLink(text)) return null;
     if (getMapLink(text)) return null;
     const trimmed = text.trim();
@@ -2535,6 +2550,9 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     
     const dz = getDeezerLink(text);
     if (dz) result = result.replace(dz.url, '');
+    
+    const sp = getSpotifyLink(text);
+    if (sp) result = result.replace(sp.url, '');
     
     const yt = getYouTubeLink(text);
     if (yt) result = result.replace(yt.url, '');
@@ -2880,6 +2898,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     {@const dz = getDeezerLink(snip.content_markdown)!}
                     <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
                   {/if}
+                  {#if getSpotifyLink(snip.content_markdown)}
+                    {@const sp = getSpotifyLink(snip.content_markdown)!}
+                    <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
+                  {/if}
                   {#if getYouTubeLink(snip.content_markdown)}
                     {@const yt = getYouTubeLink(snip.content_markdown)!}
                     <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
@@ -3092,6 +3114,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {@const dz = getDeezerLink(editContent)!}
                   <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={getHeaderColor()} />
                 {/if}
+                {#if getSpotifyLink(editContent)}
+                  {@const sp = getSpotifyLink(editContent)!}
+                  <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
+                {/if}
                 {#if getYouTubeLink(editContent)}
                   {@const yt = getYouTubeLink(editContent)!}
                   <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
@@ -3289,6 +3315,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     {#if getDeezerLink(item.snipsel.content_markdown)}
                       {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
                       <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
+                    {/if}
+                    {#if getSpotifyLink(item.snipsel.content_markdown)}
+                      {@const sp = getSpotifyLink(item.snipsel.content_markdown)!}
+                      <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
                     {/if}
                     {#if getYouTubeLink(item.snipsel.content_markdown)}
                       {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
@@ -3527,6 +3557,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {#if getDeezerLink(snip.content_markdown)}
                     {@const dz = getDeezerLink(snip.content_markdown)!}
                     <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
+                  {/if}
+                  {#if getSpotifyLink(snip.content_markdown)}
+                    {@const sp = getSpotifyLink(snip.content_markdown)!}
+                    <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
                   {/if}
                   {#if getYouTubeLink(snip.content_markdown)}
                     {@const yt = getYouTubeLink(snip.content_markdown)!}

@@ -10,6 +10,7 @@
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
   import DeezerCard from '../lib/DeezerCard.svelte';
+  import SpotifyCard from '../lib/SpotifyCard.svelte';
   import YouTubeCard from '../lib/YouTubeCard.svelte';
   import VideoModal from '../lib/VideoModal.svelte';
 
@@ -321,6 +322,15 @@
     return null;
   }
 
+  function getSpotifyLink(text: string | null) {
+    if (!text) return null;
+    const match = text.match(/https?:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/[a-zA-Z0-9]+/);
+    if (match) return { url: match[0] };
+    const shortMatch = text.match(/https?:\/\/spotify\.link\/[a-zA-Z0-9]+/);
+    if (shortMatch) return { url: shortMatch[0] };
+    return null;
+  }
+
   function getYouTubeLink(text: string | null) {
     if (!text) return null;
     const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[^\s\)]*)/);
@@ -335,6 +345,8 @@
     let result = text;
     const dz = getDeezerLink(text);
     if (dz) result = result.replace(dz.url, '');
+    const sp = getSpotifyLink(text);
+    if (sp) result = result.replace(sp.url, '');
     const yt = getYouTubeLink(text);
     if (yt) result = result.replace(yt.url, '');
     return result.trim();
@@ -566,6 +578,13 @@
           {@const dz = getDeezerLink(snipsel.content_markdown)!}
           <div class="mb-4">
             <DeezerCard url={dz.url} type={dz.type} id={dz.id} />
+          </div>
+        {/if}
+
+        {#if getSpotifyLink(snipsel.content_markdown)}
+          {@const sp = getSpotifyLink(snipsel.content_markdown)!}
+          <div class="mb-4">
+            <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
           </div>
         {/if}
         
