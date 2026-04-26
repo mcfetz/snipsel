@@ -802,7 +802,7 @@
           <div>
             <label for="light-bg-color-picker" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Light mode</label>
             <div class="flex items-center gap-2">
-              <div class="flex max-w-[160px] flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
+              <div class="flex max-w-[160px] md:max-w-none flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
                 <label class="relative block h-8 w-8 cursor-pointer">
                   <input
                     id="light-bg-color-picker"
@@ -829,7 +829,7 @@
           <div>
             <label for="dark-bg-color-picker" class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Dark mode</label>
             <div class="flex items-center gap-2">
-              <div class="flex max-w-[160px] flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
+              <div class="flex max-w-[160px] md:max-w-none flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800">
                 <label class="relative block h-8 w-8 cursor-pointer">
                   <input
                     id="dark-bg-color-picker"
