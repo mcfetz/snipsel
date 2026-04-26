@@ -43,6 +43,7 @@ import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
   import ImageModal from '../lib/ImageModal.svelte';
   import CollectionSelectModal from '../lib/CollectionSelectModal.svelte';
   import DeleteConfirmModal from '../lib/DeleteConfirmModal.svelte';
+  import ConfirmModal from '../lib/ConfirmModal.svelte';
   import InfoModal from '../lib/InfoModal.svelte';
   import ProgressModal from '../lib/ProgressModal.svelte';
   import DeezerCard from '../lib/DeezerCard.svelte';
@@ -290,6 +291,7 @@ import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
 
   let throwbackLists = $state<Array<{ id: string; year: number; title: string; icon: string }>>([]);
   let dicedSnipsel = $state<import('../lib/api').Snipsel | null>(null);
+  let showDicedBanModal = $state(false);
 
   async function loadThrowback() {
     throwbackLists = [];
@@ -2826,10 +2828,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   class="flex items-center justify-center p-2 rounded-full bg-red-50 dark:bg-red-950/20 active:scale-95 transition-all"
                   onclick={async (e) => {
                      e.stopPropagation();
-                     if (dicedSnipsel && confirm(`Never show this snipsel in Diced Moments again?\n\n"${dicedSnipsel.content_markdown.substring(0, 50)}..."`)) {
-                        await api.snipsels.banDicedMoment(dicedSnipsel.id);
-                        api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
-                     }
+                     showDicedBanModal = true;
                   }}
                   title="Never show again"
               >
@@ -4186,6 +4185,25 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     title="Snipsel Info"
     message={`ID: ${infoModalItem.snipsel_id}\nType: ${infoModalItem.snipsel.type}\nCreated: ${new Date(infoModalItem.snipsel.created_at).toLocaleString()}`}
     onClose={() => { showInfoModalFlag = false; infoModalItem = null; }}
+  />
+{/if}
+
+{#if showDicedBanModal && dicedSnipsel}
+  <ConfirmModal
+    title="Never show again"
+    message={`"${dicedSnipsel.content_markdown.substring(0, 100)}..."\n\nAre you sure you want to exclude this snipsel from Diced Moments forever?`}
+    confirmLabel="Never show again"
+    icon={Ban}
+    iconClass="bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+    confirmClass="bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+    onConfirm={async () => {
+       if (dicedSnipsel) {
+          await api.snipsels.banDicedMoment(dicedSnipsel.id);
+          api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
+       }
+       showDicedBanModal = false;
+    }}
+    onCancel={() => (showDicedBanModal = false)}
   />
 {/if}
 

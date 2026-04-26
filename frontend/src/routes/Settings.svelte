@@ -69,6 +69,15 @@
   
   let dicedMomentsTags = $state('');
   let showDicedMomentsSaved = $state(false);
+  let allUserTags = $state<string[]>([]);
+  let showTagSuggestions = $state(false);
+  let tagSearchQuery = $state('');
+  
+  const tagSuggestions = $derived(
+    tagSearchQuery 
+      ? allUserTags.filter(t => t.toLowerCase().includes(tagSearchQuery.toLowerCase()) && !dicedMomentsTags.toLowerCase().includes(t.toLowerCase()))
+      : []
+  );
 
   // API Keys
   let apiKeys = $state<ApiKey[]>([]);
@@ -247,6 +256,46 @@
     } finally {
       isBusy = false;
     }
+  }
+
+  async function loadAllTags() {
+    try {
+      const res = await api.tags.list('my');
+      allUserTags = res.tags.map(t => t.tag);
+    } catch (err) {
+      console.error("Failed to load tags", err);
+    }
+  }
+
+  function handleTagKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Tab' && tagSuggestions.length > 0 && showTagSuggestions) {
+      e.preventDefault();
+      selectTag(tagSuggestions[0]);
+    }
+  }
+
+  function handleTagInput(e: Event) {
+    const val = (e.target as HTMLInputElement).value;
+    const parts = val.split(',');
+    const lastPart = parts[parts.length - 1].trim();
+    if (lastPart.length > 0) {
+      tagSearchQuery = lastPart;
+      showTagSuggestions = true;
+    } else {
+      showTagSuggestions = false;
+    }
+  }
+
+  function selectTag(tag: string) {
+    let parts = dicedMomentsTags.split(',').map(p => p.trim()).filter(p => !!p);
+    if (parts.length > 0 && tagSearchQuery && parts[parts.length - 1].toLowerCase().includes(tagSearchQuery.toLowerCase())) {
+        parts[parts.length - 1] = tag;
+    } else {
+        parts.push(tag);
+    }
+    dicedMomentsTags = parts.join(', ') + ', ';
+    showTagSuggestions = false;
+    tagSearchQuery = '';
   }
 
   async function loadApiKeys() {
@@ -549,6 +598,10 @@
 
   $effect(() => {
     api.meStats().then((res) => (userStats = res.stats)).catch(() => {});
+  });
+
+  $effect(() => {
+    loadAllTags();
   });
 </script>
 
@@ -933,13 +986,32 @@
         <div>
           <label for="diced-tags" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Tags (comma separated)</label>
           <div class="text-xs text-slate-500 dark:text-slate-400 mb-2">Snipsels with these tags will be randomly picked for your daily collection.</div>
-          <input
-            id="diced-tags"
-            type="text"
-            class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-black/5 focus:outline-none focus:ring-2 focus:ring-black/5 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:ring-white/10"
-            bind:value={dicedMomentsTags}
-            placeholder="quote, thought, memory"
-          />
+          <div class="relative">
+            <input
+              id="diced-tags"
+              type="text"
+              class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-black/5 focus:outline-none focus:ring-2 focus:ring-black/5 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:ring-white/10"
+              bind:value={dicedMomentsTags}
+              oninput={handleTagInput}
+              onkeydown={handleTagKeyDown}
+              onblur={() => setTimeout(() => showTagSuggestions = false, 200)}
+              placeholder="quote, thought, memory"
+              autocomplete="off"
+            />
+            {#if showTagSuggestions && tagSuggestions.length > 0}
+              <div class="absolute z-50 mt-1 max-h-40 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-slate-800">
+                {#each tagSuggestions as tag}
+                  <button
+                    type="button"
+                    class="block w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5"
+                    onclick={() => selectTag(tag)}
+                  >
+                    #{tag}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
         </div>
         <div class="flex justify-end">
           <button
