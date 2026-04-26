@@ -260,6 +260,7 @@ class Snipsel(db.Model):
     deleted_by_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )
+    diced_count: Mapped[int] = mapped_column(default=0, nullable=False, index=True)
 
     owner = relationship("User", foreign_keys=[owner_user_id])
     done_by = relationship("User", foreign_keys=[done_by_id])

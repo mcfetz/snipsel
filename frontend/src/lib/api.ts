@@ -895,6 +895,7 @@ export const api = {
       await idbEnqueueSync('POST', `/api/snipsels/${snipselId}/reactions`, { emoji });
       return { message: 'Queued', active: true };
     },
+    banDicedMoment: (snipselId: string) => requestJson<{ ok: true }>(`/api/snipsels/${snipselId}/diced/ban`, { method: 'POST' }),
     trash: () => requestJson<{ snipsels: Snipsel[] }>('/api/snipsels/trash'),
     emptyTrash: () => requestJson<{ ok: true; deleted: number }>('/api/snipsels/trash', { method: 'DELETE' }),
     deleteTrashItem: (id: string) => requestJson<{ ok: true; deleted: number }>(`/api/snipsels/trash/${id}`, { method: 'DELETE' }),

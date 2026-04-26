@@ -1446,3 +1446,13 @@ def permanent_delete_snipsel(snipsel_id: str):
     db.session.commit()
 
     return json_response({"ok": True, "deleted": 1})
+
+
+@snipsels_bp.post("/snipsels/<snipsel_id>/diced/ban")
+@require_auth
+def ban_from_diced_moments(snipsel_id: str):
+    user = current_user()
+    s = _get_owned_snipsel(user.id, snipsel_id)
+    s.diced_count = -1
+    db.session.commit()
+    return json_response({"ok": True})

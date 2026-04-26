@@ -35,6 +35,7 @@ import Share from '@animated-color-icons/lucide-svelte/Share.svelte';
 import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
 import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
 import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
+import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
 
   import MarkdownIt from 'markdown-it';
   import mermaid from 'mermaid';
@@ -2808,17 +2809,33 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                <Dices label="" size={14} strokeWidth={2.5} className="opacity-80" />
                <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Diced Moment</span>
             </div>
-            <button 
-                type="button"
-                class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10"
-                onclick={(e) => {
-                   e.stopPropagation();
-                   api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
-                }}
-                title="Roll again"
-            >
-               <RotateCcw label="" size={12} strokeWidth={2.5} className="text-slate-400" />
-            </button>
+            <div class="flex items-center gap-1">
+              <button 
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10"
+                  onclick={(e) => {
+                     e.stopPropagation();
+                     api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
+                  }}
+                  title="Roll again"
+              >
+                 <RotateCcw label="" size={12} strokeWidth={2.5} className="text-slate-400" />
+              </button>
+              <button 
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20"
+                  onclick={async (e) => {
+                     e.stopPropagation();
+                     if (dicedSnipsel && confirm('Never show this snipsel in Diced Moments again?')) {
+                        await api.snipsels.banDicedMoment(dicedSnipsel.id);
+                        api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
+                     }
+                  }}
+                  title="Never show again"
+              >
+                 <Ban label="" size={12} strokeWidth={2.5} className="text-red-400" />
+              </button>
+            </div>
           </div>
           <div class="text-sm text-slate-800 dark:text-slate-200 line-clamp-3 italic relative z-10 pointer-events-none">
             {dicedSnipsel.content_markdown}

@@ -417,15 +417,19 @@ def get_diced_moment():
         .where(
             Snipsel.owner_user_id == user.id,
             Snipsel.deleted_at.is_(None),
+            Snipsel.diced_count >= 0,
             func.lower(Tag.name).in_(tag_names),
         )
-        .order_by(func.random())
+        .order_by(Snipsel.diced_count.asc(), func.random())
         .limit(1)
     )
 
     snipsel = db.session.execute(q).scalars().unique().first()
     if not snipsel:
         return json_response({"snipsel": None})
+
+    snipsel.diced_count += 1
+    db.session.commit()
 
     from snipsel_api.routes_snipsels import _snipsel_json
 
