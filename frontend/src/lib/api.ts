@@ -143,6 +143,7 @@ export type Snipsel = {
   tags?: string[];
   mentions?: string[];
   reactions?: ReactionSummary[];
+  diced_count?: number;
   collection_refs?: Array<{ title: string; collection_id: string }>;
 };
 

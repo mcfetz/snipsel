@@ -45,6 +45,7 @@ import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
   import DeleteConfirmModal from '../lib/DeleteConfirmModal.svelte';
   import ConfirmModal from '../lib/ConfirmModal.svelte';
   import InfoModal from '../lib/InfoModal.svelte';
+  import SnipselInfoModal from '../lib/SnipselInfoModal.svelte';
   import ProgressModal from '../lib/ProgressModal.svelte';
   import DeezerCard from '../lib/DeezerCard.svelte';
   import SpotifyCard from '../lib/SpotifyCard.svelte';
@@ -4181,10 +4182,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 {/if}
 
 {#if showInfoModalFlag && infoModalItem}
-  <InfoModal
-    title="Snipsel Info"
-    message={`ID: ${infoModalItem.snipsel_id}\nType: ${infoModalItem.snipsel.type}\nCreated: ${new Date(infoModalItem.snipsel.created_at).toLocaleString()}`}
+  <SnipselInfoModal
+    snipsel={infoModalItem.snipsel}
     onClose={() => { showInfoModalFlag = false; infoModalItem = null; }}
+    onUpdate={(updated) => {
+       if (infoModalItem) infoModalItem.snipsel = updated;
+    }}
   />
 {/if}
 

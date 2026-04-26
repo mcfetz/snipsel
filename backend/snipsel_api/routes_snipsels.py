@@ -555,6 +555,11 @@ def update_snipsel(snipsel_id: str):
             s.type = new_type
     if "card_view" in data and has_write_access:
         s.card_view = bool(data.get("card_view", True))
+    if "diced_count" in data and has_write_access:
+        try:
+            s.diced_count = int(data.get("diced_count", 0))
+        except (ValueError, TypeError):
+             pass
     if "content_markdown" in data and has_write_access:
         s.content_markdown = data.get("content_markdown")
     if "task_done" in data:
@@ -1208,6 +1213,7 @@ def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
         "done_by_username": s.done_by.username if s.done_by else None,
         "external_url": s.external_url,
         "external_label": s.external_label,
+        "diced_count": s.diced_count,
         "internal_target_snipsel_id": s.internal_target_snipsel_id,
         "geo_lat": s.geo_lat,
         "geo_lng": s.geo_lng,
