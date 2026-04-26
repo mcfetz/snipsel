@@ -94,7 +94,7 @@
     [
       { icon: Code, label: 'Inline Code', prefix: '`', suffix: '`' },
       { icon: Terminal, label: 'Code Block', prefix: '```\n', suffix: '\n```' },
-      { icon: Network, label: 'Mermaid Diagram', prefix: '```mermaid\n', suffix: '\n```' },
+      { icon: Network, label: 'Mermaid Diagram', prefix: '```mermaid\n%% --- Diagramm-Typen (%% entfernen) ---\n\n%% graph TD;\n%%     Start-->Ende;\n\n%% sequenceDiagram\n%%     User->>System: Hallo\n\n%% pie title Aufteilung\n%%     "A" : 50\n%%     "B" : 50\n\n%% gantt\n%%     title Zeitplan\n\n', suffix: '\n```' },
     ],
     [
       { icon: Link, label: 'Link', prefix: '[', suffix: '](url)' },
