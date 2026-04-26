@@ -2810,6 +2810,9 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                <Dices label="" size={14} strokeWidth={2.5} className="opacity-80" />
                <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Diced Moment</span>
+               {#if dicedSnipsel.attachments && dicedSnipsel.attachments.length > 0}
+                 <Paperclip label="" size={12} strokeWidth={2.5} className="text-slate-400 ml-0.5" />
+               {/if}
             </div>
             <div class="flex items-center gap-2">
               <button 
