@@ -386,6 +386,50 @@ def get_throwback_collections():
     return json_response({"collections": out})
 
 
+@collections_bp.get("/diced_moment")
+@require_auth
+def get_diced_moment():
+    user = current_user()
+    if not user.diced_moments_tags:
+        return json_response({"snipsel": None})
+
+    tag_names = [
+        t.strip().lower() for t in user.diced_moments_tags.split(",") if t.strip()
+    ]
+    if not tag_names:
+        return json_response({"snipsel": None})
+
+    from sqlalchemy.sql import func
+
+    q = (
+        db.select(Snipsel)
+        .options(
+            joinedload(Snipsel.created_by),
+            joinedload(Snipsel.modified_by),
+            joinedload(Snipsel.done_by),
+            selectinload(Snipsel.reactions),
+            selectinload(Snipsel.attachments),
+        )
+        .join(SnipselTag, Snipsel.id == SnipselTag.snipsel_id)
+        .join(Tag, Tag.id == SnipselTag.tag_id)
+        .where(
+            Snipsel.owner_user_id == user.id,
+            Snipsel.deleted_at.is_(None),
+            func.lower(Tag.name).in_(tag_names),
+        )
+        .order_by(func.random())
+        .limit(1)
+    )
+
+    snipsel = db.session.execute(q).scalars().unique().first()
+    if not snipsel:
+        return json_response({"snipsel": None})
+
+    from snipsel_api.routes_snipsels import _snipsel_json
+
+    return json_response({"snipsel": _snipsel_json(snipsel, user.id)})
+
+
 def _get_or_create_daily_collection(user_id: str, day: date) -> Collection:
     """Finds or creates a daily collection for a user. Refactored from get_today_collection."""
     user = db.session.get(User, user_id)

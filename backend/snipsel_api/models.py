@@ -87,6 +87,7 @@ class User(db.Model):
         String(7), nullable=True
     )
     is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
+    diced_moments_tags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
 class Collection(db.Model):

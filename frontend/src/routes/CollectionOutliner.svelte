@@ -34,6 +34,7 @@
 import Share from '@animated-color-icons/lucide-svelte/Share.svelte';
 import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
 import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
+import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
 
   import MarkdownIt from 'markdown-it';
   import mermaid from 'mermaid';
@@ -287,16 +288,21 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   let infoModalItem: CollectionItem | null = $state(null);
 
   let throwbackLists = $state<Array<{ id: string; year: number; title: string; icon: string }>>([]);
+  let dicedSnipsel = $state<import('../lib/api').Snipsel | null>(null);
 
   async function loadThrowback() {
     throwbackLists = [];
+    dicedSnipsel = null;
     const day = $currentCollection?.list_for_day;
     if (!day) return;
     try {
       const res = await api.collections.throwback(day);
       throwbackLists = res.collections;
+      
+      const dr = await api.collections.dicedMoment();
+      dicedSnipsel = dr.snipsel;
     } catch (err) {
-      console.error('Failed to load throwback collections:', err);
+      console.error('Failed to load daily extras:', err);
     }
   }
 
@@ -2792,6 +2798,36 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               </button>
             {/each}
           </div>
+        </div>
+      {/if}
+
+      {#if dicedSnipsel}
+        <div class="mt-2 group relative overflow-hidden rounded-xl border border-slate-200/60 bg-white/40 dark:border-white/10 dark:bg-white/5 backdrop-blur-sm px-4 py-3 transition-all hover:bg-white/60 dark:hover:bg-white/10" in:fade={{ duration: 400 }}>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+               <Dices label="" size={14} strokeWidth={2.5} className="opacity-80" />
+               <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Diced Moment</span>
+            </div>
+            <button 
+                type="button"
+                class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10"
+                onclick={(e) => {
+                   e.stopPropagation();
+                   api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
+                }}
+                title="Roll again"
+            >
+               <RotateCcw label="" size={12} strokeWidth={2.5} className="text-slate-400" />
+            </button>
+          </div>
+          <div class="text-sm text-slate-800 dark:text-slate-200 line-clamp-3 italic relative z-10 pointer-events-none">
+            {dicedSnipsel.content_markdown}
+          </div>
+          <button 
+             type="button"
+             class="absolute inset-0 z-0"
+             onclick={() => currentView.set({ type: 'snipsel', id: dicedSnipsel.id })}
+          ></button>
         </div>
       {/if}
     {/if}

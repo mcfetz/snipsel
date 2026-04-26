@@ -638,6 +638,11 @@ def update_me():
             data.get("dark_background_color") or ""
         ).strip() or None
 
+    if "diced_moments_tags" in data:
+        user.diced_moments_tags = (
+            data.get("diced_moments_tags") or ""
+        ).strip() or None
+
     if "email" in data or "password" in data:
         current_password = data.get("current_password") or ""
         if not current_password or not check_password_hash(
@@ -838,6 +843,7 @@ def _user_json(user: User) -> dict:
         "light_background_color": user.light_background_color,
         "dark_background_color": user.dark_background_color,
         "is_admin": getattr(user, "is_admin", False),
+        "diced_moments_tags": user.diced_moments_tags,
         "created_at": user.created_at.isoformat() + "Z",
     }
 

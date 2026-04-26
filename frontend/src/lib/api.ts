@@ -25,6 +25,7 @@ export type User = {
   light_background_color?: string | null;
   dark_background_color?: string | null;
   is_admin?: boolean;
+  diced_moments_tags?: string | null;
 };
 
 export type UserStats = {
@@ -403,6 +404,7 @@ export const api = {
     ai_llm_url?: string | null;
     ai_model_name?: string | null;
     ai_api_key?: string | null;
+    diced_moments_tags?: string | null;
   }) =>
     requestJson<{ user: User }>('/api/auth/me', {
       method: 'PATCH',
@@ -695,6 +697,7 @@ export const api = {
       requestJson<{ collections: Array<{ id: string; year: number; title: string; icon: string }> }>(
         `/api/collections/throwback?day=${encodeURIComponent(day)}`
       ),
+    dicedMoment: () => requestJson<{ snipsel: Snipsel | null }>('/api/collections/diced_moment'),
   },
 
   users: {

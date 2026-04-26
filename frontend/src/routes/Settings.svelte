@@ -12,6 +12,7 @@
   import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import ChevronRight from '@animated-color-icons/lucide-svelte/ChevronRight.svelte';
   import Users from '@animated-color-icons/lucide-svelte/Users.svelte';
+  import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
   import { api, type Collection, type UserStats, type ApiKey } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { collectionAnchor, currentView } from '../lib/stores';
@@ -65,6 +66,9 @@
   let availableModels = $state<Array<{ id: string; name: string }>>([]);
   let isLoadingModels = $state(false);
   let modelsError = $state('');
+  
+  let dicedMomentsTags = $state('');
+  let showDicedMomentsSaved = $state(false);
 
   // API Keys
   let apiKeys = $state<ApiKey[]>([]);
@@ -430,6 +434,20 @@
     }
   }
 
+  async function saveDicedMomentsSettings() {
+    isBusy = true;
+    try {
+      const res = await api.updateMe({
+        diced_moments_tags: dicedMomentsTags.trim() || null,
+      });
+      currentUser.set(res.user);
+      showDicedMomentsSaved = true;
+      setTimeout(() => showDicedMomentsSaved = false, 2000);
+    } finally {
+      isBusy = false;
+    }
+  }
+
   async function fetchModels() {
     if (!aiLlmUrl.trim()) {
       modelsError = 'Please enter LLM URL first';
@@ -504,6 +522,7 @@
     aiModelName = $currentUser.ai_model_name ?? '';
     lightBackgroundColor = $currentUser.light_background_color ?? '';
     darkBackgroundColor = $currentUser.dark_background_color ?? '';
+    dicedMomentsTags = $currentUser.diced_moments_tags ?? '';
     initialized = true;
     
     const savedLastSync = localStorage.getItem('snipsel_last_full_sync');
@@ -902,6 +921,48 @@
           </button>
         </div>
       {/if}
+    </div>
+
+    <!-- Diced Moments -->
+    <div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
+      <div class="flex items-center gap-2 text-xs uppercase text-slate-500">
+        <Dices label="" size={12} strokeWidth={2.5} />
+        <span>Diced Moments</span>
+      </div>
+      <div class="mt-3 space-y-4">
+        <div>
+          <label for="diced-tags" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Tags (comma separated)</label>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mb-2">Snipsels with these tags will be randomly picked for your daily collection.</div>
+          <input
+            id="diced-tags"
+            type="text"
+            class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-black/5 focus:outline-none focus:ring-2 focus:ring-black/5 dark:border-white/10 dark:bg-slate-800 dark:text-white dark:focus:ring-white/10"
+            bind:value={dicedMomentsTags}
+            placeholder="quote, thought, memory"
+          />
+        </div>
+        <div class="flex justify-end">
+          <button
+            class="relative flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+            style={`background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}`}
+            type="button"
+            onclick={saveDicedMomentsSettings}
+            disabled={isBusy || showDicedMomentsSaved}
+          >
+            {#if isBusy}
+              <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+              <span>Saving...</span>
+            {:else if showDicedMomentsSaved}
+              <div class="animate-in zoom-in fade-in duration-300 flex items-center gap-2">
+                <Check label="" size={18} strokeWidth={3} />
+                <span>Saved!</span>
+              </div>
+            {:else}
+              <span>Save</span>
+            {/if}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- AI Integration -->
