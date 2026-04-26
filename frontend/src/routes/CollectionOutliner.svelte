@@ -2809,31 +2809,31 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                <Dices label="" size={14} strokeWidth={2.5} className="opacity-80" />
                <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Diced Moment</span>
             </div>
-            <div class="flex items-center gap-1">
+            <div class="flex items-center gap-2">
               <button 
                   type="button"
-                  class="opacity-40 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10"
+                  class="flex items-center justify-center p-2 rounded-full bg-slate-100 dark:bg-white/10 active:scale-95 transition-all"
                   onclick={(e) => {
                      e.stopPropagation();
                      api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
                   }}
                   title="Roll again"
               >
-                 <RotateCcw label="" size={12} strokeWidth={2.5} className="text-slate-400" />
+                 <RotateCcw label="" size={14} strokeWidth={2.5} className="text-slate-500 dark:text-slate-400" />
               </button>
               <button 
                   type="button"
-                  class="opacity-40 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20"
+                  class="flex items-center justify-center p-2 rounded-full bg-red-50 dark:bg-red-950/20 active:scale-95 transition-all"
                   onclick={async (e) => {
                      e.stopPropagation();
-                     if (dicedSnipsel && confirm(`Never show this snipsel in Diced Moments again?\n\n"${dicedSnipsel.content_markdown.substring(0, 100)}..."`)) {
+                     if (dicedSnipsel && confirm(`Never show this snipsel in Diced Moments again?\n\n"${dicedSnipsel.content_markdown.substring(0, 50)}..."`)) {
                         await api.snipsels.banDicedMoment(dicedSnipsel.id);
                         api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
                      }
                   }}
                   title="Never show again"
               >
-                 <Ban label="" size={12} strokeWidth={2.5} className="text-red-400" />
+                 <Ban label="" size={14} strokeWidth={2.5} className="text-red-500 dark:text-red-400" />
               </button>
             </div>
           </div>
