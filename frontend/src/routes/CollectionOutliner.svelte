@@ -2826,7 +2826,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20"
                   onclick={async (e) => {
                      e.stopPropagation();
-                     if (dicedSnipsel && confirm('Never show this snipsel in Diced Moments again?')) {
+                     if (dicedSnipsel && confirm(`Never show this snipsel in Diced Moments again?\n\n"${dicedSnipsel.content_markdown.substring(0, 100)}..."`)) {
                         await api.snipsels.banDicedMoment(dicedSnipsel.id);
                         api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
                      }

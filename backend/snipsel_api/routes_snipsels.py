@@ -1171,6 +1171,31 @@ def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
         .scalars()
         .all()
     )
+    # Also include direct collection memberships
+    memberships = (
+        db.session.execute(
+            db.select(CollectionSnipsel)
+            .join(Collection, Collection.id == CollectionSnipsel.collection_id)
+            .options(joinedload(CollectionSnipsel.collection))
+            .where(
+                CollectionSnipsel.snipsel_id == s.id,
+                Collection.deleted_at.is_(None),
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    final_refs = []
+    seen_ids = set()
+    for r in refs:
+        if r.collection_id not in seen_ids:
+            final_refs.append({"title": r.collection.title, "collection_id": r.collection_id})
+            seen_ids.add(r.collection_id)
+    for m in memberships:
+        if m.collection_id not in seen_ids:
+            final_refs.append({"title": m.collection.title, "collection_id": m.collection_id})
+            seen_ids.add(m.collection_id)
 
     return {
         "id": s.id,
@@ -1206,10 +1231,7 @@ def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
             }
             for a in s.attachments
         ],
-        "collection_refs": [
-            {"title": r.collection.title, "collection_id": r.collection_id}
-            for r in refs
-        ],
+        "collection_refs": final_refs,
     }
 
 
