@@ -2843,7 +2843,23 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <button 
              type="button"
              class="absolute inset-0 z-0"
-             onclick={() => currentView.set({ type: 'snipsel', id: dicedSnipsel.id })}
+             onclick={() => {
+                if (dicedSnipsel && dicedSnipsel.collection_refs && dicedSnipsel.collection_refs.length > 0) {
+                   const colId = dicedSnipsel.collection_refs[0].collection_id;
+                   collectionAnchor.set({ collectionId: colId, snipselId: dicedSnipsel.id });
+                   if ($currentCollection?.id === colId) {
+                      // Already in this collection, trigger effect manually or it might not fire if same key
+                      const el = document.getElementById(`snipsel-${dicedSnipsel.id}`);
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      anchorHighlightId = dicedSnipsel.id;
+                      setTimeout(() => { if (anchorHighlightId === dicedSnipsel.id) anchorHighlightId = null; }, 5000);
+                   } else {
+                      currentView.set({ type: 'collection', id: colId });
+                   }
+                } else if (dicedSnipsel) {
+                   currentView.set({ type: 'snipsel', id: dicedSnipsel.id });
+                }
+             }}
           ></button>
         </div>
       {/if}
