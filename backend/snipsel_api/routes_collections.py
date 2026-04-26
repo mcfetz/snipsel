@@ -32,6 +32,8 @@ from snipsel_api.models import (
     Notification,
     SnipselCollectionRef,
     CollectionVisit,
+    Tag,
+    SnipselTag,
 )
 from snipsel_api.permissions import (
     can_read_collection,
