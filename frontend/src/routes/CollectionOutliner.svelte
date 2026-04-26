@@ -4080,7 +4080,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         type="button"
         aria-label="Info"
         title="Info"
-        onclick={openDetailSelected}
+        onclick={openInfoModal}
         disabled={selectedIds.size !== 1}
       >
           <Info label="" size={20} strokeWidth={2} />

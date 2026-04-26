@@ -3,6 +3,8 @@
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
   import Heart from '@animated-color-icons/lucide-svelte/Heart.svelte';
   import Info from '@animated-color-icons/lucide-svelte/Info.svelte';
+  import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
+  import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
   import { api, type Attachment, type Snipsel, type SnipselDetailResponse } from '../lib/api';
   import ImageModal from '../lib/ImageModal.svelte';
@@ -401,6 +403,17 @@
 		await load();
 	}
 
+  async function toggleDicedBan() {
+    if (!snipsel || !hasWriteAccess) return;
+    try {
+      const newCount = snipsel.diced_count === -1 ? 0 : -1;
+      await api.snipsels.update(snipselId, { diced_count: newCount });
+      await load();
+    } catch (err) {
+      console.error('Failed to toggle diced ban:', err);
+    }
+  }
+
   load();
 
 	function directLinkUrl(): string {
@@ -566,6 +579,37 @@
 					{/if}
 				</div>
 			</div>
+
+      <!-- Diced Moments Info -->
+      <div class="rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80">
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Diced Moments</div>
+          <div class="flex items-center gap-2">
+            <Dices label="" size={14} className="text-slate-400" />
+            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">
+               {snipsel.diced_count === -1 ? 'Banned' : `${snipsel.diced_count ?? 0} rolls`}
+            </span>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-white/5">
+          <div class="flex items-center gap-2">
+            <Ban label="" size={16} className={snipsel.diced_count === -1 ? 'text-red-500' : 'text-slate-400'} />
+            <span class="text-sm text-slate-600 dark:text-slate-400">Ban from Diced Moments</span>
+          </div>
+          <button
+            type="button"
+            class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 {snipsel.diced_count === -1 ? 'bg-red-500' : 'bg-slate-200 dark:bg-slate-700'}"
+            onclick={toggleDicedBan}
+            disabled={!hasWriteAccess}
+            role="switch"
+            aria-checked={snipsel.diced_count === -1}
+          >
+            <span 
+              class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {snipsel.diced_count === -1 ? 'translate-x-5' : 'translate-x-0'}"
+            ></span>
+          </button>
+        </div>
+      </div>
 
 
 
