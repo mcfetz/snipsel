@@ -396,7 +396,7 @@ def get_diced_moment():
         return json_response({"snipsel": None})
 
     tag_names = [
-        t.strip().lower() for t in user.diced_moments_tags.split(",") if t.strip()
+        t.strip().lower().lstrip("#") for t in user.diced_moments_tags.split(",") if t.strip()
     ]
     if not tag_names:
         return json_response({"snipsel": None})

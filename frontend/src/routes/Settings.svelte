@@ -75,7 +75,9 @@
   
   const tagSuggestions = $derived(
     tagSearchQuery 
-      ? allUserTags.filter(t => t.toLowerCase().includes(tagSearchQuery.toLowerCase()) && !dicedMomentsTags.toLowerCase().includes(t.toLowerCase()))
+      ? allUserTags
+          .map(t => '#' + t)
+          .filter(t => t.toLowerCase().includes(tagSearchQuery.toLowerCase()) && !dicedMomentsTags.toLowerCase().includes(t.toLowerCase()))
       : []
   );
 
@@ -288,7 +290,9 @@
 
   function selectTag(tag: string) {
     let parts = dicedMomentsTags.split(',').map(p => p.trim()).filter(p => !!p);
-    if (parts.length > 0 && tagSearchQuery && parts[parts.length - 1].toLowerCase().includes(tagSearchQuery.toLowerCase())) {
+    if (parts.length > 0 && tagSearchQuery && parts[parts.length - 1].toLowerCase().includes(tagSearchQuery.toLowerCase().replace('#', ''))) {
+        parts[parts.length - 1] = tag;
+    } else if (parts.length > 0 && tagSearchQuery && tag.toLowerCase().includes(tagSearchQuery.toLowerCase())) {
         parts[parts.length - 1] = tag;
     } else {
         parts.push(tag);
