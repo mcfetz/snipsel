@@ -91,10 +91,10 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   let focusProxyRef: HTMLInputElement | undefined = $state();
   let editContent = $state('');
   let editIndent = $state(0);
+  let editFullscreen = $state(false);
   let saving = $state(false);
   let creatingFromTripleEmptyLines = $state(false);
   let saveStatuses = $state<Record<string, 'success' | 'error' | null>>({});
-
 
   let selectedIds = $state<Set<string>>(new Set());
   let selectionPulse = $state(false);
@@ -1128,6 +1128,17 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
   function cancelEdit() {
     editingSnipselId.set(null);
+    editFullscreen = false;
+  }
+
+  function handleSaveAndNew() {
+    const currentId = $editingSnipselId;
+    const currentItem = currentId ? $sortedItems.find((i) => i.snipsel_id === currentId) : null;
+    if (!currentItem) return;
+    
+    saveEdit().then(() => {
+      createSnipselAfterPosition(currentItem.position, currentItem.indent, currentItem.snipsel.type as any);
+    });
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -1339,6 +1350,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   function autosizeTextarea() {
     const el = textareaRef;
     if (!el) return;
+    if (editFullscreen) {
+      el.style.height = '100%';
+      return;
+    }
     el.style.height = '0px';
     el.style.height = `${el.scrollHeight}px`;
   }
@@ -2981,17 +2996,30 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               <div
                 bind:this={editContainerRef}
                 class="relative rounded-lg bg-slate-50 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
+                class:!fixed={editFullscreen}
+                class:inset-[5%]={editFullscreen}
+                class:!z-50={editFullscreen}
+                class:!flex={editFullscreen}
+                class:!flex-col={editFullscreen}
+                class:shadow-2xl={editFullscreen}
+                class:overflow-hidden={editFullscreen}
                 onfocusout={handleEditFocusOut}
               >
                 <FormattingToolbar 
                   textarea={textareaRef} 
                   onFormat={(content) => { editContent = content; handleEditInput(); }} 
                   accentColor={getHeaderColor()} 
+                  isFullscreen={editFullscreen}
+                  onToggleFullscreen={() => { editFullscreen = !editFullscreen; tick().then(autosizeTextarea); textareaRef?.focus(); }}
+                  onIndent={() => { editIndent = Math.min(6, editIndent + 1); textareaRef?.focus(); }}
+                  onOutdent={() => { editIndent = Math.max(0, editIndent - 1); textareaRef?.focus(); }}
+                  onNewSnipsel={handleSaveAndNew}
                 />
-                <div class="px-2 py-3 rounded-b-lg">
+                <div class="px-2 py-3 rounded-b-lg overflow-y-auto" class:flex-1={editFullscreen} class:flex={editFullscreen} class:flex-col={editFullscreen}>
                   <textarea
                 bind:this={textareaRef}
                 class="w-full resize-none bg-transparent text-lg outline-none dark:text-slate-100"
+                class:flex-1={editFullscreen}
                 rows="1"
                 bind:value={editContent}
                 oninput={handleEditInput}

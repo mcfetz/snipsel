@@ -12,15 +12,24 @@
   import ListOrdered from '@animated-color-icons/lucide-svelte/ListOrdered.svelte';
   import Table from '@animated-color-icons/lucide-svelte/Table.svelte';
   import SeparatorHorizontal from '@animated-color-icons/lucide-svelte/SeparatorHorizontal.svelte';
-
+  import Maximize from '@animated-color-icons/lucide-svelte/Maximize.svelte';
+  import Minimize from '@animated-color-icons/lucide-svelte/Minimize.svelte';
+  import Indent from '@animated-color-icons/lucide-svelte/Indent.svelte';
+  import Outdent from '@animated-color-icons/lucide-svelte/Outdent.svelte';
+  import ListPlus from '@animated-color-icons/lucide-svelte/ListPlus.svelte';
 
   interface Props {
     textarea: HTMLTextAreaElement | undefined;
     onFormat: (content: string) => void;
     accentColor: string;
+    isFullscreen?: boolean;
+    onToggleFullscreen?: () => void;
+    onIndent?: () => void;
+    onOutdent?: () => void;
+    onNewSnipsel?: () => void;
   }
 
-  let { textarea, onFormat, accentColor }: Props = $props();
+  let { textarea, onFormat, accentColor, isFullscreen, onToggleFullscreen, onIndent, onOutdent, onNewSnipsel }: Props = $props();
 
   function applyFormat(prefix: string, suffix: string = '') {
     if (!textarea) return;
@@ -118,6 +127,74 @@
       </button>
     {/each}
   {/each}
+
+  <div class="flex-1"></div>
+
+  {#if onOutdent}
+    <button
+      type="button"
+      class="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+      onpointerdown={(e) => e.preventDefault()}
+      onmousedown={(e) => e.preventDefault()}
+      ontouchstart={(e) => e.preventDefault()}
+      onclick={onOutdent}
+      title="Outdent"
+      aria-label="Outdent"
+    >
+      <Outdent size={16} strokeWidth={2.5} />
+    </button>
+  {/if}
+
+  {#if onIndent}
+    <button
+      type="button"
+      class="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+      onpointerdown={(e) => e.preventDefault()}
+      onmousedown={(e) => e.preventDefault()}
+      ontouchstart={(e) => e.preventDefault()}
+      onclick={onIndent}
+      title="Indent"
+      aria-label="Indent"
+    >
+      <Indent size={16} strokeWidth={2.5} />
+    </button>
+  {/if}
+
+  {#if onNewSnipsel}
+    <div class="mx-1 h-4 w-px bg-slate-200 dark:bg-white/10"></div>
+    <button
+      type="button"
+      class="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+      onpointerdown={(e) => e.preventDefault()}
+      onmousedown={(e) => e.preventDefault()}
+      ontouchstart={(e) => e.preventDefault()}
+      onclick={onNewSnipsel}
+      title="Save & New Snipsel"
+      aria-label="Save & New Snipsel"
+    >
+      <ListPlus size={16} strokeWidth={2.5} />
+    </button>
+  {/if}
+
+  {#if onToggleFullscreen}
+    <div class="mx-1 h-4 w-px bg-slate-200 dark:bg-white/10"></div>
+    <button
+      type="button"
+      class="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+      onpointerdown={(e) => e.preventDefault()}
+      onmousedown={(e) => e.preventDefault()}
+      ontouchstart={(e) => e.preventDefault()}
+      onclick={onToggleFullscreen}
+      title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+      aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+    >
+      {#if isFullscreen}
+        <Minimize size={16} strokeWidth={2.5} />
+      {:else}
+        <Maximize size={16} strokeWidth={2.5} />
+      {/if}
+    </button>
+  {/if}
 </div>
 
 <style>
