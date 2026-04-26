@@ -263,7 +263,7 @@
   async function loadAllTags() {
     try {
       const res = await api.tags.list('my');
-      allUserTags = res.tags.map(t => t.tag);
+      allUserTags = res.tags.map(t => t.name);
     } catch (err) {
       console.error("Failed to load tags", err);
     }
@@ -1011,7 +1011,7 @@
                     class="block w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-white/5"
                     onclick={() => selectTag(tag)}
                   >
-                    #{tag}
+                    {tag}
                   </button>
                 {/each}
               </div>
