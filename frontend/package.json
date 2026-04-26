@@ -29,6 +29,7 @@
     "idb": "^8.0.3",
     "leaflet": "^1.9.4",
     "markdown-it": "^14.1.0",
+    "mermaid": "^11.14.0",
     "non.geist": "^2.0.1",
     "workbox-cacheable-response": "^7.4.0",
     "workbox-expiration": "^7.4.0",

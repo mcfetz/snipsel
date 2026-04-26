@@ -36,6 +36,7 @@ import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
 import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
 
   import MarkdownIt from 'markdown-it';
+  import mermaid from 'mermaid';
   import { api, type Attachment, type CollectionItem, type SearchSnipselHit } from '../lib/api';
   import ImageModal from '../lib/ImageModal.svelte';
   import CollectionSelectModal from '../lib/CollectionSelectModal.svelte';
@@ -86,6 +87,21 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
 
   const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
+  const defaultRender = md.renderer.rules.fence || function (tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options);
+  };
+
+  md.renderer.rules.fence = function (tokens, idx, options, env, self) {
+    const token = tokens[idx];
+    const info = token.info ? token.info.trim() : '';
+
+    if (info === 'mermaid') {
+      return `<div class="mermaid-unprocessed" data-mermaid="${md.utils.escapeHtml(token.content)}"></div>\n`;
+    }
+
+    return defaultRender(tokens, idx, options, env, self);
+  };
+
   let textareaRef: HTMLTextAreaElement | undefined = $state();
   let editContainerRef: HTMLDivElement | undefined = $state();
   let focusProxyRef: HTMLInputElement | undefined = $state();
@@ -108,6 +124,36 @@ import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
       setTimeout(() => { selectionPulse = false; }, 400);
     }
     previousSelectionSize = size;
+  });
+
+  $effect(() => {
+    // Process mermaid diagrams when data changes
+    const items = $sortedItems;
+    const searchRes = $searchResults;
+    const view = $currentView;
+    const editing = $editingSnipselId;
+
+    tick().then(async () => {
+      const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'default';
+      mermaid.initialize({ startOnLoad: false, theme: currentTheme });
+
+      const containers = document.querySelectorAll('.mermaid-unprocessed');
+      for (const el of Array.from(containers)) {
+        try {
+          const content = el.getAttribute('data-mermaid');
+          if (content) {
+            el.className = 'mermaid my-4'; // remove unprocessed class to prevent rerun
+            const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+            const { svg } = await mermaid.render(id, content);
+            el.innerHTML = svg;
+          }
+        } catch (err) {
+          console.error("Mermaid error", err);
+          el.className = 'mermaid-error my-4';
+          el.innerHTML = `<pre style="color:#ef4444;font-size:12px;background:rgba(239,68,68,0.1);padding:10px;border-radius:4px;overflow-x:auto;">Mermaid syntax error:\n${err}</pre>`;
+        }
+      }
+    });
   });
 
   // Prevent stale list fetches from overwriting optimistic mutations.
