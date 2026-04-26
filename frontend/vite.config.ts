@@ -26,6 +26,9 @@ export default defineConfig({
         enabled: true,
         type: 'module',
       },
+      injectManifest: {
+        maximumFileSizeToCacheInBytes: 5000000,
+      },
     }),
   ],
   server: {
@@ -53,6 +56,9 @@ export default defineConfig({
         manualChunks(id: string) {
           if (id.includes('markdown-it')) {
             return 'markdown-it';
+          }
+          if (id.includes('mermaid')) {
+            return 'mermaid';
           }
           if (id.includes('node_modules')) {
             return 'vendor';
