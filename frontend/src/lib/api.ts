@@ -698,8 +698,13 @@ export const api = {
       requestJson<{ collections: Array<{ id: string; year: number; title: string; icon: string }> }>(
         `/api/collections/throwback?day=${encodeURIComponent(day)}`
       ),
-    dicedMoment: () => requestJson<{ snipsel: Snipsel | null }>('/api/collections/diced_moment'),
-  },
+  dicedMoment: () => requestJson<{ snipsel: Snipsel | null }>('/api/collections/diced_moment'),
+  duplicate: (id: string, title: string) =>
+    requestJson<{ collection: Collection }>(`/api/collections/${id}/duplicate`, {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    }),
+},
 
   users: {
     list: () => requestJson<{ users: UserLite[] }>('/api/users'),

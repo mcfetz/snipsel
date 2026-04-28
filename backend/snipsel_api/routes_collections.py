@@ -1000,7 +1000,155 @@ def create_collection():
     j["access_level"] = "owner"
     # Notify all clients of the owner that the collection list changed
     sse_bus.publish([user.id], {"type": "collection_list_changed"},
-                   origin_client_id=request.headers.get("X-Client-Id"))
+    origin_client_id=request.headers.get("X-Client-Id"))
+    return json_response({"collection": j}, status=201)
+
+
+@collections_bp.post("/<collection_id>/duplicate")
+@require_auth
+@enforce_json
+def duplicate_collection(collection_id: str):
+    """Duplicate a collection with all its settings and snipsels."""
+    user = current_user()
+    
+    # Get the source collection and verify ownership
+    source = db.session.get(Collection, collection_id)
+    if not source or source.deleted_at is not None:
+        raise api_error(404, "not_found", "Collection not found")
+    if source.owner_user_id != user.id:
+        raise api_error(403, "forbidden", "Only the owner can duplicate a collection")
+    
+    data = request.get_json() or {}
+    new_title = (data.get("title") or "").strip()
+    if not new_title:
+        raise api_error(400, "invalid_input", "title is required")
+    
+    # Create new collection with same settings as source
+    new_collection = Collection(
+        owner_user_id=user.id,
+        title=new_title,
+        icon=source.icon,
+        header_image_url=source.header_image_url,
+        header_color=source.header_color,
+        header_image_position=source.header_image_position,
+        header_image_x_position=source.header_image_x_position,
+        header_image_zoom=source.header_image_zoom,
+        is_template=source.is_template,
+        is_passcode_protected=source.is_passcode_protected,
+        show_completed_tasks=source.show_completed_tasks,
+        mute_notifications=source.mute_notifications,
+        exclude_from_todo_list=source.exclude_from_todo_list,
+        default_snipsel_type=source.default_snipsel_type,
+        created_by_id=user.id,
+        modified_by_id=user.id,
+    )
+    db.session.add(new_collection)
+    db.session.flush()
+    
+    # Get all snipsels from source collection
+    source_items = (
+        db.session.execute(
+            db.select(CollectionSnipsel)
+            .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
+            .where(
+                CollectionSnipsel.collection_id == source.id,
+                Snipsel.deleted_at.is_(None),
+            )
+            .order_by(CollectionSnipsel.position.asc())
+        )
+        .scalars()
+        .all()
+    )
+    
+    # Copy each snipsel with its content and attachments
+    for cs in source_items:
+        src_snipsel = cs.snipsel
+        
+        # Create new snipsel with same content
+        new_snipsel = Snipsel(
+            owner_user_id=user.id,
+            type=src_snipsel.type,
+            card_view=src_snipsel.card_view,
+            content_markdown=src_snipsel.content_markdown,
+            task_done=src_snipsel.task_done,
+            done_at=src_snipsel.done_at,
+            done_by_id=src_snipsel.done_by_id,
+            external_url=src_snipsel.external_url,
+            external_label=src_snipsel.external_label,
+            internal_target_snipsel_id=None,  # Don't copy internal links
+            geo_lat=src_snipsel.geo_lat,
+            geo_lng=src_snipsel.geo_lng,
+            geo_accuracy_m=src_snipsel.geo_accuracy_m,
+            reminder_at=src_snipsel.reminder_at,
+            reminder_rrule=src_snipsel.reminder_rrule,
+            created_by_id=user.id,
+            modified_by_id=user.id,
+        )
+        db.session.add(new_snipsel)
+        db.session.flush()
+        
+        # Copy attachments
+        for att in src_snipsel.attachments:
+            src_path = _resolve_attachment_path(att)
+            if not src_path:
+                continue
+            
+            new_att_id = str(uuid.uuid4())
+            upload_dir = src_path.parent
+            dst_path = upload_dir / f"{new_att_id}_{att.filename}"
+            
+            try:
+                dst_path.write_bytes(src_path.read_bytes())
+            except OSError:
+                continue
+            
+            # Copy thumbnail if exists
+            thumb_path = None
+            src_thumb = _resolve_thumbnail_path(att)
+            if src_thumb:
+                thumb_path = upload_dir / f"{new_att_id}_thumb.jpg"
+                try:
+                    thumb_path.write_bytes(src_thumb.read_bytes())
+                except OSError:
+                    thumb_path = None
+            
+            new_att = Attachment(
+                id=new_att_id,
+                snipsel_id=new_snipsel.id,
+                collection_id=None,
+                filename=att.filename,
+                mime_type=att.mime_type,
+                size_bytes=int(dst_path.stat().st_size),
+                storage_path=str(dst_path),
+                thumbnail_path=str(thumb_path) if thumb_path else None,
+                created_by_id=user.id,
+            )
+            db.session.add(new_att)
+        
+        # Create collection-snipsel link
+        db.session.add(
+            CollectionSnipsel(
+                collection_id=new_collection.id,
+                snipsel_id=new_snipsel.id,
+                position=cs.position,
+                indent=cs.indent,
+            )
+        )
+        
+        # Sync tags and mentions for the new snipsel
+        _sync_tags_mentions(user_id=user.id, snipsel=new_snipsel)
+        _sync_backlinks(user_id=user.id, snipsel=new_snipsel)
+    
+    db.session.commit()
+    
+    j = _collection_json(new_collection)
+    j["is_favorite"] = False
+    j["access_level"] = "owner"
+    
+    # Notify all clients of the owner that the collection list changed
+    sse_bus.publish([user.id], {"type": "collection_list_changed"},
+    origin_client_id=request.headers.get("X-Client-Id"))
+    
     return json_response({"collection": j}, status=201)
 
 

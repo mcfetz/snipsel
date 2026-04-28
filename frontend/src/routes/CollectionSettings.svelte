@@ -12,9 +12,10 @@
   import { api, type Collection, type CollectionShare, type UserLite, type CollectionBacklink } from '../lib/api';
   import { collectionAnchor, collections, currentCollection, currentView, isLoading } from '../lib/stores';
   import { currentUser } from '../lib/session';
-  import DeleteConfirmModal from '../lib/DeleteConfirmModal.svelte';
-  import InfoModal from '../lib/InfoModal.svelte';
-  import ProgressModal from '../lib/ProgressModal.svelte';
+import DeleteConfirmModal from '../lib/DeleteConfirmModal.svelte';
+import InfoModal from '../lib/InfoModal.svelte';
+import ProgressModal from '../lib/ProgressModal.svelte';
+import CollectionDuplicateModal from '../lib/CollectionDuplicateModal.svelte';
 
   interface Props {
     collectionId: string;
@@ -39,10 +40,11 @@
   let showDeleteModal = $state(false);
   let showBulkDeleteModal = $state(false);
   let showBulkResetModal = $state(false);
-  let showUnsplashModal = $state(false);
-  let errorModal = $state<{ title: string; message: string } | null>(null);
-  let uploadProgress = $state<{ filename: string; percent: number } | null>(null);
-  let showSavedFeedback = $state(false);
+let showUnsplashModal = $state(false);
+let showDuplicateModal = $state(false);
+let errorModal = $state<{ title: string; message: string } | null>(null);
+let uploadProgress = $state<{ filename: string; percent: number } | null>(null);
+let showSavedFeedback = $state(false);
 
   let users = $state<UserLite[]>([]);
   let shares = $state<CollectionShare[]>([]);
@@ -344,20 +346,46 @@
     showBulkResetModal = true;
   }
 
-  async function confirmBulkReset() {
-    if (!collection) return;
-    showBulkResetModal = false;
-    saving = true;
-    try {
-      await api.collections.resetCompletedTasks(collection.id);
-    } catch (err: any) {
-      alert('Failed to reset completed tasks: ' + (err.error?.message || 'Unknown error'));
-    } finally {
-      saving = false;
-    }
+async function confirmBulkReset() {
+  if (!collection) return;
+  showBulkResetModal = false;
+  saving = true;
+  try {
+    await api.collections.resetCompletedTasks(collection.id);
+  } catch (err: any) {
+    alert('Failed to reset completed tasks: ' + (err.error?.message || 'Unknown error'));
+  } finally {
+    saving = false;
   }
+}
 
-  function goBack() {
+function duplicateCollection() {
+  if (!collection) return;
+  showDuplicateModal = true;
+}
+
+async function confirmDuplicate(newTitle: string) {
+  if (!collection) return;
+  showDuplicateModal = false;
+  saving = true;
+  try {
+    const res = await api.collections.duplicate(collection.id, newTitle);
+    const newCollection = res.collection;
+    collections.update((list) => [newCollection, ...list]);
+    currentCollection.set(newCollection);
+    currentView.set({ type: 'collection', id: newCollection.id });
+  } catch (err: any) {
+    alert('Failed to duplicate collection: ' + (err.error?.message || 'Unknown error'));
+  } finally {
+    saving = false;
+  }
+}
+
+function cancelDuplicate() {
+  showDuplicateModal = false;
+}
+
+function goBack() {
     currentView.set({ type: 'collection', id: collectionId });
   }
   function openBacklink(bl: CollectionBacklink) {
@@ -823,14 +851,23 @@
           {/if}
         </button>
         
-        <button 
-          class="w-full rounded-xl bg-red-600/90 px-4 py-3 text-base font-semibold text-white shadow-sm transition-all hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600" 
-          type="button" 
-          onclick={deleteCollection}
-        >
-          Delete collection
-        </button>
-      </div>
+<button
+    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+    type="button"
+    onclick={duplicateCollection}
+    disabled={saving}
+  >
+    Duplicate collection
+  </button>
+
+  <button
+    class="w-full rounded-xl bg-red-600/90 px-4 py-3 text-base font-semibold text-white shadow-sm transition-all hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600"
+    type="button"
+    onclick={deleteCollection}
+  >
+    Delete collection
+  </button>
+</div>
     </div>
   {/if}
 </div>
@@ -884,6 +921,14 @@
     accentColor={getAccent()}
     onSelect={(url) => { headerImageUrl = url; save(); }}
     onClose={() => (showUnsplashModal = false)}
+  />
+{/if}
+
+{#if showDuplicateModal && collection}
+  <CollectionDuplicateModal
+    defaultTitle={`Copy of ${collection.title}`}
+    onConfirm={confirmDuplicate}
+    onCancel={cancelDuplicate}
   />
 {/if}
 
