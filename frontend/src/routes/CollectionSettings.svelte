@@ -16,6 +16,7 @@ import DeleteConfirmModal from '../lib/DeleteConfirmModal.svelte';
 import InfoModal from '../lib/InfoModal.svelte';
 import ProgressModal from '../lib/ProgressModal.svelte';
 import CollectionDuplicateModal from '../lib/CollectionDuplicateModal.svelte';
+import CollectionExportModal from '../lib/CollectionExportModal.svelte';
 
   interface Props {
     collectionId: string;
@@ -42,6 +43,7 @@ import CollectionDuplicateModal from '../lib/CollectionDuplicateModal.svelte';
   let showBulkResetModal = $state(false);
 let showUnsplashModal = $state(false);
 let showDuplicateModal = $state(false);
+let showExportModal = $state(false);
 let errorModal = $state<{ title: string; message: string } | null>(null);
 let uploadProgress = $state<{ filename: string; percent: number } | null>(null);
 let showSavedFeedback = $state(false);
@@ -383,6 +385,15 @@ async function confirmDuplicate(newTitle: string) {
 
 function cancelDuplicate() {
   showDuplicateModal = false;
+}
+
+function exportCollection() {
+  if (!collection) return;
+  showExportModal = true;
+}
+
+function closeExportModal() {
+  showExportModal = false;
 }
 
 function goBack() {
@@ -861,6 +872,14 @@ function goBack() {
   </button>
 
   <button
+    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+    type="button"
+    onclick={exportCollection}
+  >
+    Export to Markdown
+  </button>
+
+  <button
     class="w-full rounded-xl bg-red-600/90 px-4 py-3 text-base font-semibold text-white shadow-sm transition-all hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600"
     type="button"
     onclick={deleteCollection}
@@ -929,6 +948,13 @@ function goBack() {
     defaultTitle={`Copy of ${collection.title}`}
     onConfirm={confirmDuplicate}
     onCancel={cancelDuplicate}
+  />
+{/if}
+
+{#if showExportModal && collection}
+  <CollectionExportModal
+    collection={collection}
+    onClose={closeExportModal}
   />
 {/if}
 
