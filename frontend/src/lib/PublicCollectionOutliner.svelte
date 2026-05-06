@@ -490,7 +490,7 @@
             {/if}
 
             <div 
-              class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words {item.snipsel.task_done ? 'line-through opacity-50' : ''}"
+              class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words {item.snipsel.task_done === 2 ? 'line-through' : ''} {item.snipsel.task_done > 0 ? 'opacity-50' : ''}"
             >
               {@html renderMarkdown(stripMediaLinks(item.snipsel.content_markdown))}
             </div>

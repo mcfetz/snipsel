@@ -3333,7 +3333,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             <div
               class="rounded py-3 {item.snipsel.type === 'task' ? 'pl-10 pr-2' : 'px-2'} {selectedIds.has(item.snipsel_id)
                 ? 'bg-slate-100 dark:bg-white/5'
-                : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'} {item.snipsel.task_done > 0 ? 'task-faded' : ''}"
+                : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'} {item.snipsel.task_done > 0 ? 'task-faded' : ''} {item.snipsel.task_done === 2 ? 'task-cancelled' : ''}"
               role="button"
               tabindex="0"
               onclick={(e) => {

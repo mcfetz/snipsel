@@ -221,8 +221,11 @@ body {
 
 .task-faded {
   color: var(--text-faded) !important;
-  text-decoration: line-through;
   transition: color 0.3s ease;
+}
+
+.task-cancelled {
+  text-decoration: line-through;
 }
 
 .task-faded .snip-token {

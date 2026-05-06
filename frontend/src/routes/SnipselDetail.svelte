@@ -640,7 +640,7 @@
         {/if}
 
         <div 
-          class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words {snipsel.type === 'task' && snipsel.task_done > 0 ? 'task-faded' : ''}"
+          class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert break-words {snipsel.type === 'task' && snipsel.task_done > 0 ? 'task-faded' : ''} {snipsel.type === 'task' && snipsel.task_done === 2 ? 'task-cancelled' : ''}"
           onclick={(e) => {
             const tagTarget = (e.target as HTMLElement).closest('[data-tag]');
             if (tagTarget) {
