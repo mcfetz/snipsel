@@ -19,6 +19,7 @@ ai_bp = Blueprint("ai", __name__)
 @ai_bp.post("/generate")
 @require_auth
 def generate():
+    current_app.logger.info(f"AI Generate request received for user: {current_user().id}")
     user = current_user()
     if not user.ai_llm_url or not user.ai_api_key:
         raise api_error(
