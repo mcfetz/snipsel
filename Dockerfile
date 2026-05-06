@@ -58,7 +58,7 @@ cd /app/backend
 flask db upgrade
 echo "Starting backend..."
 cd /app
-exec gunicorn -w 1 --threads 128 -b 0.0.0.0:5000 "snipsel_api.app:create_app()"
+exec gunicorn -w 1 --threads 128 --timeout 120 -b 0.0.0.0:5000 "snipsel_api.app:create_app()"
 EOF
 RUN chmod +x /app/entrypoint.sh
 

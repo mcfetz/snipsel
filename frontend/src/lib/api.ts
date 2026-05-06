@@ -417,6 +417,7 @@ export const api = {
       requestJson<{ text: string }>('/api/ai/generate', {
         method: 'POST',
         body: JSON.stringify(input),
+        timeout: 120000,
       }),
     getModels: () =>
       requestJson<{ models: Array<{ id: string; name: string }> }>('/api/ai/models'),

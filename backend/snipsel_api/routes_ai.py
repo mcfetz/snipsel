@@ -126,7 +126,7 @@ def generate():
             },
             method="POST",
         )
-        with urllib_request.urlopen(req, timeout=30) as response:
+        with urllib_request.urlopen(req, timeout=120) as response:
             res_data = json.loads(response.read().decode("utf-8"))
             # Expecting OpenAI format
             if "choices" in res_data and len(res_data["choices"]) > 0:
