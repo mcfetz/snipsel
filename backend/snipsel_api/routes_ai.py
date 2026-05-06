@@ -118,6 +118,7 @@ def generate():
     }
 
     try:
+        current_app.logger.info(f"Sending request to LLM URL: {user.ai_llm_url}")
         req = urllib_request.Request(
             user.ai_llm_url,
             data=json.dumps(payload).encode("utf-8"),
@@ -128,7 +129,9 @@ def generate():
             method="POST",
         )
         with urllib_request.urlopen(req, timeout=120) as response:
+            current_app.logger.info("LLM responded, reading data...")
             res_data = json.loads(response.read().decode("utf-8"))
+            current_app.logger.info("Data read successfully")
             # Expecting OpenAI format
             if "choices" in res_data and len(res_data["choices"]) > 0:
                 ai_text = res_data["choices"][0]["message"]["content"]
