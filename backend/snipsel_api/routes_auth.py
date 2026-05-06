@@ -627,7 +627,13 @@ def update_me():
     if "ai_model_name" in data:
         user.ai_model_name = (data.get("ai_model_name") or "").strip() or None
     if "ai_api_key" in data:
-        user.ai_api_key = (data.get("ai_api_key") or "").strip() or None
+        new_key = data.get("ai_api_key")
+        if new_key is None:
+            user.ai_api_key = None
+        else:
+            stripped_key = new_key.strip()
+            if stripped_key:
+                user.ai_api_key = stripped_key
 
     if "light_background_color" in data:
         user.light_background_color = (

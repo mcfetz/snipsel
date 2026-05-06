@@ -475,11 +475,17 @@
   async function saveAiSettings() {
     isBusy = true;
     try {
-      const res = await api.updateMe({
+      const updateData: any = {
         ai_llm_url: aiLlmUrl.trim() || null,
         ai_model_name: aiModelName.trim() || null,
-        ai_api_key: aiApiKey.trim() || null,
-      });
+      };
+      
+      const trimmedKey = aiApiKey.trim();
+      if (trimmedKey) {
+        updateData.ai_api_key = trimmedKey;
+      }
+
+      const res = await api.updateMe(updateData);
       currentUser.set(res.user);
       showAiSaved = true;
       setTimeout(() => showAiSaved = false, 2000);
