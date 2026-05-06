@@ -92,6 +92,8 @@
   // Offline Sync
   let syncStatus = $state<'idle' | 'syncing' | 'success' | 'error'>('idle');
   let syncError = $state('');
+  let syncProgress = $state(0);
+  let syncStage = $state('');
   let lastFullSync = $state<number | null>(null);
 
   // Success Feedback states
@@ -546,21 +548,38 @@
 
     syncStatus = 'syncing';
     syncError = '';
+    syncProgress = 10;
+    syncStage = 'Connecting to server...';
     isBusy = true;
 
     try {
+      syncProgress = 30;
+      syncStage = 'Downloading collections and snipsels (this may take a while)...';
       const res = await api.collections.syncAll();
+      
+      syncProgress = 80;
+      syncStage = 'Saving data to local database...';
       await idbSaveBulkSync(res.collections, res.items);
       
       const now = Date.now();
       lastFullSync = now;
       localStorage.setItem('snipsel_last_full_sync', String(now));
       
+      syncProgress = 100;
+      syncStage = 'Sync complete!';
       syncStatus = 'success';
-      setTimeout(() => { if (syncStatus === 'success') syncStatus = 'idle'; }, 5000);
+      setTimeout(() => { 
+        if (syncStatus === 'success') {
+          syncStatus = 'idle';
+          syncProgress = 0;
+          syncStage = '';
+        }
+      }, 5000);
     } catch (e: any) {
       console.error('Full sync failed', e);
       syncStatus = 'error';
+      syncProgress = 0;
+      syncStage = '';
       syncError = e.error?.message || 'Sync failed. Please try again later.';
     } finally {
       isBusy = false;
@@ -1655,6 +1674,22 @@
               {/if}
             </button>
           </div>
+
+          {#if syncStatus === 'syncing'}
+            <div class="mt-4 space-y-2">
+              <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <span>{syncStage}</span>
+                <span>{Math.round(syncProgress)}%</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
+                <div 
+                  class="h-full transition-all duration-500 ease-out"
+                  style={`width: ${syncProgress}%; background-color: ${getAccent()}; box-shadow: 0 0 10px ${getAccent()}40`}
+                ></div>
+              </div>
+            </div>
+          {/if}
+
           {#if syncStatus === 'error'}
             <div class="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{syncError}</div>
           {/if}

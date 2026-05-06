@@ -443,7 +443,7 @@ export const api = {
           if (!navigator.onLine) return;
           const res = await requestJson<{ collections: Collection[] }>(
             `/api/collections${includeArchived ? '?include_archived=1' : ''}`,
-            { timeout: 10000 }
+            { timeout: 60000 }
           );
           if (mutationSeq !== seqBefore) return; // Discard stale response
           await idbSaveCollections(res.collections);
@@ -459,7 +459,7 @@ export const api = {
         if (!navigator.onLine) throw new Error('offline');
         const res = await requestJson<{ collections: Collection[] }>(
           `/api/collections${includeArchived ? '?include_archived=1' : ''}`,
-          { timeout: 10000 }
+          { timeout: 60000 }
         );
         await idbSaveCollections(res.collections);
         return res;
@@ -474,7 +474,7 @@ export const api = {
       const refresh = async () => {
         try {
           if (!navigator.onLine) return;
-          const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`, { timeout: 10000 });
+          const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`, { timeout: 60000 });
           await idbSaveCollection(res.collection);
         } catch {}
       };
@@ -486,7 +486,7 @@ export const api = {
 
       try {
         if (!navigator.onLine) throw new Error('offline');
-        const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`, { timeout: 10000 });
+        const res = await requestJson<{ collection: Collection }>(`/api/collections/${id}`, { timeout: 60000 });
         await idbSaveCollection(res.collection);
         return res;
       } catch (err: any) {
@@ -694,7 +694,7 @@ export const api = {
     emptyTrash: () => requestJson<{ ok: true; deleted: number }>('/api/collections/trash', { method: 'DELETE' }),
     deleteTrashItem: (id: string) => requestJson<{ ok: true; deleted: number }>(`/api/collections/trash/${id}`, { method: 'DELETE' }),
     restore: (id: string) => requestJson<{ collection: Collection }>(`/api/collections/${id}/restore`, { method: 'POST' }),
-    syncAll: () => requestJson<{ collections: Collection[]; items: Record<string, CollectionItem[]> }>('/api/collections/sync/all'),
+    syncAll: () => requestJson<{ collections: Collection[]; items: Record<string, CollectionItem[]> }>('/api/collections/sync/all', { timeout: 300000 }),
     throwback: (day: string) =>
       requestJson<{ collections: Array<{ id: string; year: number; title: string; icon: string }> }>(
         `/api/collections/throwback?day=${encodeURIComponent(day)}`
@@ -725,7 +725,7 @@ export const api = {
 
           const res = await requestJson<{ items: CollectionItem[] }>(
             `/api/collections/${collectionId}/snipsels`,
-            { timeout: 10000, cache: 'no-store' }
+            { timeout: 60000, cache: 'no-store' }
           );
           if (mutationSeq !== seqBefore) return; // Discard stale response
           await idbReplaceCollectionItems(collectionId, res.items);
@@ -747,7 +747,7 @@ export const api = {
         if (!navigator.onLine) throw new Error('offline');
         const res = await requestJson<{ items: CollectionItem[] }>(
           `/api/collections/${collectionId}/snipsels`,
-          { timeout: 10000 }
+          { timeout: 60000 }
         );
         await idbSaveCollectionItems(res.items);
         return res;
