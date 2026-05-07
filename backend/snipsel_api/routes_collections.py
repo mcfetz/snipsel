@@ -203,7 +203,7 @@ def sync_all_data():
     
     # We still fetch the IDs as a list for the result structure (items_out)
     # This was reported as "fast" in the previous call.
-    all_collection_id_list = db.session.execute(db.select(accessible_ids_stmt)).scalars().all()
+    all_collection_id_list = db.session.execute(accessible_ids_stmt).scalars().all()
 
     res = {}
 
