@@ -31,11 +31,11 @@
   import FileText from '@animated-color-icons/lucide-svelte/FileText.svelte';
   import ImageIcon from '@animated-color-icons/lucide-svelte/Image.svelte';
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
-import Share from '@animated-color-icons/lucide-svelte/Share.svelte';
-import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
-import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
-import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
-import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
+  import Share from '@animated-color-icons/lucide-svelte/Share.svelte';
+  import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
+  import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
+  import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
+  import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
 
   import MarkdownIt from 'markdown-it';
   import mermaid from 'mermaid';
@@ -130,43 +130,47 @@ import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
     previousSelectionSize = size;
   });
 
+  // Debounced mermaid processing – avoids re-rendering diagrams on every keystroke
+  let mermaidTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
-    // Process mermaid diagrams when data changes
-    const items = $sortedItems;
-    const searchRes = $searchResults;
-    const view = $currentView;
-    const editing = $editingSnipselId;
+    // Track only the data sources that produce new mermaid blocks
+    const _items = $sortedItems;
+    const _searchRes = $searchResults;
+    const _editing = $editingSnipselId;
 
-    tick().then(async () => {
-      const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'default';
-      mermaid.initialize({ startOnLoad: false, theme: currentTheme });
+    if (mermaidTimer) clearTimeout(mermaidTimer);
+    mermaidTimer = setTimeout(() => {
+      tick().then(async () => {
+        const containers = document.querySelectorAll('.mermaid-unprocessed');
+        if (containers.length === 0) return;
 
-      const containers = document.querySelectorAll('.mermaid-unprocessed');
-      for (const el of Array.from(containers)) {
-        try {
-          let content = el.getAttribute('data-mermaid');
-          if (content) {
-            el.className = 'mermaid my-4'; // remove unprocessed class to prevent rerun
-            
-            // Unescape the HTML entities for Mermaid parser
-            content = content
-              .replace(/&amp;/g, '&')
-              .replace(/&lt;/g, '<')
-              .replace(/&gt;/g, '>')
-              .replace(/&quot;/g, '"')
-              .replace(/&#39;/g, "'");
+        const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'default';
+        mermaid.initialize({ startOnLoad: false, theme: currentTheme });
 
-            const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-            const { svg } = await mermaid.render(id, content);
-            el.innerHTML = svg;
+        for (const el of Array.from(containers)) {
+          try {
+            let content = el.getAttribute('data-mermaid');
+            if (content) {
+              el.className = 'mermaid my-4';
+              content = content
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'");
+
+              const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+              const { svg } = await mermaid.render(id, content);
+              el.innerHTML = svg;
+            }
+          } catch (err) {
+            console.error("Mermaid error", err);
+            el.className = 'mermaid-error my-4';
+            el.innerHTML = `<pre style="color:#ef4444;font-size:12px;background:rgba(239,68,68,0.1);padding:10px;border-radius:4px;overflow-x:auto;">Mermaid syntax error:\n${err}</pre>`;
           }
-        } catch (err) {
-          console.error("Mermaid error", err);
-          el.className = 'mermaid-error my-4';
-          el.innerHTML = `<pre style="color:#ef4444;font-size:12px;background:rgba(239,68,68,0.1);padding:10px;border-radius:4px;overflow-x:auto;">Mermaid syntax error:\n${err}</pre>`;
         }
-      }
-    });
+      });
+    }, 300);
   });
 
   // Prevent stale list fetches from overwriting optimistic mutations.
@@ -647,9 +651,7 @@ import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
       await api.snipsels.update(firstId, { content_markdown: text });
 
       // 2. Delete the others
-      for (const id of otherIds) {
-        await api.snipsels.delete(id);
-      }
+      await Promise.all(otherIds.map(id => api.snipsels.delete(id)));
 
       await loadItems();
       showAiModal = false;
@@ -737,13 +739,27 @@ import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
     const isDark = document.documentElement.classList.contains('dark');
     const baseColor = isDark ? '#1e293b' : TOOLBOX_BASE_COLOR;
     const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
-    const header = hexToRgb(getHeaderColor());
+    const header = hexToRgb(headerColor);
     const mixed = header ? mixRgb(base, header, 0.14) : base;
     return rgba(mixed, 0.8);
   }
 
+  // Cached color values — avoids DOM reads and color math on every renderMarkdown call
+  let headerColor = $derived(getHeaderColor());
+  let toolboxBg = $derived.by(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    const baseColor = isDark ? '#1e293b' : TOOLBOX_BASE_COLOR;
+    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
+    const header = hexToRgb(headerColor);
+    const mixed = header ? mixRgb(base, header, 0.14) : base;
+    return rgba(mixed, 0.8);
+  });
+
+  // Item lookup map — O(1) lookups instead of repeated O(n) .find() calls
+  let itemById = $derived(new Map($sortedItems.map(i => [i.snipsel_id, i])));
+
   function getHeaderGradient(): string {
-    const headerColor = getHeaderColor();
+    const headerColor = headerColor;
     const base = hexToRgb(headerColor);
     if (!base) return headerColor;
     const lighter = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.45);
@@ -827,7 +843,7 @@ import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
     const isSelecting = !next.has(id);
 
     // Get child ids in case we need them
-    const item = $sortedItems.find((i) => i.snipsel_id === id);
+    const item = itemById.get(id);
     const hasCollapsedChildren = item && hasChildren(item, $sortedItems) && !expandedSnipsels.has(id);
     const childIds = hasCollapsedChildren ? getChildIds(id, $sortedItems) : [];
 
@@ -1119,7 +1135,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (!snipselId || !$currentCollection) return;
     saving = true;
     try {
-      const currentItem = $collectionItems.find((i) => i.snipsel_id === snipselId);
+      const currentItem = itemById.get(snipselId);
       const hasAttachments = (currentItem?.snipsel.attachments?.length ?? 0) > 0;
       const isEmpty = editContent.trim().length === 0;
 
@@ -1198,7 +1214,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
   function handleSaveAndNew() {
     const currentId = $editingSnipselId;
-    const currentItem = currentId ? $sortedItems.find((i) => i.snipsel_id === currentId) : null;
+    const currentItem = currentId ? itemById.get(currentId) : null;
     if (!currentItem) return;
     
     saveEdit().then(() => {
@@ -1243,7 +1259,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       const currentId = $editingSnipselId;
-      const currentItem = currentId ? $sortedItems.find((i) => i.snipsel_id === currentId) : null;
+      const currentItem = currentId ? itemById.get(currentId) : null;
       
       saveEdit().then(() => {
         if (currentItem) {
@@ -1266,7 +1282,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     const atEnd = (el.selectionStart ?? 0) === el.value.length && (el.selectionEnd ?? 0) === el.value.length;
     if (atEnd && editContent.endsWith('\n\n\n')) {
       const currentId = $editingSnipselId;
-      const currentItem = currentId ? $sortedItems.find((i) => i.snipsel_id === currentId) : null;
+      const currentItem = currentId ? itemById.get(currentId) : null;
       if (!currentId || !currentItem) return;
 
       creatingFromTripleEmptyLines = true;
@@ -1440,13 +1456,33 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     }, 100);
   }
 
+  // Shared geolocation helper — replaces 3 identical copy-pasted blocks
+  async function getGeoLocation(): Promise<{ geo_lat: number; geo_lng: number; geo_accuracy_m?: number } | null> {
+    try {
+      return await new Promise((resolve) => {
+        if (!('geolocation' in navigator)) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({
+            geo_lat: pos.coords.latitude,
+            geo_lng: pos.coords.longitude,
+            geo_accuracy_m: pos.coords.accuracy,
+          }),
+          () => resolve(null),
+          { enableHighAccuracy: false, maximumAge: 60_000, timeout: 1500 }
+        );
+      });
+    } catch {
+      return null;
+    }
+  }
+
   async function createSnipsel() {
     if (!$currentCollection) return;
     if (!canWrite()) return;
     
     // Get indent from last visible snipsel (not collapsed)
     let indent = 0;
-    const visible = visibleItems($sortedItems);
+    const visible = displayedItems;
     if (visible.length > 0) {
       const lastVisibleItem = visible[visible.length - 1];
       indent = lastVisibleItem.indent ?? 0;
@@ -1454,26 +1490,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     
     isLoading.set(true);
     try {
-      let geo:
-        | { geo_lat: number; geo_lng: number; geo_accuracy_m?: number }
-        | null = null;
-      try {
-        geo = await new Promise((resolve) => {
-          if (!('geolocation' in navigator)) return resolve(null);
-          navigator.geolocation.getCurrentPosition(
-            (pos) =>
-              resolve({
-                geo_lat: pos.coords.latitude,
-                geo_lng: pos.coords.longitude,
-                geo_accuracy_m: pos.coords.accuracy,
-              }),
-            () => resolve(null),
-            { enableHighAccuracy: false, maximumAge: 60_000, timeout: 1500 }
-          );
-        });
-      } catch {
-        geo = null;
-      }
+      const geo = await getGeoLocation();
 
       const res = await api.snipsels.create($currentCollection.id, {
         type: $currentCollection.default_snipsel_type || 'text',
@@ -1494,26 +1511,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (!canWrite()) return;
     isLoading.set(true);
     try {
-      let geo:
-        | { geo_lat: number; geo_lng: number; geo_accuracy_m?: number }
-        | null = null;
-      try {
-        geo = await new Promise((resolve) => {
-          if (!('geolocation' in navigator)) return resolve(null);
-          navigator.geolocation.getCurrentPosition(
-            (pos) =>
-              resolve({
-                geo_lat: pos.coords.latitude,
-                geo_lng: pos.coords.longitude,
-                geo_accuracy_m: pos.coords.accuracy,
-              }),
-            () => resolve(null),
-            { enableHighAccuracy: false, maximumAge: 60_000, timeout: 1500 }
-          );
-        });
-      } catch {
-        geo = null;
-      }
+      const geo = await getGeoLocation();
 
       // Calculate the next position to avoid races in the API layer during rapid creation
       const sorted = $sortedItems;
@@ -1593,26 +1591,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (!$currentCollection) return;
     isLoading.set(true);
     try {
-      let geo:
-        | { geo_lat: number; geo_lng: number; geo_accuracy_m?: number }
-        | null = null;
-      try {
-        geo = await new Promise((resolve) => {
-          if (!('geolocation' in navigator)) return resolve(null);
-          navigator.geolocation.getCurrentPosition(
-            (pos) =>
-              resolve({
-                geo_lat: pos.coords.latitude,
-                geo_lng: pos.coords.longitude,
-                geo_accuracy_m: pos.coords.accuracy,
-              }),
-            () => resolve(null),
-            { enableHighAccuracy: false, maximumAge: 60_000, timeout: 1500 }
-          );
-        });
-      } catch {
-        geo = null;
-      }
+      const geo = await getGeoLocation();
 
       const res = await api.snipsels.create($currentCollection.id, {
         type: type || $currentCollection.default_snipsel_type || 'text',
@@ -1822,7 +1801,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (selectedIds.size === 0) return;
 
     const firstId = Array.from(selectedIds)[0];
-    const firstItem = $collectionItems.find(item => item.snipsel_id === firstId);
+    const firstItem = itemById.get(firstId);
     const currentType = firstItem?.snipsel.type;
     const newType = currentType === 'task' ? 'text' : 'task';
 
@@ -1840,7 +1819,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   function openInfoModal() {
     if (selectedIds.size === 0) return;
     const firstId = Array.from(selectedIds)[0];
-    const firstItem = $collectionItems.find(item => item.snipsel_id === firstId);
+    const firstItem = itemById.get(firstId);
     if (firstItem) {
       infoModalItem = firstItem;
       showInfoModalFlag = true;
@@ -1859,9 +1838,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     isLoading.set(true);
     try {
       const ids = Array.from(selectedIds);
-      for (const id of ids) {
-        await api.snipsels.delete($currentCollection.id, id);
-      }
+      const colId = $currentCollection.id;
+      await Promise.all(ids.map(id => api.snipsels.delete(colId, id)));
       collectionItems.update((items) => items.filter((i) => !selectedIds.has(i.snipsel_id)));
       clearSelection();
     } finally {
@@ -1876,9 +1854,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     isLoading.set(true);
     try {
       const ids = Array.from(selectedIds);
-      for (const id of ids) {
-        await api.snipsels.update(id, { type: nextType });
-      }
+      await Promise.all(ids.map(id => api.snipsels.update(id, { type: nextType })));
       await loadItems();
       closeTypeMenu();
     } finally {
@@ -1891,15 +1867,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (selectedIds.size === 0) return;
 
     const firstId = Array.from(selectedIds)[0];
-    const firstItem = $collectionItems.find(item => item.snipsel_id === firstId);
+    const firstItem = itemById.get(firstId);
     const newValue = firstItem ? !(firstItem.snipsel.card_view ?? true) : true;
 
     isLoading.set(true);
     try {
       const ids = Array.from(selectedIds);
-      for (const id of ids) {
-        await api.snipsels.update(id, { card_view: newValue });
-      }
+      await Promise.all(ids.map(id => api.snipsels.update(id, { card_view: newValue })));
       await loadItems();
       closeTypeMenu();
     } finally {
@@ -1909,12 +1883,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
   function getSelectedCardView(): boolean {
     const firstId = Array.from(selectedIds)[0];
-    const firstItem = $collectionItems.find(item => item.snipsel_id === firstId);
+    const firstItem = itemById.get(firstId);
     return firstItem?.snipsel.card_view ?? true;
   }
 
   function getEditingSnipselCardView(): boolean {
-    const editingItem = $sortedItems.find(item => item.snipsel_id === $editingSnipselId);
+    const editingItem = $editingSnipselId ? itemById.get($editingSnipselId) : undefined;
     return editingItem?.snipsel.card_view ?? true;
   }
 
@@ -2276,8 +2250,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     // the correct "empty line" appearance without creating separate paragraphs.
     const preprocessed = text.trim().replace(/^[ \t]*$/gm, '\u00a0');
     const html = md.render(preprocessed).trim();
-    const tokenBg = getToolboxBg();
-    const tokenFg = getHeaderColor();
+    const tokenBg = toolboxBg;
+    const tokenFg = headerColor;
     return html
       .replace(
         /(^|[^\p{L}\p{N}_])(#[A-Za-z\p{L}][\p{L}\p{N}_-]*|@[A-Za-z\p{L}][\p{L}\p{N}_-]*)/gu,
@@ -2303,8 +2277,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         refMap.set(r.title.toLowerCase(), r.collection_id);
       }
     }
-    const tokenBg = getToolboxBg();
-    const tokenFg = getHeaderColor();
+    const tokenBg = toolboxBg;
+    const tokenFg = headerColor;
     html = html.replace(/\[\[([^\]]+)\]\]/g, (_match, title: string) => {
       // Unescape HTML entities (like &amp;) because markdown-it escapes them
       const unescapedTitle = title
@@ -2362,10 +2336,24 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     return result;
   }
 
+  // Derived visible items — avoids recalculating on every template reference
+  let displayedItems = $derived(visibleItems($sortedItems));
+
   function hiddenDoneCount(items: CollectionItem[]): number {
     if (!hideDoneTasks) return 0;
     return items.filter((i) => isDoneTask(i)).length;
   }
+
+  // Derived hidden done count
+  let hiddenDone = $derived(hiddenDoneCount($sortedItems));
+
+  // Derived task progress — avoids recalculating on every template reference
+  let taskProg = $derived.by(() => {
+    const tasks = $sortedItems.filter((i) => i.snipsel.type === 'task');
+    const total = tasks.length;
+    const done = tasks.filter((i) => i.snipsel.task_done > 0).length;
+    return { total, done, ratio: total > 0 ? done / total : 0 };
+  });
 
   $effect(() => {
     const nextId = $currentCollection?.id ?? null;
@@ -2404,7 +2392,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     if (key === lastAnchorKey) return;
 
     const target = a.snipselId
-      ? $sortedItems.find((i) => i.snipsel_id === a.snipselId)
+      ? itemById.get(a.snipselId)
       : typeof a.pos === 'number'
         ? $sortedItems.find((i) => i.position === a.pos)
         : null;
@@ -2618,10 +2606,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       >
         {#if pullReloading || pullTriggered}
           <!-- Spinning loader -->
-          <Loader2 label="" size={20} className="animate-spin" color={getHeaderColor()} />
+          <Loader2 label="" size={20} className="animate-spin" color={headerColor} />
         {:else}
           <!-- Arrow down -->
-          <ArrowDown label="" size={20} className="transition-transform duration-150" color={getHeaderColor()} style={`transform: rotate(${Math.min(180, pullDeltaY * 180 / PULL_THRESHOLD)}deg)`} />
+          <ArrowDown label="" size={20} className="transition-transform duration-150" color={headerColor} style={`transform: rotate(${Math.min(180, pullDeltaY * 180 / PULL_THRESHOLD)}deg)`} />
         {/if}
       </div>
     </div>
@@ -2637,7 +2625,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     <div class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-slate-900">
       <div
         class="relative h-28 w-full rounded-t-[calc(0.75rem-1px)] overflow-hidden dark:brightness-75"
-        style="background: {$currentCollection?.header_image_url ? getHeaderColor() : getHeaderGradient()}"
+        style="background: {$currentCollection?.header_image_url ? headerColor : getHeaderGradient()}"
       >
         {#if $currentCollection?.header_image_url}
           <div
@@ -2729,7 +2717,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           {/if}
         </div>
 
-        {#if taskProgress().total > 0}
+        {#if taskProg.total > 0}
           <button
             class="absolute left-[5.5rem] right-4 top-0 -translate-y-1/2 rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80"
             type="button"
@@ -2742,7 +2730,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             <div class="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
               <div
                 class="h-full rounded-full transition-all duration-300 ease-out"
-                style={`width: ${Math.round(taskProgress().ratio * 100)}%; background-color: ${getHeaderColor()}`}
+                style={`width: ${Math.round(taskProg.ratio * 100)}%; background-color: ${headerColor}`}
               ></div>
             </div>
           </button>
@@ -2794,7 +2782,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               <button
                 type="button"
                 class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white border border-slate-200 shadow-sm transition-all hover:shadow-md active:scale-95 dark:bg-slate-800 dark:border-white/10 dark:text-slate-300 throwback-chip"
-                style="--accent-color: {getHeaderColor()}"
+                style="--accent-color: {headerColor}"
                 onclick={() => currentView.set({ type: 'collection', id: tb.id })}
               >
                 {tb.year}
@@ -2967,27 +2955,27 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 {#if snip.content_markdown}
                   {#if getDeezerLink(snip.content_markdown)}
                     {@const dz = getDeezerLink(snip.content_markdown)!}
-                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
+                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={headerColor} />
                   {/if}
                   {#if getSpotifyLink(snip.content_markdown)}
                     {@const sp = getSpotifyLink(snip.content_markdown)!}
-                    <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
+                    <SpotifyCard url={sp.url} accentColor={headerColor} />
                   {/if}
                   {#if getYouTubeLink(snip.content_markdown)}
                     {@const yt = getYouTubeLink(snip.content_markdown)!}
-                    <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
+                    <YouTubeCard url={yt.url} accentColor={headerColor} />
                   {/if}
                   {#if getMapLink(snip.content_markdown)}
                     {@const ml = getMapLink(snip.content_markdown)!}
-                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
+                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
                   {/if}
                   {#if getGenericLink(snip.content_markdown)}
                     {@const gl = getGenericLink(snip.content_markdown)!}
-                    <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+                    <HyperlinkCard url={gl.url} accentColor={headerColor} />
                   {/if}
                   {#if getCollectionLink(snip.content_markdown, snip.collection_refs)}
                     {@const cid = getCollectionLink(snip.content_markdown, snip.collection_refs)!}
-                    <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
+                    <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
                   {/if}
                   <div class="flex items-start gap-3">
                     {#if snip.type === 'task'}
@@ -3000,7 +2988,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                           if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
                         }}
                         style={snip.task_done > 0
-                          ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
+                          ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}; font-size: 10px`
                           : ''}
                       >
                         {#if snip.task_done === 1}
@@ -3125,7 +3113,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     </div>
   {:else}
     <div class="flex flex-col">
-      {#each visibleItems($sortedItems) as item (item.snipsel_id)}
+      {#each displayedItems as item (item.snipsel_id)}
         <div
           id={`snipsel-${item.snipsel_id}`}
           class="group relative pr-4 transition-all duration-500 {anchorHighlightId === item.snipsel_id ? 'ring-2 rounded-lg' : ''}"
@@ -3136,7 +3124,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           out:fade={{ duration: 100 }}
           style={
             anchorHighlightId === item.snipsel_id
-              ? `padding-left: calc(1.5rem + ${(item.snipsel_id === $editingSnipselId ? editIndent : item.indent) * 1.25}rem); --tw-ring-color: ${getHeaderColor()}`
+              ? `padding-left: calc(1.5rem + ${(item.snipsel_id === $editingSnipselId ? editIndent : item.indent) * 1.25}rem); --tw-ring-color: ${headerColor}`
               : `padding-left: calc(1.5rem + ${(item.snipsel_id === $editingSnipselId ? editIndent : item.indent) * 1.25}rem)`
           }
         >
@@ -3156,7 +3144,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 <FormattingToolbar 
                   textarea={textareaRef} 
                   onFormat={(content) => { editContent = content; handleEditInput(); }} 
-                  accentColor={getHeaderColor()} 
+                  accentColor={headerColor} 
                   isFullscreen={editFullscreen}
                   onToggleFullscreen={() => { editFullscreen = !editFullscreen; tick().then(autosizeTextarea); textareaRef?.focus(); }}
                   onIndent={() => { editIndent = Math.min(6, editIndent + 1); textareaRef?.focus(); }}
@@ -3183,27 +3171,27 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               {#if getEditingSnipselCardView()}
                 {#if getDeezerLink(editContent)}
                   {@const dz = getDeezerLink(editContent)!}
-                  <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={getHeaderColor()} />
+                  <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={headerColor} />
                 {/if}
                 {#if getSpotifyLink(editContent)}
                   {@const sp = getSpotifyLink(editContent)!}
-                  <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
+                  <SpotifyCard url={sp.url} accentColor={headerColor} />
                 {/if}
                 {#if getYouTubeLink(editContent)}
                   {@const yt = getYouTubeLink(editContent)!}
-                  <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
+                  <YouTubeCard url={yt.url} accentColor={headerColor} />
                 {/if}
                 {#if getMapLink(editContent)}
                   {@const ml = getMapLink(editContent)!}
-                  <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
+                  <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
                 {/if}
                 {#if getGenericLink(editContent)}
                   {@const gl = getGenericLink(editContent)!}
-                  <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+                  <HyperlinkCard url={gl.url} accentColor={headerColor} />
                 {/if}
-                {#if getCollectionLink(editContent, $collectionItems.find(i => i.snipsel_id === $editingSnipselId)?.collection_refs)}
-                  {@const cid = getCollectionLink(editContent, $collectionItems.find(i => i.snipsel_id === $editingSnipselId)?.collection_refs)!}
-                  <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
+                {#if getCollectionLink(editContent, $editingSnipselId ? itemById.get($editingSnipselId)?.collection_refs : undefined)}
+                  {@const cid = getCollectionLink(editContent, $editingSnipselId ? itemById.get($editingSnipselId)?.collection_refs : undefined)!}
+                  <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
                 {/if}
               {/if}
               {#if showAutocomplete && suggestions.length > 0}
@@ -3257,7 +3245,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     toggleTaskDone(item);
                   }}
                   style="left: calc(2.0rem + {item.indent * 1.25}rem); {item.snipsel.task_done > 0
-                    ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
+                    ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}; font-size: 10px`
                     : ''}"
                 >
                   {#if item.snipsel.task_done === 1}
@@ -3286,7 +3274,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 >
                   <div
                     class="w-1.5 h-full transition-all duration-150 ease-out origin-right {selectedIds.has(item.snipsel_id) ? '' : 'scale-x-0 group-hover:scale-x-100'} hover:scale-x-150 active:scale-x-75"
-                    style={selectedIds.has(item.snipsel_id) ? `background-color: ${getHeaderColor()}` : 'background-color: #94a3b8'}
+                    style={selectedIds.has(item.snipsel_id) ? `background-color: ${headerColor}` : 'background-color: #94a3b8'}
                   ></div>
                 </button>
             {:else}
@@ -3309,7 +3297,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               >
                 <div
                   class="w-1.5 h-full transition-all duration-150 ease-out origin-right hover:scale-x-150 active:scale-x-75"
-                  style={selectedIds.has(item.snipsel_id) ? `background-color: ${getHeaderColor()}` : 'background-color: #94a3b8'}
+                  style={selectedIds.has(item.snipsel_id) ? `background-color: ${headerColor}` : 'background-color: #94a3b8'}
                 ></div>
               </button>
             {/if}
@@ -3385,34 +3373,34 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {#if item.snipsel.card_view !== false}
                     {#if getDeezerLink(item.snipsel.content_markdown)}
                       {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
-                      <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
+                      <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={headerColor} />
                     {/if}
                     {#if getSpotifyLink(item.snipsel.content_markdown)}
                       {@const sp = getSpotifyLink(item.snipsel.content_markdown)!}
-                      <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
+                      <SpotifyCard url={sp.url} accentColor={headerColor} />
                     {/if}
                     {#if getYouTubeLink(item.snipsel.content_markdown)}
                       {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
-                      <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
+                      <YouTubeCard url={yt.url} accentColor={headerColor} />
                     {/if}
                     {#if getMapLink(item.snipsel.content_markdown)}
                       {@const ml = getMapLink(item.snipsel.content_markdown)!}
-                      <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
+                      <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
                     {/if}
                     {#if getGenericLink(item.snipsel.content_markdown)}
                       {@const gl = getGenericLink(item.snipsel.content_markdown)!}
-                      <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+                      <HyperlinkCard url={gl.url} accentColor={headerColor} />
                     {/if}
                     {#if getCollectionLink(item.snipsel.content_markdown, item.collection_refs)}
                       {@const cid = getCollectionLink(item.snipsel.content_markdown, item.collection_refs)!}
-                      <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
+                      <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
                     {/if}
                   {/if}
 
                   <div class="flex items-start gap-2">
                     <div
                       class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words"
-                      style="--accent-light: {getToolboxBg()}"
+                      style="--accent-light: {toolboxBg}"
                     >
                       {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown, item.collection_refs) : item.snipsel.content_markdown, item.collection_refs)}
                     </div>
@@ -3477,7 +3465,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                       {#each item.snipsel.tags ?? [] as t (t)}
                         <span 
                           class="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-                          style="background-color: {getToolboxBg()}; color: {getHeaderColor()}; border: 1px solid rgba(0,0,0,0.05)"
+                          style="background-color: {toolboxBg}; color: {headerColor}; border: 1px solid rgba(0,0,0,0.05)"
                         >
                           #{t}
                         </span>
@@ -3485,7 +3473,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                       {#each item.snipsel.mentions ?? [] as m (m)}
                         <span 
                           class="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-                          style="background-color: {getToolboxBg()}; color: {getHeaderColor()}; border: 1px solid rgba(0,0,0,0.05)"
+                          style="background-color: {toolboxBg}; color: {headerColor}; border: 1px solid rgba(0,0,0,0.05)"
                         >
                           @{m}
                         </span>
@@ -3519,7 +3507,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     class="flex items-center gap-1 rounded px-1.5 py-0.5 {expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : ''}"
                     style={expired 
                       ? undefined 
-                      : `background-color: ${getToolboxBg()}; color: ${getHeaderColor()}`}
+                      : `background-color: ${toolboxBg}; color: ${headerColor}`}
                   >
                     <Bell label="" size={10} strokeWidth={2.5} />
                     {new Date(item.snipsel.reminder_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
@@ -3588,7 +3576,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   {#if others.length > 0}
                     <div class="mt-3 space-y-2">
                       {#each others.slice(0, 3) as a}
-                        <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} accentColor={getHeaderColor()} />
+                        <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} accentColor={headerColor} />
                       {/each}
                       {#if others.length > 3}
                         <div class="text-[11px] text-slate-400">+{others.length - 3} more files</div>
@@ -3627,27 +3615,27 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 {#if snip.content_markdown}
                   {#if getDeezerLink(snip.content_markdown)}
                     {@const dz = getDeezerLink(snip.content_markdown)!}
-                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={getHeaderColor()} />
+                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={headerColor} />
                   {/if}
                   {#if getSpotifyLink(snip.content_markdown)}
                     {@const sp = getSpotifyLink(snip.content_markdown)!}
-                    <SpotifyCard url={sp.url} accentColor={getHeaderColor()} />
+                    <SpotifyCard url={sp.url} accentColor={headerColor} />
                   {/if}
                   {#if getYouTubeLink(snip.content_markdown)}
                     {@const yt = getYouTubeLink(snip.content_markdown)!}
-                    <YouTubeCard url={yt.url} accentColor={getHeaderColor()} />
+                    <YouTubeCard url={yt.url} accentColor={headerColor} />
                   {/if}
                   {#if getMapLink(snip.content_markdown)}
                     {@const ml = getMapLink(snip.content_markdown)!}
-                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={getHeaderColor()} />
+                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
                   {/if}
                   {#if getGenericLink(snip.content_markdown)}
                     {@const gl = getGenericLink(snip.content_markdown)!}
-                    <HyperlinkCard url={gl.url} accentColor={getHeaderColor()} />
+                    <HyperlinkCard url={gl.url} accentColor={headerColor} />
                   {/if}
                   {#if getCollectionLink(snip.content_markdown, snip.collection_refs)}
                     {@const cid = getCollectionLink(snip.content_markdown, snip.collection_refs)!}
-                    <CollectionLinkCard collectionId={cid} accentColor={getHeaderColor()} />
+                    <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
                   {/if}
                   <div class="flex items-start gap-3">
                     {#if snip.type === 'task'}
@@ -3660,7 +3648,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                           if (snip.can_toggle_task_done) toggleIncomingMentionTaskDone(snip);
                         }}
                         style={snip.task_done > 0
-                          ? `border-color: ${getHeaderColor()}; background-color: ${getToolboxBg()}; color: ${getHeaderColor()}; font-size: 10px`
+                          ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}; font-size: 10px`
                           : ''}
                       >
                         {#if snip.task_done === 1}
@@ -3802,9 +3790,9 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         add new snipsel
       </button>
 
-      {#if hideDoneTasks && hiddenDoneCount($sortedItems) > 0}
+      {#if hideDoneTasks && hiddenDone > 0}
         <div class="mt-3 text-center text-sm text-slate-500 transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId}>
-          {hiddenDoneCount($sortedItems)} completed tasks hidden
+          {hiddenDone} completed tasks hidden
         </div>
       {/if}
     </div>
@@ -3820,10 +3808,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   <div class="fixed bottom-0 left-0 right-0 z-20 px-4 pb-4" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
     <div
       class="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-3 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur-xl dark:text-slate-100 dark:ring-white/10"
-      style={`background-color: ${getToolboxBg()}`}
+      style={`background-color: ${toolboxBg}`}
     >
       <div class="flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-black/10 dark:bg-white/10">
-        <span class="text-sm font-bold transition-transform duration-150 {selectionPulse ? 'scale-125' : ''}" style="color: {getHeaderColor()}">{selectedIds.size}</span>
+        <span class="text-sm font-bold transition-transform duration-150 {selectionPulse ? 'scale-125' : ''}" style="color: {headerColor}">{selectedIds.size}</span>
       </div>
 
        <input
@@ -3922,7 +3910,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                  <button
                    type="button"
                    class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {getSelectedCardView() ? '' : 'bg-slate-200 dark:bg-slate-700'}"
-                   style={getSelectedCardView() ? `background-color: ${getHeaderColor()}` : ''}
+                   style={getSelectedCardView() ? `background-color: ${headerColor}` : ''}
                    onclick={toggleCardViewSelected}
                    role="switch"
                    aria-checked={getSelectedCardView()}
