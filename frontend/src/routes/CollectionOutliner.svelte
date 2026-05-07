@@ -739,7 +739,7 @@
     const isDark = document.documentElement.classList.contains('dark');
     const baseColor = isDark ? '#1e293b' : TOOLBOX_BASE_COLOR;
     const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
-    const header = hexToRgb(headerColor);
+    const header = hexToRgb(getHeaderColor());
     const mixed = header ? mixRgb(base, header, 0.14) : base;
     return rgba(mixed, 0.8);
   }
@@ -759,12 +759,12 @@
   let itemById = $derived(new Map($sortedItems.map(i => [i.snipsel_id, i])));
 
   function getHeaderGradient(): string {
-    const headerColor = headerColor;
-    const base = hexToRgb(headerColor);
-    if (!base) return headerColor;
+    const hc = getHeaderColor();
+    const base = hexToRgb(hc);
+    if (!base) return hc;
     const lighter = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.45);
     const mid = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.2);
-    return `linear-gradient(135deg, ${headerColor} 0%, ${rgba(mid, 1)} 50%, ${rgba(lighter, 1)} 100%)`;
+    return `linear-gradient(135deg, ${hc} 0%, ${rgba(mid, 1)} 50%, ${rgba(lighter, 1)} 100%)`;
   }
 
   function openImageModal(images: Array<{ id: string; filename: string }>, index: number) {
