@@ -185,18 +185,16 @@ def sync_all_data():
     from snipsel_api.models import Attachment, SnipselReaction
 
     user = current_user()
-    t_start = time.monotonic()
+    t0_total = time.monotonic()
 
     include_collections = request.args.get("include_collections", "1") == "1"
     include_items = request.args.get("include_items", "1") == "1"
     offset = int(request.args.get("offset", 0))
     limit = int(request.args.get("limit", 0)) or 500
 
-    logger.info("SYNC START offset=%d limit=%d inc_col=%s inc_items=%s",
-                offset, limit, include_collections, include_items)
+
 
     # ── Step 1: materialise accessible collection IDs ────────────────
-    t0 = time.monotonic()
     owned_ids = set(
         db.session.execute(
             db.select(Collection.id).where(
@@ -214,8 +212,7 @@ def sync_all_data():
     )
     all_ids_set = owned_ids | shared_ids
     all_ids = list(all_ids_set)
-    logger.info("SYNC step1_ids: %d owned + %d shared = %d (%.3fs)",
-                len(owned_ids), len(shared_ids), len(all_ids), time.monotonic() - t0)
+
 
     res = {}
 
@@ -344,7 +341,6 @@ def sync_all_data():
 
         # Total count – only on first batch (offset==0) since it's expensive
         if offset == 0:
-            t0 = time.monotonic()
             total_items = db.session.execute(
                 db.select(db.func.count())
                 .select_from(CollectionSnipsel)
@@ -366,11 +362,10 @@ def sync_all_data():
                     Snipsel.deleted_at.is_(None),
                 )
             ).scalar()
-            logger.info("SYNC items_count: %d (%.3fs)", total_items, time.monotonic() - t0)
+
             res["total_items"] = total_items
 
         # 1) Fetch lightweight CollectionSnipsel rows via JOIN (no IN clause)
-        t0 = time.monotonic()
         cs_rows = db.session.execute(
             db.select(
                 CollectionSnipsel.collection_id,
@@ -399,24 +394,21 @@ def sync_all_data():
             .limit(limit)
             .offset(offset)
         ).all()
-        logger.info("SYNC items_cs_rows: %d rows offset=%d (%.3fs)",
-                    len(cs_rows), offset, time.monotonic() - t0)
+
 
         snipsel_ids = list({r.snipsel_id for r in cs_rows})
-        logger.info("SYNC unique_snipsel_ids: %d", len(snipsel_ids))
+
 
         # 2) Batch-fetch Snipsel objects
-        t0 = time.monotonic()
         snipsels_map = {}
         if snipsel_ids:
             snipsels = db.session.execute(
                 db.select(Snipsel).where(Snipsel.id.in_(snipsel_ids))
             ).scalars().all()
             snipsels_map = {s.id: s for s in snipsels}
-        logger.info("SYNC items_snipsels: %d (%.3fs)", len(snipsels_map), time.monotonic() - t0)
+
 
         # 3) Batch-fetch usernames
-        t0 = time.monotonic()
         user_ids_needed = set()
         for s in snipsels_map.values():
             user_ids_needed.add(s.created_by_id)
@@ -434,10 +426,9 @@ def sync_all_data():
                     )
                 ).all()
             )
-        logger.info("SYNC items_usernames: %d (%.3fs)", len(usernames), time.monotonic() - t0)
+
 
         # 4) Batch-fetch reactions
-        t0 = time.monotonic()
         reactions_by_sid = {sid: [] for sid in snipsel_ids}
         if snipsel_ids:
             for r in db.session.execute(
@@ -446,10 +437,9 @@ def sync_all_data():
                 )
             ).scalars().all():
                 reactions_by_sid[r.snipsel_id].append(r)
-        logger.info("SYNC items_reactions (%.3fs)", time.monotonic() - t0)
+
 
         # 5) Batch-fetch attachments
-        t0 = time.monotonic()
         attachments_by_sid = {sid: [] for sid in snipsel_ids}
         if snipsel_ids:
             for a in db.session.execute(
@@ -458,7 +448,7 @@ def sync_all_data():
                 )
             ).scalars().all():
                 attachments_by_sid[a.snipsel_id].append(a)
-        logger.info("SYNC items_attachments (%.3fs)", time.monotonic() - t0)
+
 
         # Helper: reaction summary
         def _reaction_summary(snipsel_id: str) -> list:
@@ -473,7 +463,6 @@ def sync_all_data():
             return sorted(summary.values(), key=lambda x: x["count"], reverse=True)
 
         # 6) Build response – no ORM relationship access at all
-        t0 = time.monotonic()
         items_out: dict = {}
         for row in cs_rows:
             s = snipsels_map.get(row.snipsel_id)
@@ -525,9 +514,9 @@ def sync_all_data():
             }
             items_out.setdefault(row.collection_id, []).append(item)
         res["items"] = items_out
-        logger.info("SYNC items_serialize: %d items (%.3fs)", len(cs_rows), time.monotonic() - t0)
-
-    logger.info("SYNC DONE total=%.3fs", time.monotonic() - t_start)
+    logger.info("SYNC offset=%d limit=%d items=%d total=%.3fs",
+                offset, limit, len(cs_rows) if include_items else 0,
+                time.monotonic() - t0_total)
     return json_response(res)
 
 
