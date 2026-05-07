@@ -318,20 +318,58 @@ def sync_all_data():
 
     # ── Items (snipsels in collections) ──────────────────────────────
     if include_items:
-        t0 = time.monotonic()
-        total_items = db.session.execute(
-            db.select(db.func.count())
-            .select_from(CollectionSnipsel)
-            .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
-            .where(
-                CollectionSnipsel.collection_id.in_(all_ids),
-                Snipsel.deleted_at.is_(None),
+        # Helper: accessible-collection filter via JOINs (avoids huge IN clause)
+        def _accessible_items_base():
+            """Base query selecting CollectionSnipsel rows the user can access."""
+            return (
+                db.select(CollectionSnipsel)
+                .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
+                .join(Collection, Collection.id == CollectionSnipsel.collection_id)
+                .outerjoin(
+                    CollectionShare,
+                    db.and_(
+                        CollectionShare.collection_id == Collection.id,
+                        CollectionShare.shared_with_user_id == user.id,
+                    ),
+                )
+                .where(
+                    db.or_(
+                        Collection.owner_user_id == user.id,
+                        CollectionShare.id.is_not(None),
+                    ),
+                    Collection.deleted_at.is_(None),
+                    Snipsel.deleted_at.is_(None),
+                )
             )
-        ).scalar()
-        logger.info("SYNC items_count: %d (%.3fs)", total_items, time.monotonic() - t0)
-        res["total_items"] = total_items
 
-        # 1) Fetch lightweight CollectionSnipsel rows (no ORM joins)
+        # Total count – only on first batch (offset==0) since it's expensive
+        if offset == 0:
+            t0 = time.monotonic()
+            total_items = db.session.execute(
+                db.select(db.func.count())
+                .select_from(CollectionSnipsel)
+                .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
+                .join(Collection, Collection.id == CollectionSnipsel.collection_id)
+                .outerjoin(
+                    CollectionShare,
+                    db.and_(
+                        CollectionShare.collection_id == Collection.id,
+                        CollectionShare.shared_with_user_id == user.id,
+                    ),
+                )
+                .where(
+                    db.or_(
+                        Collection.owner_user_id == user.id,
+                        CollectionShare.id.is_not(None),
+                    ),
+                    Collection.deleted_at.is_(None),
+                    Snipsel.deleted_at.is_(None),
+                )
+            ).scalar()
+            logger.info("SYNC items_count: %d (%.3fs)", total_items, time.monotonic() - t0)
+            res["total_items"] = total_items
+
+        # 1) Fetch lightweight CollectionSnipsel rows via JOIN (no IN clause)
         t0 = time.monotonic()
         cs_rows = db.session.execute(
             db.select(
@@ -341,8 +379,20 @@ def sync_all_data():
                 CollectionSnipsel.indent,
             )
             .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
+            .join(Collection, Collection.id == CollectionSnipsel.collection_id)
+            .outerjoin(
+                CollectionShare,
+                db.and_(
+                    CollectionShare.collection_id == Collection.id,
+                    CollectionShare.shared_with_user_id == user.id,
+                ),
+            )
             .where(
-                CollectionSnipsel.collection_id.in_(all_ids),
+                db.or_(
+                    Collection.owner_user_id == user.id,
+                    CollectionShare.id.is_not(None),
+                ),
+                Collection.deleted_at.is_(None),
                 Snipsel.deleted_at.is_(None),
             )
             .order_by(CollectionSnipsel.collection_id, CollectionSnipsel.position)
