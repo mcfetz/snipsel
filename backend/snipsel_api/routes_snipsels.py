@@ -1161,46 +1161,47 @@ def _is_snipsel_muted(snipsel_id: str) -> bool:
     return not_muted_count == 0
 
 
-def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
-    from sqlalchemy.orm import joinedload
-    refs = (
-        db.session.execute(
-            db.select(SnipselCollectionRef)
-            .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
-            .options(joinedload(SnipselCollectionRef.collection))
-            .where(
-                SnipselCollectionRef.snipsel_id == s.id,
-                Collection.deleted_at.is_(None),
+def _snipsel_json(s: Snipsel, user_id: str | None = None, collection_refs: list[dict] | None = None) -> dict:
+    if collection_refs is None:
+        from sqlalchemy.orm import joinedload
+        refs = (
+            db.session.execute(
+                db.select(SnipselCollectionRef)
+                .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
+                .options(joinedload(SnipselCollectionRef.collection))
+                .where(
+                    SnipselCollectionRef.snipsel_id == s.id,
+                    Collection.deleted_at.is_(None),
+                )
             )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
-    # Also include direct collection memberships
-    memberships = (
-        db.session.execute(
-            db.select(CollectionSnipsel)
-            .join(Collection, Collection.id == CollectionSnipsel.collection_id)
-            .options(joinedload(CollectionSnipsel.collection))
-            .where(
-                CollectionSnipsel.snipsel_id == s.id,
-                Collection.deleted_at.is_(None),
+        # Also include direct collection memberships
+        memberships = (
+            db.session.execute(
+                db.select(CollectionSnipsel)
+                .join(Collection, Collection.id == CollectionSnipsel.collection_id)
+                .options(joinedload(CollectionSnipsel.collection))
+                .where(
+                    CollectionSnipsel.snipsel_id == s.id,
+                    Collection.deleted_at.is_(None),
+                )
             )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
 
-    final_refs = []
-    seen_ids = set()
-    for r in refs:
-        if r.collection_id not in seen_ids:
-            final_refs.append({"title": r.collection.title, "collection_id": r.collection_id})
-            seen_ids.add(r.collection_id)
-    for m in memberships:
-        if m.collection_id not in seen_ids:
-            final_refs.append({"title": m.collection.title, "collection_id": m.collection_id})
-            seen_ids.add(m.collection_id)
+        collection_refs = []
+        seen_ids = set()
+        for r in refs:
+            if r.collection_id not in seen_ids:
+                collection_refs.append({"title": r.collection.title, "collection_id": r.collection_id})
+                seen_ids.add(r.collection_id)
+        for m in memberships:
+            if m.collection_id not in seen_ids:
+                collection_refs.append({"title": m.collection.title, "collection_id": m.collection_id})
+                seen_ids.add(m.collection_id)
 
     return {
         "id": s.id,
@@ -1237,7 +1238,7 @@ def _snipsel_json(s: Snipsel, user_id: str | None = None) -> dict:
             }
             for a in s.attachments
         ],
-        "collection_refs": final_refs,
+        "collection_refs": collection_refs,
     }
 
 
@@ -1247,6 +1248,7 @@ def _collection_item_json(
     refs: list[SnipselCollectionRef] | None = None,
 ) -> dict:
     if refs is None:
+        from sqlalchemy.orm import joinedload
         refs = (
             db.session.execute(
                 db.select(SnipselCollectionRef)
@@ -1260,16 +1262,19 @@ def _collection_item_json(
             .scalars()
             .all()
         )
+    
+    formatted_refs = [
+        {"title": r.collection.title, "collection_id": r.collection_id}
+        for r in refs
+    ]
+    
     return {
         "collection_id": cs.collection_id,
         "snipsel_id": cs.snipsel_id,
         "position": cs.position,
         "indent": cs.indent,
-        "snipsel": _snipsel_json(cs.snipsel, user_id),
-        "collection_refs": [
-            {"title": r.collection.title, "collection_id": r.collection_id}
-            for r in refs
-        ],
+        "snipsel": _snipsel_json(cs.snipsel, user_id, formatted_refs),
+        "collection_refs": formatted_refs,
     }
 
 
