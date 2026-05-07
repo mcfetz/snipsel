@@ -572,20 +572,27 @@
       await idbSaveCollections(colRes.collections);
       
       // Stage 2: Items in batches
-      const totalItems = colRes.total_items || 0;
+      let totalItems = 0;
       let fetchedItems = 0;
       
       await idbClearAllCollectionItems();
       
       while (true) {
-        syncStage = `Downloading snipsels (${fetchedItems.toLocaleString()} / ${totalItems.toLocaleString()})...`;
-        syncProgress = 15 + Math.floor((fetchedItems / Math.max(1, totalItems)) * 80);
+        syncStage = totalItems > 0 
+          ? `Downloading snipsels (${fetchedItems.toLocaleString()} / ${totalItems.toLocaleString()})...`
+          : 'Downloading snipsels...';
+        syncProgress = 15 + Math.floor((fetchedItems / Math.max(1, totalItems || 1)) * 80);
         
         const itemRes = await api.collections.syncAll({ 
           include_collections: false, 
           offset: fetchedItems, 
           limit: batchSize 
         });
+        
+        // Get total from first response
+        if (itemRes.total_items && totalItems === 0) {
+          totalItems = itemRes.total_items;
+        }
         
         const batchItemCount = Object.values(itemRes.items).reduce((acc, items) => acc + items.length, 0);
         if (batchItemCount === 0) break;
