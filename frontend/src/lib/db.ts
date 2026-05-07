@@ -235,3 +235,26 @@ export async function idbSaveBulkSync(collections: Collection[], collectionItems
         window.dispatchEvent(new CustomEvent('snipsel-bulk-sync-completed'));
     }
 }
+
+export async function idbClearAllCollections() {
+    const db = await getDB();
+    await db.clear('collections');
+}
+
+export async function idbClearAllCollectionItems() {
+    const db = await getDB();
+    await db.clear('collectionItems');
+}
+
+export async function idbAddCollectionItemsBulk(collectionItemsMap: Record<string, CollectionItem[]>) {
+    const db = await getDB();
+    const tx = db.transaction('collectionItems', 'readwrite');
+    for (const items of Object.values(collectionItemsMap)) {
+        for (const item of items) {
+            await tx.store.put(item);
+        }
+    }
+    await tx.done;
+}
+
+

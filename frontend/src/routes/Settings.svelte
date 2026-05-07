@@ -16,7 +16,7 @@
   import { api, type Collection, type UserStats, type ApiKey } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { collectionAnchor, currentView } from '../lib/stores';
-  import { idbSaveBulkSync } from '../lib/db';
+  import { idbSaveBulkSync, idbClearAllCollections, idbClearAllCollectionItems, idbAddCollectionItemsBulk, idbSaveCollections } from '../lib/db';
   import {
     checkPushSubscription,
     subscribeToPushNotifications,
@@ -554,18 +554,47 @@
 
     syncStatus = 'syncing';
     syncError = '';
-    syncProgress = 10;
+    syncProgress = 5;
     syncStage = 'Connecting to server...';
     isBusy = true;
 
     try {
-      syncProgress = 30;
-      syncStage = 'Downloading collections and snipsels (this may take a while)...';
-      const res = await api.collections.syncAll();
+      const batchSize = 2500;
       
-      syncProgress = 80;
-      syncStage = 'Saving data to local database...';
-      await idbSaveBulkSync(res.collections, res.items);
+      // Stage 1: Collections
+      syncProgress = 10;
+      syncStage = 'Downloading collections...';
+      const colRes = await api.collections.syncAll({ include_items: false });
+      
+      syncProgress = 15;
+      syncStage = 'Saving collections...';
+      await idbClearAllCollections();
+      await idbSaveCollections(colRes.collections);
+      
+      // Stage 2: Items in batches
+      const totalItems = colRes.total_items || 0;
+      let fetchedItems = 0;
+      
+      await idbClearAllCollectionItems();
+      
+      while (true) {
+        syncStage = `Downloading snipsels (${fetchedItems.toLocaleString()} / ${totalItems.toLocaleString()})...`;
+        syncProgress = 15 + Math.floor((fetchedItems / Math.max(1, totalItems)) * 80);
+        
+        const itemRes = await api.collections.syncAll({ 
+          include_collections: false, 
+          offset: fetchedItems, 
+          limit: batchSize 
+        });
+        
+        const batchItemCount = Object.values(itemRes.items).reduce((acc, items) => acc + items.length, 0);
+        if (batchItemCount === 0) break;
+        
+        await idbAddCollectionItemsBulk(itemRes.items);
+        fetchedItems += batchItemCount;
+        
+        if (batchItemCount < batchSize) break;
+      }
       
       const now = Date.now();
       lastFullSync = now;
@@ -591,6 +620,7 @@
       isBusy = false;
     }
   }
+
 
   $effect(() => {
     if (!$currentUser || initialized) return;

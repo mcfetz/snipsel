@@ -182,7 +182,12 @@ def list_collections():
 def sync_all_data():
     user = current_user()
     
-    # Get all collections (including archived for full offline sync)
+    include_collections = request.args.get("include_collections", "1") == "1"
+    include_items = request.args.get("include_items", "1") == "1"
+    offset = int(request.args.get("offset", 0))
+    limit = int(request.args.get("limit", 0))
+
+    # Get all collection IDs user has access to
     owned_ids = db.select(Collection.id).where(
         Collection.owner_user_id == user.id, Collection.deleted_at.is_(None)
     )
@@ -195,129 +200,149 @@ def sync_all_data():
         )
     )
     ids_subq = owned_ids.union(shared_ids).subquery()
-    ids_select = db.select(ids_subq.c.id)
+    all_collection_id_list = db.session.execute(db.select(ids_subq.c.id)).scalars().all()
 
-    q = db.select(Collection).where(
-        Collection.id.in_(ids_select), Collection.deleted_at.is_(None)
-    )
-    collections = db.session.execute(q).scalars().all()
+    res = {}
 
-    # Favorites
-    fav_ids = set(
-        db.session.execute(
-            db.select(CollectionFavorite.collection_id).where(
-                CollectionFavorite.user_id == user.id
-            )
+    if include_collections:
+        q = db.select(Collection).where(
+            Collection.id.in_(all_collection_id_list) if all_collection_id_list else db.false(),
+            Collection.deleted_at.is_(None)
         )
-        .scalars()
-        .all()
-    )
+        collections = db.session.execute(q).scalars().all()
 
-    # Sharing info
-    shared_collection_ids = [c.id for c in collections if c.owner_user_id != user.id]
-    perms = {
-        cid: perm
-        for cid, perm in (
+        # Favorites
+        fav_ids = set(
             db.session.execute(
-                db.select(
-                    CollectionShare.collection_id, CollectionShare.permission
-                ).where(
-                    CollectionShare.shared_with_user_id == user.id,
-                    CollectionShare.collection_id.in_(shared_collection_ids)
-                    if shared_collection_ids
-                    else db.false(),
+                db.select(CollectionFavorite.collection_id).where(
+                    CollectionFavorite.user_id == user.id
                 )
-            ).all()
+            )
+            .scalars()
+            .all()
         )
-    }
-    owner_ids = list({c.owner_user_id for c in collections if c.owner_user_id != user.id})
-    owner_names = {
-        uid: uname
-        for uid, uname in (
+
+        # Sharing info
+        shared_collection_ids = [c.id for c in collections if c.owner_user_id != user.id]
+        perms = {
+            cid: perm
+            for cid, perm in (
+                db.session.execute(
+                    db.select(
+                        CollectionShare.collection_id, CollectionShare.permission
+                    ).where(
+                        CollectionShare.shared_with_user_id == user.id,
+                        CollectionShare.collection_id.in_(shared_collection_ids)
+                        if shared_collection_ids
+                        else db.false(),
+                    )
+                ).all()
+            )
+        }
+        owner_ids = list({c.owner_user_id for c in collections if c.owner_user_id != user.id})
+        owner_names = {
+            uid: uname
+            for uid, uname in (
+                db.session.execute(
+                    db.select(User.id, User.username).where(User.id.in_(owner_ids))
+                ).all()
+                if owner_ids
+                else []
+            )
+        }
+
+        owned_item_ids = [c.id for c in collections if c.owner_user_id == user.id]
+        shared_out_ids = set(
             db.session.execute(
-                db.select(User.id, User.username).where(User.id.in_(owner_ids))
-            ).all()
-            if owner_ids
-            else []
-        )
-    }
-
-    owned_item_ids = [c.id for c in collections if c.owner_user_id == user.id]
-    shared_out_ids = set(
-        db.session.execute(
-            db.select(db.distinct(CollectionShare.collection_id)).where(
-                CollectionShare.collection_id.in_(owned_item_ids)
-                if owned_item_ids
-                else db.false()
+                db.select(db.distinct(CollectionShare.collection_id)).where(
+                    CollectionShare.collection_id.in_(owned_item_ids)
+                    if owned_item_ids
+                    else db.false()
+                )
             )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
 
-    cols_out = []
-    for c in collections:
-        j = _collection_json(c)
-        j["is_favorite"] = c.id in fav_ids
-        if c.owner_user_id == user.id:
-            j["access_level"] = "owner"
-            j["shared_out"] = c.id in shared_out_ids
-        else:
-            perm = perms.get(c.id)
-            j["access_level"] = "write" if perm == "write" else "read"
-            j["shared_by_username"] = owner_names.get(c.owner_user_id)
-            j["shared_out"] = False
-        cols_out.append(j)
+        cols_out = []
+        for c in collections:
+            j = _collection_json(c)
+            j["is_favorite"] = c.id in fav_ids
+            if c.owner_user_id == user.id:
+                j["access_level"] = "owner"
+                j["shared_out"] = c.id in shared_out_ids
+            else:
+                perm = perms.get(c.id)
+                j["access_level"] = "write" if perm == "write" else "read"
+                j["shared_by_username"] = owner_names.get(c.owner_user_id)
+                j["shared_out"] = False
+            cols_out.append(j)
+        res["collections"] = cols_out
 
-    # Get all items for all collections
-    all_collection_id_list = [c.id for c in collections]
-    items_stmt = (
-        db.select(CollectionSnipsel)
-        .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
-        .options(
-            joinedload(CollectionSnipsel.snipsel).joinedload(Snipsel.created_by),
-            joinedload(CollectionSnipsel.snipsel).joinedload(Snipsel.modified_by),
-            joinedload(CollectionSnipsel.snipsel).joinedload(Snipsel.done_by),
-            joinedload(CollectionSnipsel.snipsel).selectinload(Snipsel.reactions),
-            joinedload(CollectionSnipsel.snipsel).selectinload(Snipsel.attachments),
-        )
-        .where(
-            CollectionSnipsel.collection_id.in_(all_collection_id_list) if all_collection_id_list else db.false(),
-            Snipsel.deleted_at.is_(None),
-        )
-        .order_by(CollectionSnipsel.position.asc())
-    )
-    all_items = db.session.execute(items_stmt).scalars().unique().all()
-    
-    # Pre-fetch collection refs for efficiency
-    snipsel_ids = list({cs.snipsel_id for cs in all_items})
-    refs_by_snipsel_id = {sid: [] for sid in snipsel_ids}
-    if snipsel_ids:
-        all_refs_stmt = (
-            db.select(SnipselCollectionRef)
-            .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
-            .options(joinedload(SnipselCollectionRef.collection))
+    if include_items:
+        # Count total items for progress
+        count_stmt = (
+            db.select(db.func.count(CollectionSnipsel.snipsel_id))
+            .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
             .where(
-                SnipselCollectionRef.snipsel_id.in_(snipsel_ids),
-                Collection.deleted_at.is_(None),
+                CollectionSnipsel.collection_id.in_(all_collection_id_list) if all_collection_id_list else db.false(),
+                Snipsel.deleted_at.is_(None),
             )
         )
-        all_refs = db.session.execute(all_refs_stmt).scalars().all()
-        for r in all_refs:
-            refs_by_snipsel_id[r.snipsel_id].append(r)
+        total_items = db.session.execute(count_stmt).scalar()
+        res["total_items"] = total_items
 
-    items_out = {}
-    for cs in all_items:
-        if cs.collection_id not in items_out:
-            items_out[cs.collection_id] = []
-        items_out[cs.collection_id].append(
-            _collection_item_json(cs, user.id, refs_by_snipsel_id[cs.snipsel_id])
+        # Get items for collections
+        items_stmt = (
+            db.select(CollectionSnipsel)
+            .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
+            .options(
+                joinedload(CollectionSnipsel.snipsel).joinedload(Snipsel.created_by),
+                joinedload(CollectionSnipsel.snipsel).joinedload(Snipsel.modified_by),
+                joinedload(CollectionSnipsel.snipsel).joinedload(Snipsel.done_by),
+                joinedload(CollectionSnipsel.snipsel).selectinload(Snipsel.reactions),
+                joinedload(CollectionSnipsel.snipsel).selectinload(Snipsel.attachments),
+            )
+            .where(
+                CollectionSnipsel.collection_id.in_(all_collection_id_list) if all_collection_id_list else db.false(),
+                Snipsel.deleted_at.is_(None),
+            )
+            .order_by(CollectionSnipsel.collection_id.asc(), CollectionSnipsel.position.asc())
         )
+        
+        if limit > 0:
+            items_stmt = items_stmt.limit(limit).offset(offset)
+            
+        all_items = db.session.execute(items_stmt).scalars().unique().all()
+        
+        # Pre-fetch collection refs for efficiency
+        snipsel_ids = list({cs.snipsel_id for cs in all_items})
+        refs_by_snipsel_id = {sid: [] for sid in snipsel_ids}
+        if snipsel_ids:
+            all_refs_stmt = (
+                db.select(SnipselCollectionRef)
+                .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
+                .options(joinedload(SnipselCollectionRef.collection))
+                .where(
+                    SnipselCollectionRef.snipsel_id.in_(snipsel_ids),
+                    Collection.deleted_at.is_(None),
+                )
+            )
+            all_refs = db.session.execute(all_refs_stmt).scalars().all()
+            for r in all_refs:
+                refs_by_snipsel_id[r.snipsel_id].append(r)
 
-    return json_response({
-        "collections": cols_out,
-        "items": items_out
-    })
+        items_out = {}
+        for cs in all_items:
+            if cs.collection_id not in items_out:
+                items_out[cs.collection_id] = []
+            items_out[cs.collection_id].append(
+                _collection_item_json(cs, user.id, refs_by_snipsel_id[cs.snipsel_id])
+            )
+        res["items"] = items_out
+
+    return json_response(res)
+
 
 
 @collections_bp.get("/today")

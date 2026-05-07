@@ -406,6 +406,8 @@ export const api = {
     ai_model_name?: string | null;
     ai_api_key?: string | null;
     diced_moments_tags?: string | null;
+    light_background_color?: string | null;
+    dark_background_color?: string | null;
   }) =>
     requestJson<{ user: User }>('/api/auth/me', {
       method: 'PATCH',
@@ -694,7 +696,19 @@ export const api = {
     emptyTrash: () => requestJson<{ ok: true; deleted: number }>('/api/collections/trash', { method: 'DELETE' }),
     deleteTrashItem: (id: string) => requestJson<{ ok: true; deleted: number }>(`/api/collections/trash/${id}`, { method: 'DELETE' }),
     restore: (id: string) => requestJson<{ collection: Collection }>(`/api/collections/${id}/restore`, { method: 'POST' }),
-    syncAll: () => requestJson<{ collections: Collection[]; items: Record<string, CollectionItem[]> }>('/api/collections/sync/all', { timeout: 300000 }),
+    syncAll: (params?: { include_collections?: boolean; include_items?: boolean; offset?: number; limit?: number }) => {
+      const sp = new URLSearchParams();
+      if (params?.include_collections === false) sp.set('include_collections', '0');
+      if (params?.include_items === false) sp.set('include_items', '0');
+      if (params?.offset !== undefined) sp.set('offset', params.offset.toString());
+      if (params?.limit !== undefined) sp.set('limit', params.limit.toString());
+      const qs = sp.toString();
+      return requestJson<{ 
+        collections: Collection[]; 
+        items: Record<string, CollectionItem[]>; 
+        total_items?: number;
+      }>(`/api/collections/sync/all${qs ? `?${qs}` : ''}`, { timeout: 300000 });
+    },
     throwback: (day: string) =>
       requestJson<{ collections: Array<{ id: string; year: number; title: string; icon: string }> }>(
         `/api/collections/throwback?day=${encodeURIComponent(day)}`
