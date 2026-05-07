@@ -559,7 +559,7 @@
     isBusy = true;
 
     try {
-      const batchSize = 1000;
+      const batchSize = 500;
       
       // Stage 1: Collections
       syncProgress = 10;

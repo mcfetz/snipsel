@@ -187,11 +187,11 @@ def sync_all_data():
     offset = int(request.args.get("offset", 0))
     limit = int(request.args.get("limit", 0))
 
-    # Get all collection IDs user has access to
-    owned_ids = db.select(Collection.id).where(
+    # Define accessible collections subquery once
+    owned_ids_stmt = db.select(Collection.id).where(
         Collection.owner_user_id == user.id, Collection.deleted_at.is_(None)
     )
-    shared_ids = (
+    shared_ids_stmt = (
         db.select(Collection.id)
         .join(CollectionShare, CollectionShare.collection_id == Collection.id)
         .where(
@@ -199,18 +199,21 @@ def sync_all_data():
             CollectionShare.shared_with_user_id == user.id,
         )
     )
-    ids_subq = owned_ids.union(shared_ids).subquery()
-    all_collection_id_list = db.session.execute(db.select(ids_subq.c.id)).scalars().all()
+    accessible_ids_stmt = owned_ids_stmt.union(shared_ids_stmt)
+    
+    # We still fetch the IDs as a list for the result structure (items_out)
+    # This was reported as "fast" in the previous call.
+    all_collection_id_list = db.session.execute(db.select(accessible_ids_stmt)).scalars().all()
 
     res = {}
 
     if include_collections:
         q = db.select(Collection).where(
-            Collection.id.in_(all_collection_id_list) if all_collection_id_list else db.false(),
+            Collection.id.in_(accessible_ids_stmt),
             Collection.deleted_at.is_(None)
         )
         collections = db.session.execute(q).scalars().all()
-
+        
         # Favorites
         fav_ids = set(
             db.session.execute(
@@ -285,7 +288,7 @@ def sync_all_data():
             db.select(db.func.count(CollectionSnipsel.snipsel_id))
             .join(Snipsel, Snipsel.id == CollectionSnipsel.snipsel_id)
             .where(
-                CollectionSnipsel.collection_id.in_(all_collection_id_list) if all_collection_id_list else db.false(),
+                CollectionSnipsel.collection_id.in_(accessible_ids_stmt),
                 Snipsel.deleted_at.is_(None),
             )
         )
@@ -304,7 +307,7 @@ def sync_all_data():
                 joinedload(CollectionSnipsel.snipsel).selectinload(Snipsel.attachments),
             )
             .where(
-                CollectionSnipsel.collection_id.in_(all_collection_id_list) if all_collection_id_list else db.false(),
+                CollectionSnipsel.collection_id.in_(accessible_ids_stmt),
                 Snipsel.deleted_at.is_(None),
             )
             .order_by(CollectionSnipsel.collection_id.asc(), CollectionSnipsel.position.asc())
@@ -315,7 +318,7 @@ def sync_all_data():
             
         all_items = db.session.execute(items_stmt).scalars().unique().all()
         
-        # Pre-fetch collection refs for efficiency
+        # Pre-fetch collection refs (wiki-links) for efficiency
         snipsel_ids = list({cs.snipsel_id for cs in all_items})
         refs_by_snipsel_id = {sid: [] for sid in snipsel_ids}
         if snipsel_ids:
@@ -325,17 +328,33 @@ def sync_all_data():
                 .options(joinedload(SnipselCollectionRef.collection))
                 .where(
                     SnipselCollectionRef.snipsel_id.in_(snipsel_ids),
-                    Collection.deleted_at.is_(None),
+                    Collection.deleted_at.is_(None)
                 )
             )
             all_refs = db.session.execute(all_refs_stmt).scalars().all()
             for r in all_refs:
                 refs_by_snipsel_id[r.snipsel_id].append(r)
 
-        items_out = {}
+            # ALSO pre-fetch memberships (actual collection placement)
+            all_memberships_stmt = (
+                db.select(CollectionSnipsel)
+                .join(Collection, Collection.id == CollectionSnipsel.collection_id)
+                .options(joinedload(CollectionSnipsel.collection))
+                .where(
+                    CollectionSnipsel.snipsel_id.in_(snipsel_ids),
+                    CollectionSnipsel.collection_id.in_(accessible_ids_stmt),
+                    Collection.deleted_at.is_(None)
+                )
+            )
+            all_memberships = db.session.execute(all_memberships_stmt).scalars().all()
+            for m in all_memberships:
+                # Avoid duplicates if a snipsel is already in the list via ref
+                # (though usually they are different tables)
+                refs_by_snipsel_id[m.snipsel_id].append(m)
+
+        # Group by collection
+        items_out = {cid: [] for cid in all_collection_id_list}
         for cs in all_items:
-            if cs.collection_id not in items_out:
-                items_out[cs.collection_id] = []
             items_out[cs.collection_id].append(
                 _collection_item_json(cs, user.id, refs_by_snipsel_id[cs.snipsel_id])
             )
