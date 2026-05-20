@@ -2839,9 +2839,15 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
           {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
             {@const allCompleted = dailyHabits.every(h => h.today_completed)}
+            {@const totalHabits = dailyHabits.length}
+            {@const completedHabits = dailyHabits.filter(h => h.today_completed).length}
+            {@const openHabits = totalHabits - completedHabits}
+            {@const ringRadius = 14}
+            {@const ringCircumference = 2 * Math.PI * ringRadius}
+            {@const ringProgress = totalHabits > 0 ? completedHabits / totalHabits : 0}
             <div bind:this={habitsPopupRef} class="relative" onmouseleave={() => showHabitsPopup = false}>
               <button
-                class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full transition-colors {showHabitsPopup
+                class="al-icon-wrapper relative grid h-9 w-9 place-items-center rounded-full transition-colors {showHabitsPopup
                   ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
                   : allCompleted
                     ? ''
@@ -2852,7 +2858,32 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 aria-label="Habits"
                 title="Habits"
               >
+                <svg class="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 36 36">
+                  <circle
+                    cx="18" cy="18" r={ringRadius}
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    class="text-slate-200 dark:text-slate-700"
+                  />
+                  <circle
+                    cx="18" cy="18" r={ringRadius}
+                    fill="none"
+                    stroke={headerColor}
+                    stroke-width="1.5"
+                    stroke-dasharray={ringCircumference}
+                    stroke-dashoffset={ringCircumference * (1 - ringProgress)}
+                    stroke-linecap="round"
+                  />
+                </svg>
+
                 <Flame label="" size={22} />
+
+                {#if openHabits > 0}
+                  <span class="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-red-500 px-[3px] text-[9px] font-bold text-white shadow-sm">
+                    {openHabits}
+                  </span>
+                {/if}
               </button>
 
               {#if showHabitsPopup}
@@ -2886,7 +2917,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           {#if throwbackLists.length > 0}
             <div bind:this={throwbackPopupRef} class="relative" onmouseleave={() => showThrowbackPopup = false}>
               <button
-                class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full transition-colors {showThrowbackPopup
+                class="al-icon-wrapper relative grid h-9 w-9 place-items-center rounded-full transition-colors {showThrowbackPopup
                   ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
                   : 'text-slate-400 hover:bg-black/5 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-slate-300'}"
                 type="button"
@@ -2895,6 +2926,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 title="Throwback"
               >
                 <RotateCcw label="" size={20} />
+
+                {#if throwbackLists.length > 0}
+                  <span class="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-slate-400 px-[3px] text-[9px] font-bold text-white shadow-sm dark:bg-slate-500">
+                    {throwbackLists.length}
+                  </span>
+                {/if}
               </button>
 
               {#if showThrowbackPopup}
