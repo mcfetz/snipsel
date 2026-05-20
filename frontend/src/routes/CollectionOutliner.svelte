@@ -2823,17 +2823,21 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           </button>
 
           {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
+            {@const allCompleted = dailyHabits.every(h => h.today_completed)}
             <div bind:this={habitsPopupRef} class="relative">
               <button
-                class="al-icon-wrapper grid h-7 w-7 place-items-center rounded-full transition-colors {showHabitsPopup
+                class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full transition-colors {showHabitsPopup
                   ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
-                  : 'text-slate-400 hover:bg-black/5 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-slate-300'}"
+                  : allCompleted
+                    ? ''
+                    : 'text-slate-400 hover:bg-black/5 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-slate-300'}"
+                style={!showHabitsPopup && allCompleted ? `color: ${headerColor}` : undefined}
                 type="button"
                 onclick={() => showHabitsPopup = !showHabitsPopup}
                 aria-label="Habits"
                 title="Habits"
               >
-                <Flame label="" size={16} />
+                <Flame label="" size={28} />
               </button>
 
               {#if showHabitsPopup}
