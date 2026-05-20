@@ -87,6 +87,8 @@ def _habit_json(habit: Habit, user_id: str, today: date | None = None) -> dict:
 def list_habits():
     user = current_user()
     include_archived = request.args.get("include_archived") == "1"
+    date_str = request.args.get("date")
+    target_date = date.fromisoformat(date_str) if date_str else date.today()
 
     q = db.select(Habit).where(
         Habit.owner_user_id == user.id,
@@ -98,8 +100,9 @@ def list_habits():
     q = q.order_by(Habit.sort_position.asc(), Habit.created_at.asc())
     habits = db.session.execute(q).scalars().all()
 
-    today = date.today()
-    return json_response({"habits": [_habit_json(h, user.id, today) for h in habits]})
+    return json_response(
+        {"habits": [_habit_json(h, user.id, target_date) for h in habits]}
+    )
 
 
 @habits_bp.post("")

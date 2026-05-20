@@ -1301,10 +1301,13 @@ export const api = {
   },
 
   habits: {
-    list: (includeArchived = false) =>
-      requestJson<{ habits: Habit[] }>(
-        `/api/habits${includeArchived ? '?include_archived=1' : ''}`
-      ),
+    list: (includeArchived = false, date?: string) => {
+      const sp = new URLSearchParams();
+      if (includeArchived) sp.set('include_archived', '1');
+      if (date) sp.set('date', date);
+      const qs = sp.toString();
+      return requestJson<{ habits: Habit[] }>(`/api/habits${qs ? `?${qs}` : ''}`);
+    },
     get: (id: string) =>
       requestJson<{ habit: Habit }>(`/api/habits/${id}`),
     create: (input: {

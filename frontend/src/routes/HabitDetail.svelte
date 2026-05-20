@@ -86,26 +86,51 @@
     currentView.set({ type: 'habits' });
   }
 
-  function getDaysInRange(from: string, to: string): string[] {
-    const days: string[] = [];
-    const start = new Date(from + 'T00:00:00');
-    const end = new Date(to + 'T00:00:00');
-    for (let d = new Date(end); d >= start; d.setDate(d.getDate() - 1)) {
-      days.push(d.toISOString().slice(0, 10));
-    }
-    return days;
-  }
-
-  function getHeatmapDays(): Array<{ date: string; completed: boolean }> {
+  function getHeatmapWeeks(): Array<Array<{ date: string; completed: boolean; dayLabel: string }>> {
     if (!stats) return [];
-    const to = new Date().toISOString().slice(0, 10);
-    const from = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
-    const days = getDaysInRange(from, to);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - 180);
+
+    // Round to previous Monday
+    const startDayOfWeek = startDate.getDay();
+    const daysToSubtract = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+    startDate.setDate(startDate.getDate() - daysToSubtract);
+
     const completionSet = new Set(stats.completions);
-    return days.map(date => ({
-      date,
-      completed: completionSet.has(date),
-    }));
+    const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+    const weeks: Array<Array<{ date: string; completed: boolean; dayLabel: string }>> = [];
+    let currentWeek: Array<{ date: string; completed: boolean; dayLabel: string }> = [];
+
+    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+      const dayOfWeek = d.getDay();
+      const index = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const dateStr = d.toISOString().slice(0, 10);
+      currentWeek[index] = {
+        date: dateStr,
+        completed: completionSet.has(dateStr),
+        dayLabel: dayLabels[index],
+      };
+
+      if (index === 6) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+    }
+
+    if (currentWeek.length > 0) {
+      // Fill remaining days of the last week with empty placeholders
+      for (let i = currentWeek.length; i < 7; i++) {
+        currentWeek[i] = { date: '', completed: false, dayLabel: dayLabels[i] };
+      }
+      weeks.push(currentWeek);
+    }
+
+    return weeks;
   }
 
   fetchData();
@@ -234,19 +259,35 @@
         </div>
       </div>
 
-      <div class="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900">
-        <h3 class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Last 90 Days</h3>
-        <div class="grid grid-cols-7 gap-1">
-          {#each getHeatmapDays() as day}
-            <div
-              class="aspect-square rounded-sm"
-              class:bg-green-500={day.completed}
-              class:bg-slate-200={!day.completed}
-              class:dark:bg-green-600={day.completed}
-              class:dark:bg-slate-700={!day.completed}
-              title="{day.date}: {day.completed ? 'Completed' : 'Not completed'}"
-            ></div>
-          {/each}
+      <div class="mb-6 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-slate-900">
+        <h3 class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Last 180 Days</h3>
+        <div class="flex justify-center">
+          <div class="flex">
+            <div class="flex flex-col gap-[2px] pt-[1px] pr-2 shrink-0">
+              {#each ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as label, i}
+                <div class="h-2.5 sm:h-3 flex items-center justify-end text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 leading-none">{label}</div>
+              {/each}
+            </div>
+            <div class="overflow-x-auto pb-1">
+              <div class="flex gap-[2px]">
+                {#each getHeatmapWeeks() as week}
+                  <div class="flex flex-col gap-[2px]">
+                    {#each week as day}
+                      <div
+                        class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2px] {day.date ? '' : 'invisible'}"
+                        class:bg-green-500={day.completed}
+                        class:bg-slate-200={!day.completed && day.date}
+                        class:dark:bg-green-600={day.completed}
+                        class:dark:bg-slate-700={!day.completed && day.date}
+                        class:bg-transparent={!day.date}
+                        title="{day.date ? `${day.date}: ${day.completed ? 'Completed' : 'Not completed'}` : ''}"
+                      ></div>
+                    {/each}
+                  </div>
+                {/each}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     {/if}

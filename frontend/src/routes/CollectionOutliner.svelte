@@ -35,6 +35,7 @@
   import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
+import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
   import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
 
   import MarkdownIt from 'markdown-it';
@@ -319,14 +320,14 @@
 
   async function loadDailyHabits() {
     const day = $currentCollection?.list_for_day;
-    if (!day) {
+    if (!day || isFutureDate(day)) {
       dailyHabits = [];
       habitsLoaded = false;
       return;
     }
     try {
-      const res = await api.habits.list();
-      dailyHabits = res.habits.filter(h => !h.is_archived);
+      const res = await api.habits.list(true, day);
+      dailyHabits = res.habits.filter(h => !h.is_archived || h.today_completed);
       habitsLoaded = true;
     } catch (err) {
       console.error('Failed to load habits:', err);
@@ -340,11 +341,12 @@
       h.id === habit.id ? { ...h, today_completed: !h.today_completed } : h
     );
 
+    const day = $currentCollection?.list_for_day;
     try {
       if (habit.today_completed) {
-        await api.habits.uncomplete(habit.id);
+        await api.habits.uncomplete(habit.id, day);
       } else {
-        await api.habits.complete(habit.id);
+        await api.habits.complete(habit.id, day);
       }
     } catch (err) {
       console.error('Failed to toggle habit:', err);
@@ -359,6 +361,13 @@
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  function isFutureDate(dateStr: string): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.getTime() > today.getTime();
   }
 
   async function navigateDayCollection(direction: -1 | 1) {
@@ -2407,7 +2416,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       anchorHighlightId = null;
       selectedIds = new Set();
       editingSnipselId.set(null);
-      
+
       // Reset nav visibility on collection change
       navVisible = false;
       if (navHideTimeout) {
@@ -2420,6 +2429,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       loadThrowback();
       loadDailyHabits();
     }
+  });
+
+  $effect(() => {
+    const day = $currentCollection?.list_for_day;
+    void day;
+    loadDailyHabits();
   });
 
   $effect(() => {
@@ -2958,6 +2973,41 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     <div class="py-8 text-center text-sm text-slate-500">Loading...</div>
   {:else if $sortedItems.length === 0}
     <div class="flex flex-col transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
+      {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
+        <div class="mb-4 rounded-xl border border-slate-200/60 bg-white/40 p-3 shadow-sm backdrop-blur-sm transition-all hover:bg-white/60 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
+          <div class="mb-2 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
+              <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {#each dailyHabits as habit (habit.id)}
+              <button
+                class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all"
+                class:text-white={habit.today_completed}
+                class:border-slate-200={!habit.today_completed}
+                class:bg-white={!habit.today_completed}
+                class:text-slate-700={!habit.today_completed}
+                class:dark:border-slate-600={!habit.today_completed}
+                class:dark:bg-slate-800={!habit.today_completed}
+                class:dark:text-slate-200={!habit.today_completed}
+                style={habit.today_completed ? `background-color: ${headerColor}; border-color: ${headerColor}` : undefined}
+                onclick={() => toggleHabitComplete(habit)}
+                title={habit.name}
+              >
+                <span>{habit.icon}</span>
+                <span class="max-w-[120px] truncate">{habit.name}</span>
+                {#if habit.today_completed}
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
       <div class="py-8 text-center text-base text-slate-500">No snipsels yet</div>
       <button
         class="mt-2 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-base text-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -3153,17 +3203,18 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     </div>
   {:else}
     <div class="flex flex-col">
-      {#if $currentCollection?.list_for_day && dailyHabits.length > 0}
-        <div class="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-slate-900">
+      {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
+        <div class="mb-4 rounded-xl border border-slate-200/60 bg-white/40 p-3 shadow-sm backdrop-blur-sm transition-all hover:bg-white/60 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
           <div class="mb-2 flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Habits</span>
+            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
+              <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
+            </div>
           </div>
           <div class="flex flex-wrap gap-2">
             {#each dailyHabits as habit (habit.id)}
               <button
                 class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all"
-                class:border-indigo-500={habit.today_completed}
-                class:bg-indigo-500={habit.today_completed}
                 class:text-white={habit.today_completed}
                 class:border-slate-200={!habit.today_completed}
                 class:bg-white={!habit.today_completed}
@@ -3171,6 +3222,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 class:dark:border-slate-600={!habit.today_completed}
                 class:dark:bg-slate-800={!habit.today_completed}
                 class:dark:text-slate-200={!habit.today_completed}
+                style={habit.today_completed ? `background-color: ${headerColor}; border-color: ${headerColor}` : undefined}
                 onclick={() => toggleHabitComplete(habit)}
                 title={habit.name}
               >

@@ -1,24 +1,77 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { fly, fade, scale } from 'svelte/transition';
   import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
+  import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import PlusIcon from '@animated-color-icons/lucide-svelte/Plus.svelte';
-  import ArrowLeft from '@animated-color-icons/lucide-svelte/ArrowLeft.svelte';
-  import Trash from '@animated-color-icons/lucide-svelte/Trash.svelte';
   import Archive from '@animated-color-icons/lucide-svelte/Archive.svelte';
+  import Trash from '@animated-color-icons/lucide-svelte/Trash.svelte';
   import { api, type Habit } from '../lib/api';
   import { currentView, habitsStore, isLoading } from '../lib/stores';
+  import { currentUser } from '../lib/session';
 
   let habits = $state<Habit[]>([]);
   let showArchived = $state(false);
+  let titleFilter = $state('');
+  let saveStatuses = $state<Record<string, 'success' | 'error' | null>>({});
+
   let showAddForm = $state(false);
   let newName = $state('');
   let newIcon = $state('✅');
   let newReminderTime = $state('');
   let isSubmitting = $state(false);
 
-  $effect(() => {
-    habits = $habitsStore;
-  });
+  type SortKey = 'name' | 'streak' | 'reminder';
+  type SortDir = 'asc' | 'desc';
+  let sortKey = $state<SortKey>('name');
+  let sortDir = $state<SortDir>('asc');
+
+  const DEFAULT_ACCENT = '#4f46e5';
+  type Rgb = { r: number; g: number; b: number };
+
+  function clampByte(n: number): number {
+    return Math.max(0, Math.min(255, Math.round(n)));
+  }
+
+  function hexToRgb(hex: string): Rgb | null {
+    const h = hex.trim();
+    const m = /^#([0-9a-fA-F]{6})$/.exec(h);
+    if (!m) return null;
+    const v = m[1];
+    return {
+      r: parseInt(v.slice(0, 2), 16),
+      g: parseInt(v.slice(2, 4), 16),
+      b: parseInt(v.slice(4, 6), 16),
+    };
+  }
+
+  function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
+    const tt = Math.max(0, Math.min(1, t));
+    return {
+      r: clampByte(a.r + (b.r - a.r) * tt),
+      g: clampByte(a.g + (b.g - a.g) * tt),
+      b: clampByte(a.b + (b.b - a.b) * tt),
+    };
+  }
+
+  function rgba(c: Rgb, alpha: number): string {
+    const a = Math.max(0, Math.min(1, alpha));
+    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
+  }
+
+  function getAccent(): string {
+    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
+    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
+  }
+
+  function getAccentTint(): string {
+    const isDark = document.documentElement.classList.contains('dark');
+    const baseColor = isDark ? '#1e293b' : '#ffffff';
+    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
+    const accent = hexToRgb(getAccent());
+    const mixed = accent ? mixRgb(base, accent, 0.14) : base;
+    return rgba(mixed, 0.96);
+  }
 
   async function fetchHabits() {
     isLoading.set(true);
@@ -32,6 +85,38 @@
       isLoading.set(false);
     }
   }
+
+  const sorted = $derived.by(() => {
+    let list = [...habits];
+    if (titleFilter.trim()) {
+      const q = titleFilter.toLowerCase();
+      list = list.filter(h => h.name.toLowerCase().includes(q));
+    }
+    list.sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      if (sortKey === 'name') {
+        return a.name.localeCompare(b.name) * dir;
+      }
+      if (sortKey === 'streak') {
+        return (a.current_streak - b.current_streak) * dir;
+      }
+      // reminder
+      if (a.reminder_time && b.reminder_time) {
+        return a.reminder_time.localeCompare(b.reminder_time) * dir;
+      }
+      if (a.reminder_time) return -1 * dir;
+      if (b.reminder_time) return 1 * dir;
+      return 0;
+    });
+    return list;
+  });
+
+  const visible = $derived(sorted.slice(0, 100));
+
+  $effect(() => {
+    void showArchived;
+    fetchHabits();
+  });
 
   async function toggleComplete(habit: Habit) {
     const originalHabits = untrack(() => habits);
@@ -47,10 +132,14 @@
       } else {
         await api.habits.complete(habit.id);
       }
+      saveStatuses[habit.id] = 'success';
+      setTimeout(() => { if (saveStatuses[habit.id] === 'success') saveStatuses[habit.id] = null; }, 5000);
     } catch (e) {
       console.error('Failed to toggle habit:', e);
       habits = originalHabits;
       habitsStore.set(originalHabits);
+      saveStatuses[habit.id] = 'error';
+      setTimeout(() => { if (saveStatuses[habit.id] === 'error') saveStatuses[habit.id] = null; }, 5000);
     }
   }
 
@@ -90,6 +179,20 @@
     }
   }
 
+  async function unarchiveHabit(id: string) {
+    const originalHabits = untrack(() => habits);
+    habits = habits.filter(h => h.id !== id);
+    habitsStore.set(habits);
+
+    try {
+      await api.habits.update(id, { is_archived: false });
+    } catch (e) {
+      console.error('Failed to unarchive habit:', e);
+      habits = originalHabits;
+      habitsStore.set(originalHabits);
+    }
+  }
+
   async function deleteHabit(id: string) {
     if (!confirm('Delete this habit permanently?')) return;
     const originalHabits = untrack(() => habits);
@@ -108,27 +211,27 @@
   function openHabitDetail(id: string) {
     currentView.set({ type: 'habit_detail', id });
   }
-
-  fetchHabits();
 </script>
 
-<div class="mx-auto max-w-2xl">
-  <div class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-      <Flame label="" size={28} />
-      Habits
-    </h1>
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <h2 class="flex items-center gap-2 text-2xl font-semibold dark:text-slate-100">
+      <Flame label="" size={24} className="text-slate-700 dark:text-slate-300" />
+      <span>Habits</span>
+    </h2>
     <button
-      class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white shadow-md transition-transform hover:scale-105 active:scale-95 dark:bg-indigo-500"
-      onclick={() => showAddForm = !showAddForm}
+      class="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-all dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-white/5"
+      type="button"
       aria-label="Add habit"
+      title="Add habit"
+      onclick={() => showAddForm = !showAddForm}
     >
       <PlusIcon label="" size={20} />
     </button>
   </div>
 
   {#if showAddForm}
-    <div class="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900">
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
       <div class="flex gap-2 mb-3">
         <input
           class="w-16 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xl dark:border-white/10 dark:bg-slate-800"
@@ -169,82 +272,204 @@
     </div>
   {/if}
 
-  <div class="space-y-2">
-    {#each habits.filter(h => !h.is_archived) as habit (habit.id)}
-      <div
-        class="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900"
+  <div class="flex items-center gap-2">
+    <div class="flex flex-1 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={!showArchived}
+        class="flex-1 px-4 py-3 text-base font-medium transition-colors {!showArchived
+          ? 'text-slate-900 dark:text-white'
+          : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+        onclick={() => { showArchived = false; }}
+        style={!showArchived ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
       >
-        <button
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all"
-          class:border-indigo-500={habit.today_completed}
-          class:bg-indigo-500={habit.today_completed}
-          class:text-white={habit.today_completed}
-          class:border-slate-300={!habit.today_completed}
-          class:dark:border-slate-600={!habit.today_completed}
-          onclick={() => toggleComplete(habit)}
-          aria-label={habit.today_completed ? 'Mark incomplete' : 'Mark complete'}
-        >
-          {#if habit.today_completed}
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          {:else}
-            <span class="text-lg">{habit.icon}</span>
-          {/if}
-        </button>
+        Active
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={showArchived}
+        class="flex-1 border-l border-black/5 px-4 py-3 text-base font-medium transition-colors dark:border-white/5 {showArchived
+          ? 'text-slate-900 dark:text-white'
+          : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+        onclick={() => { showArchived = true; }}
+        style={showArchived ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+      >
+        Inactive
+      </button>
+    </div>
+  </div>
 
-        <button
-          class="flex-1 text-left"
-          onclick={() => openHabitDetail(habit.id)}
-        >
-          <div class="font-medium text-slate-800 dark:text-slate-100">{habit.name}</div>
-          {#if habit.current_streak > 0}
-            <div class="flex items-center gap-1 text-xs text-orange-500">
-              <Flame label="" size={12} />
-              {habit.current_streak} day{habit.current_streak === 1 ? '' : 's'}
-            </div>
-          {/if}
-        </button>
+  <div class="flex items-center gap-3">
+    <input
+      class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-base shadow-sm outline-none ring-1 ring-black/5 transition-all focus:ring-2 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100"
+      style={`--tw-ring-color: ${getAccent()}33; --accent: ${getAccent()}`}
+      onfocus={(e) => (e.currentTarget.style.borderColor = getAccent())}
+      onblur={(e) => (e.currentTarget.style.borderColor = '')}
+      type="search"
+      placeholder="Filter habits"
+      bind:value={titleFilter}
+    />
 
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div class="ml-auto flex items-center gap-2">
+      <div class="overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900">
+        <div class="flex">
           <button
-            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-200"
-            onclick={() => archiveHabit(habit.id)}
-            title="Archive"
+            class="px-4 py-2 text-sm font-medium {sortKey === 'name'
+              ? 'text-slate-900 dark:text-white'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+            type="button"
+            onclick={() => (sortKey = 'name')}
+            style={sortKey === 'name' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
           >
-            <Archive label="" size={16} />
+            Name
           </button>
           <button
-            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-            onclick={() => deleteHabit(habit.id)}
-            title="Delete"
+            class="border-l border-black/5 px-4 py-2 text-sm font-medium {sortKey === 'streak'
+              ? 'text-slate-900 dark:text-white'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+            type="button"
+            onclick={() => (sortKey = 'streak')}
+            style={sortKey === 'streak' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
           >
-            <Trash label="" size={16} />
+            Streak
+          </button>
+          <button
+            class="border-l border-black/5 px-4 py-2 text-sm font-medium {sortKey === 'reminder'
+              ? 'text-slate-900 dark:text-white'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+            type="button"
+            onclick={() => (sortKey = 'reminder')}
+            style={sortKey === 'reminder' ? `background-color: ${getAccentTint()}; color: ${getAccent()}` : undefined}
+          >
+            Reminder
           </button>
         </div>
       </div>
-    {:else}
-      <div class="py-12 text-center text-slate-500 dark:text-slate-400">
-        <div class="mb-2 text-4xl">🎯</div>
-        <p>No habits yet.</p>
-        <p class="text-sm">Create your first habit to start tracking!</p>
-      </div>
-    {/each}
+
+      <button
+        class="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-lg text-slate-700 shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-all dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-white/5"
+        type="button"
+        aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
+        title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
+        onclick={() => (sortDir = sortDir === 'asc' ? 'desc' : 'asc')}
+      >
+        {sortDir === 'asc' ? '↑' : '↓'}
+      </button>
+    </div>
   </div>
 
-  {#if !showArchived && habits.some(h => h.is_archived)}
-    <button
-      class="mt-4 text-sm text-slate-500 underline transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      onclick={() => { showArchived = true; fetchHabits(); }}
-    >
-      Show archived habits
-    </button>
-  {:else if showArchived}
-    <button
-      class="mt-4 text-sm text-slate-500 underline transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      onclick={() => { showArchived = false; fetchHabits(); }}
-    >
-      Hide archived habits
-    </button>
+  {#if habits.length === 0}
+    <div class="py-8 text-center text-sm text-slate-500" in:fade={{ duration: 200 }}>
+      No {showArchived ? 'inactive' : 'active'} habits found.
+    </div>
+  {:else if visible.length === 0}
+    <div class="py-8 text-center text-sm text-slate-500" in:fade={{ duration: 200 }}>
+      No habits match your filter.
+    </div>
+  {:else}
+    <div class="space-y-2">
+      {#each visible as h (h.id)}
+        <div class="flex w-full items-center gap-3 px-1 py-2 {h.today_completed ? 'task-faded' : ''}" in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 150 }}>
+          <button
+            class="grid h-8 w-8 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-900"
+            type="button"
+            aria-label={h.today_completed ? 'Mark incomplete' : 'Mark complete'}
+            title={h.today_completed ? 'Completed today' : 'Mark complete'}
+            style={`border-color: ${getAccent()}`}
+            onclick={() => toggleComplete(h)}
+          >
+            {#if h.today_completed}
+              <span in:scale={{ start: 0.5, duration: 150 }} class="text-sm font-semibold" style={`color: ${getAccent()}`}>✓</span>
+            {/if}
+          </button>
+
+          <button class="al-icon-wrapper min-w-0 flex flex-1 items-start gap-3 text-left" type="button" onclick={() => openHabitDetail(h.id)}>
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-lg font-medium text-slate-900 dark:text-slate-100">{h.name}</div>
+              <div class="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                {#if h.current_streak > 0}
+                  <span class="flex items-center gap-1 rounded px-1.5 py-0.5" style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}>
+                    <Flame label="" size={12} strokeWidth={2.5} />
+                    {h.current_streak} day{h.current_streak === 1 ? '' : 's'}
+                  </span>
+                {/if}
+                {#if h.reminder_time}
+                  <span class="flex items-center gap-1 rounded px-1.5 py-0.5" style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}>
+                    <Bell label="" size={12} strokeWidth={2.5} />
+                    {h.reminder_time}
+                  </span>
+                {/if}
+                {#if h.is_archived}
+                  <span class="rounded px-1.5 py-0.5 bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                    Archived
+                  </span>
+                {/if}
+              </div>
+            </div>
+          </button>
+
+          {#if saveStatuses[h.id]}
+            <div
+              class="h-2 w-2 rounded-full transition-opacity duration-500"
+              style="background-color: {saveStatuses[h.id] === 'success' ? '#22c55e' : '#ef4444'}"
+              aria-hidden="true"
+            ></div>
+          {/if}
+
+          <div class="overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10">
+            <div class="flex">
+              <button
+                class="grid h-11 w-12 place-items-center text-lg text-slate-700 hover:bg-black/5 dark:text-slate-400 dark:hover:bg-white/5"
+                type="button"
+                aria-label="Info"
+                title="Info"
+                onclick={() => openHabitDetail(h.id)}
+              >
+                ⓘ
+              </button>
+              {#if showArchived}
+                <button
+                  class="grid h-11 w-12 place-items-center border-l border-black/5 text-slate-700 hover:bg-black/5 dark:border-white/5 dark:text-slate-400 dark:hover:bg-white/5"
+                  type="button"
+                  aria-label="Unarchive"
+                  title="Unarchive"
+                  onclick={() => unarchiveHabit(h.id)}
+                >
+                  <Archive label="" size={18} />
+                </button>
+                <button
+                  class="grid h-11 w-12 place-items-center border-l border-black/5 text-red-600 hover:bg-red-50 dark:border-white/5 dark:text-red-400 dark:hover:bg-red-950/30"
+                  type="button"
+                  aria-label="Delete"
+                  title="Delete"
+                  onclick={() => deleteHabit(h.id)}
+                >
+                  <Trash label="" size={18} />
+                </button>
+              {:else}
+                <button
+                  class="grid h-11 w-12 place-items-center border-l border-black/5 text-slate-700 hover:bg-black/5 dark:border-white/5 dark:text-slate-400 dark:hover:bg-white/5"
+                  type="button"
+                  aria-label="Archive"
+                  title="Archive"
+                  onclick={() => archiveHabit(h.id)}
+                >
+                  <Archive label="" size={18} />
+                </button>
+              {/if}
+            </div>
+          </div>
+        </div>
+      {/each}
+
+      {#if sorted.length > visible.length}
+        <div class="py-6 text-center text-sm text-slate-500 font-medium bg-slate-50/50 rounded-xl border border-slate-200/50 dark:bg-slate-900/30 dark:border-white/5">
+          Showing <span class="font-bold text-slate-700 dark:text-slate-300">100</span> of <span class="font-bold text-slate-700 dark:text-slate-300">{sorted.length}</span> habits.<br/>
+          Use the filter above to find more.
+        </div>
+      {/if}
+    </div>
   {/if}
 </div>
