@@ -2852,7 +2852,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 aria-label="Habits"
                 title="Habits"
               >
-                <Flame label="" size={28} />
+                <Flame label="" size={22} />
               </button>
 
               {#if showHabitsPopup}
