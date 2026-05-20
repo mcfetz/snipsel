@@ -28,6 +28,7 @@
   import Info from '@animated-color-icons/lucide-svelte/Info.svelte';
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
   import X from '@animated-color-icons/lucide-svelte/X.svelte';
+  import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
   import FileText from '@animated-color-icons/lucide-svelte/FileText.svelte';
   import ImageIcon from '@animated-color-icons/lucide-svelte/Image.svelte';
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
@@ -124,6 +125,8 @@
   // Habits for daily collections
   let dailyHabits = $state<Habit[]>([]);
   let habitsLoaded = $state(false);
+  let showHabitsPopup = $state(false);
+  let habitsPopupRef: HTMLDivElement | undefined = $state();
 
   $effect(() => {
     const size = selectedIds.size;
@@ -352,6 +355,17 @@
       dailyHabits = original;
     }
   }
+
+  $effect(() => {
+    if (!showHabitsPopup) return;
+    const onClick = (e: MouseEvent) => {
+      if (habitsPopupRef && !habitsPopupRef.contains(e.target as Node)) {
+        showHabitsPopup = false;
+      }
+    };
+    window.addEventListener('mousedown', onClick);
+    return () => window.removeEventListener('mousedown', onClick);
+  });
 
   function offsetDate(dateStr: string, days: number): string {
     const d = new Date(dateStr + 'T12:00:00'); // noon to avoid DST issues
@@ -2799,13 +2813,57 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           </button>
         {/if}
 
-        <button
-          class="pl-20 text-lg font-semibold hover:underline dark:text-slate-100"
-          type="button"
-          onclick={() => $currentCollection && currentView.set({ type: 'collection_settings', id: $currentCollection.id })}
-        >
-          {$currentCollection?.title}
-        </button>
+        <div class="flex items-center gap-2 pl-20">
+          <button
+            class="text-lg font-semibold hover:underline dark:text-slate-100"
+            type="button"
+            onclick={() => $currentCollection && currentView.set({ type: 'collection_settings', id: $currentCollection.id })}
+          >
+            {$currentCollection?.title}
+          </button>
+
+          {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
+            <div bind:this={habitsPopupRef} class="relative">
+              <button
+                class="al-icon-wrapper grid h-7 w-7 place-items-center rounded-full transition-colors {showHabitsPopup
+                  ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
+                  : 'text-slate-400 hover:bg-black/5 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-slate-300'}"
+                type="button"
+                onclick={() => showHabitsPopup = !showHabitsPopup}
+                aria-label="Habits"
+                title="Habits"
+              >
+                <Flame label="" size={16} />
+              </button>
+
+              {#if showHabitsPopup}
+                <div class="absolute left-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
+                  <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Habits</div>
+                  <div class="max-h-80 overflow-y-auto py-1">
+                    {#each dailyHabits as habit (habit.id)}
+                      <button
+                        class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
+                        type="button"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          toggleHabitComplete(habit);
+                        }}
+                      >
+                        <span class="text-xl shrink-0">{habit.icon}</span>
+                        <span class="truncate font-medium text-slate-800 dark:text-slate-200">{habit.name}</span>
+                        {#if habit.today_completed}
+                          <svg class="ml-auto h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        {/if}
+                      </button>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        </div>
 
       </div>
     </div>
@@ -2981,20 +3039,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     <div class="py-8 text-center text-sm text-slate-500">Loading...</div>
   {:else if $sortedItems.length === 0}
     <div class="flex flex-col transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
-      {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
-        <div class="flex justify-center gap-3 overflow-x-auto pb-2 pt-1">
-          {#each dailyHabits as habit (habit.id)}
-            <button
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-full border text-xl transition-all duration-150 hover:scale-110 active:scale-95 {!habit.today_completed ? 'border-slate-300 bg-white text-slate-400 dark:border-white/20 dark:bg-slate-900 dark:text-slate-500' : ''}"
-              style={habit.today_completed ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}` : undefined}
-              onclick={() => toggleHabitComplete(habit)}
-              title={habit.name}
-            >
-              <span>{habit.icon}</span>
-            </button>
-          {/each}
-        </div>
-      {/if}
       <div class="py-8 text-center text-base text-slate-500">No snipsels yet</div>
       <button
         class="mt-2 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-base text-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
@@ -3190,20 +3234,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     </div>
   {:else}
     <div class="flex flex-col">
-      {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
-        <div class="flex justify-center gap-3 overflow-x-auto pb-2 pt-1">
-          {#each dailyHabits as habit (habit.id)}
-            <button
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-full border text-xl transition-all duration-150 hover:scale-110 active:scale-95 {!habit.today_completed ? 'border-slate-300 bg-white text-slate-400 dark:border-white/20 dark:bg-slate-900 dark:text-slate-500' : ''}"
-              style={habit.today_completed ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}` : undefined}
-              onclick={() => toggleHabitComplete(habit)}
-              title={habit.name}
-            >
-              <span>{habit.icon}</span>
-            </button>
-          {/each}
-        </div>
-      {/if}
       {#each displayedItems as item (item.snipsel_id)}
         <div
           id={`snipsel-${item.snipsel_id}`}
