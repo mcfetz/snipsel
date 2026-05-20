@@ -727,6 +727,15 @@ import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
     return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_HEADER_COLOR;
   }
 
+  function isLightColor(color: string): boolean {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128;
+  }
+
   function isExpired(dateStr: string): boolean {
     return new Date(dateStr).getTime() < Date.now();
   }
@@ -2985,14 +2994,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             {#each dailyHabits as habit (habit.id)}
               <button
                 class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all"
-                class:text-white={habit.today_completed}
                 class:border-slate-200={!habit.today_completed}
                 class:bg-white={!habit.today_completed}
                 class:text-slate-700={!habit.today_completed}
                 class:dark:border-slate-600={!habit.today_completed}
                 class:dark:bg-slate-800={!habit.today_completed}
                 class:dark:text-slate-200={!habit.today_completed}
-                style={habit.today_completed ? `background-color: ${headerColor}; border-color: ${headerColor}` : undefined}
+                style={habit.today_completed ? `background-color: ${headerColor}; border-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}` : undefined}
                 onclick={() => toggleHabitComplete(habit)}
                 title={habit.name}
               >
@@ -3215,14 +3223,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             {#each dailyHabits as habit (habit.id)}
               <button
                 class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all"
-                class:text-white={habit.today_completed}
                 class:border-slate-200={!habit.today_completed}
                 class:bg-white={!habit.today_completed}
                 class:text-slate-700={!habit.today_completed}
                 class:dark:border-slate-600={!habit.today_completed}
                 class:dark:bg-slate-800={!habit.today_completed}
                 class:dark:text-slate-200={!habit.today_completed}
-                style={habit.today_completed ? `background-color: ${headerColor}; border-color: ${headerColor}` : undefined}
+                style={habit.today_completed ? `background-color: ${headerColor}; border-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}` : undefined}
                 onclick={() => toggleHabitComplete(habit)}
                 title={habit.name}
               >
