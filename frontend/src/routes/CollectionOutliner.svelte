@@ -2982,13 +2982,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   {:else if $sortedItems.length === 0}
     <div class="flex flex-col transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
       {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
-        <div class="flex gap-3 overflow-x-auto pb-2 pt-1">
+        <div class="flex justify-center gap-3 overflow-x-auto pb-2 pt-1">
           {#each dailyHabits as habit (habit.id)}
             <button
               class="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition-all"
               class:text-slate-400={!habit.today_completed}
               class:dark:text-slate-500={!habit.today_completed}
-              style={habit.today_completed ? `background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}` : undefined}
+              style={!habit.today_completed ? `border: 1.5px solid ${headerColor}33` : `background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
               onclick={() => toggleHabitComplete(habit)}
               title={habit.name}
             >
@@ -3193,13 +3193,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   {:else}
     <div class="flex flex-col">
       {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
-        <div class="flex gap-3 overflow-x-auto pb-2 pt-1">
+        <div class="flex justify-center gap-3 overflow-x-auto pb-2 pt-1">
           {#each dailyHabits as habit (habit.id)}
             <button
               class="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition-all"
               class:text-slate-400={!habit.today_completed}
               class:dark:text-slate-500={!habit.today_completed}
-              style={habit.today_completed ? `background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}` : undefined}
+              style={!habit.today_completed ? `border: 1.5px solid ${headerColor}33` : `background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
               onclick={() => toggleHabitComplete(habit)}
               title={habit.name}
             >
