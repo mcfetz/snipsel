@@ -256,7 +256,9 @@ class Snipsel(db.Model):
     )
     modified_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True, index=True
+    )
     deleted_by_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )
@@ -354,7 +356,9 @@ class SnipselTag(db.Model):
     __tablename__ = "snipsel_tags"
 
     snipsel_id: Mapped[str] = mapped_column(ForeignKey("snipsels.id"), primary_key=True)
-    tag_id: Mapped[str] = mapped_column(ForeignKey("tags.id"), primary_key=True, index=True)
+    tag_id: Mapped[str] = mapped_column(
+        ForeignKey("tags.id"), primary_key=True, index=True
+    )
 
     snipsel = relationship("Snipsel", back_populates="tags")
     tag = relationship("Tag")
@@ -383,7 +387,9 @@ class SnipselMention(db.Model):
     __tablename__ = "snipsel_mentions"
 
     snipsel_id: Mapped[str] = mapped_column(ForeignKey("snipsels.id"), primary_key=True)
-    mention_id: Mapped[str] = mapped_column(ForeignKey("mentions.id"), primary_key=True, index=True)
+    mention_id: Mapped[str] = mapped_column(
+        ForeignKey("mentions.id"), primary_key=True, index=True
+    )
 
     snipsel = relationship("Snipsel", back_populates="mentions")
     mention = relationship("Mention")
@@ -652,4 +658,73 @@ class AiPromptHistory(db.Model):
 
     __table_args__ = (
         UniqueConstraint("user_id", "prompt", name="uq_ai_prompt_history_user_prompt"),
+    )
+
+
+class Habit(db.Model):
+    __tablename__ = "habits"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    icon: Mapped[str] = mapped_column(String(8), nullable=False, default="✅")
+    color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+
+    reminder_time: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)
+    reminder_rrule: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    sort_position: Mapped[int] = mapped_column(nullable=False, default=0)
+    is_archived: Mapped[bool] = mapped_column(default=False, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, nullable=False
+    )
+    modified_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow, nullable=False
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    owner = relationship("User", foreign_keys=[owner_user_id])
+    completions: Mapped[list["HabitCompletion"]] = relationship(
+        "HabitCompletion", back_populates="habit", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index("ix_habits_owner_archived", "owner_user_id", "is_archived"),
+    )
+
+
+class HabitCompletion(db.Model):
+    __tablename__ = "habit_completions"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    habit_id: Mapped[str] = mapped_column(
+        ForeignKey("habits.id"), nullable=False, index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    completed_date: Mapped[date] = mapped_column(Date, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, nullable=False
+    )
+
+    habit = relationship("Habit", back_populates="completions")
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "habit_id",
+            "user_id",
+            "completed_date",
+            name="uq_habit_completion_habit_user_date",
+        ),
+        Index("ix_habit_completions_habit_date", "habit_id", "completed_date"),
     )

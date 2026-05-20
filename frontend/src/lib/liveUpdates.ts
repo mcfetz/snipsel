@@ -20,7 +20,7 @@
  */
 
 import { get } from 'svelte/store';
-import { currentView, collections, collectionItems, currentCollection, notificationsStore } from './stores';
+import { currentView, collections, collectionItems, currentCollection, notificationsStore, habitsStore } from './stores';
 import { idbSaveCollections, idbSaveCollectionItems, idbSaveCollection, idbGetSyncQueue } from './db';
 import { requestJson, CLIENT_ID } from './api';
 import type { Collection, CollectionItem } from './api';
@@ -169,6 +169,12 @@ async function _handleEvent(event: {
         } else if (event.type === 'snipsels_updated' && event.collection_id) {
             const cid = event.collection_id;
             _debounce(`snipsels_${cid}`, () => { void _refreshSnipsels(cid); });
+
+        } else if (event.type === 'habit_list_changed') {
+            _debounce('habit_list', () => { void _refreshHabits(); });
+
+        } else if (event.type === 'habit_completion_changed') {
+            _debounce('habit_list', () => { void _refreshHabits(); });
         }
     } catch {
         // Never let a refresh error bubble up and crash the event listener
@@ -233,5 +239,13 @@ async function _refreshSnipsels(collectionId: string): Promise<void> {
         );
         await idbSaveCollectionItems(res.items);
         collectionItems.set(res.items);
+    } catch { /* silently ignore */ }
+}
+
+async function _refreshHabits(): Promise<void> {
+    if (!navigator.onLine) return;
+    try {
+        const res = await requestJson<{ habits: import('./api').Habit[] }>('/api/habits', { timeout: 10000, cache: 'no-store' });
+        habitsStore.set(res.habits);
     } catch { /* silently ignore */ }
 }

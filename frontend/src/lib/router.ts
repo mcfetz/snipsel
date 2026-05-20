@@ -6,6 +6,8 @@ export type Route =
   | { v: 'collection_settings'; id: string }
   | { v: 'snipsel'; id: string; returnTo?: string }
   | { v: 'tags_mentions' }
+  | { v: 'habits' }
+  | { v: 'habit_detail'; id: string }
   | { v: 'search'; q?: string }
   | { v: 'todos' }
   | { v: 'calendar' }
@@ -20,6 +22,8 @@ const KNOWN_VIEWS = new Set<Route['v']>([
   'collection_settings',
   'snipsel',
   'tags_mentions',
+  'habits',
+  'habit_detail',
   'search',
   'todos',
   'calendar',
@@ -75,7 +79,27 @@ export function parseRouteFromLocation(loc: Location): Route | null {
     return { v, token };
   }
 
-  return { v };
+  if (v === 'habit_detail') {
+    const id = sp.get('id') ?? '';
+    if (!id) return null;
+    return { v, id };
+  }
+
+  // Simple routes without additional parameters
+  if (
+    v === 'collections' ||
+    v === 'tags_mentions' ||
+    v === 'habits' ||
+    v === 'todos' ||
+    v === 'calendar' ||
+    v === 'settings' ||
+    v === 'notifications' ||
+    v === 'loading'
+  ) {
+    return { v };
+  }
+
+  return null;
 }
 
 export function routeToView(route: Route): View {
@@ -84,6 +108,8 @@ export function routeToView(route: Route): View {
   if (route.v === 'collection_settings') return { type: 'collection_settings', id: route.id };
   if (route.v === 'snipsel') return { type: 'snipsel', id: route.id, returnTo: route.returnTo };
   if (route.v === 'tags_mentions') return { type: 'tags_mentions' };
+  if (route.v === 'habits') return { type: 'habits' };
+  if (route.v === 'habit_detail') return { type: 'habit_detail', id: route.id };
   if (route.v === 'search') return { type: 'search' };
   if (route.v === 'todos') return { type: 'todos' };
   if (route.v === 'calendar') return { type: 'calendar' };
@@ -98,6 +124,8 @@ export function viewToRoute(view: View): Route {
   if (view.type === 'collection_settings') return { v: 'collection_settings', id: view.id };
   if (view.type === 'snipsel') return { v: 'snipsel', id: view.id, returnTo: view.returnTo };
   if (view.type === 'tags_mentions') return { v: 'tags_mentions' };
+  if (view.type === 'habits') return { v: 'habits' };
+  if (view.type === 'habit_detail') return { v: 'habit_detail', id: view.id };
   if (view.type === 'search') return { v: 'search' };
   if (view.type === 'todos') return { v: 'todos' };
   if (view.type === 'calendar') return { v: 'calendar' };
@@ -121,6 +149,8 @@ export function routeToUrl(route: Route, pathname = location.pathname): string {
     if (route.q) sp.set('q', route.q);
   } else if (route.v === 'public') {
     sp.set('token', route.token);
+  } else if (route.v === 'habit_detail') {
+    sp.set('id', route.id);
   }
 
   const qs = sp.toString();

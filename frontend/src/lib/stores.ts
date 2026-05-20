@@ -17,7 +17,9 @@ export type View =
   | { type: 'recycle-bin' }
   | { type: 'public'; token: string }
   | { type: 'snipsel'; id: string; returnTo?: string }
-  | { type: 'user_management' };
+  | { type: 'user_management' }
+  | { type: 'habits' }
+  | { type: 'habit_detail'; id: string };
 
 export const currentView = writable<View>({ type: 'loading' });
 export const collections = writable<Collection[]>([]);
@@ -82,3 +84,4 @@ export const moveSnipselsRequest = writable(0);
 export const infoSnipselsRequest = writable(0);
 export const uploadAttachmentRequest = writable(0);
 export const newSnipselInCurrentCollectionRequest = writable(0);
+export const habitsStore = writable<import('./api').Habit[]>([]);

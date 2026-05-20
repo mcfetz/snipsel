@@ -7,7 +7,7 @@
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
   import PlusIcon from '@animated-color-icons/lucide-svelte/Plus.svelte';
   import List from '@animated-color-icons/lucide-svelte/List.svelte';
-  import Hash from '@animated-color-icons/lucide-svelte/Hash.svelte';
+  import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
@@ -38,6 +38,8 @@ import RecycleBin from './routes/RecycleBin.svelte';
 import PasscodeModal from './lib/PasscodeModal.svelte';
 import PublicView from './routes/PublicView.svelte';
 import UserManagement from './routes/UserManagement.svelte';
+import Habits from './routes/Habits.svelte';
+import HabitDetail from './routes/HabitDetail.svelte';
 
   let initialized = $state(false);
 
@@ -611,10 +613,10 @@ import UserManagement from './routes/UserManagement.svelte';
         e.preventDefault();
         openCollections();
       }
-      // Cmd/Ctrl + Shift + 4 -> Tags/Mentions
+      // Cmd/Ctrl + Shift + 4 -> Habits
       else if (isMetaOrCtrl && e.shiftKey && e.key === '4') {
         e.preventDefault();
-        currentView.set({ type: 'tags_mentions' });
+        currentView.set({ type: 'habits' });
       }
       // Cmd/Ctrl + Shift + N -> New snipsel in Today's collection
       else if (isMetaOrCtrl && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
@@ -824,6 +826,10 @@ import UserManagement from './routes/UserManagement.svelte';
       <Search />
     {:else if $currentView.type === 'tags_mentions'}
       <TagsMentions />
+    {:else if $currentView.type === 'habits'}
+      <Habits />
+    {:else if $currentView.type === 'habit_detail'}
+      <HabitDetail habitId={$currentView.id} />
     {:else if $currentView.type === 'todos'}
       <Todos />
     {:else if $currentView.type === 'calendar'}
@@ -920,15 +926,15 @@ import UserManagement from './routes/UserManagement.svelte';
             </button>
 
             <button
-              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'tags_mentions'
+              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'habits'
                 ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
                 : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
               type="button"
-              onclick={() => currentView.set({ type: 'tags_mentions' })}
-              aria-label="Tags and mentions"
-              title="Tags / Mentions"
+              onclick={() => currentView.set({ type: 'habits' })}
+              aria-label="Habits"
+              title="Habits"
             >
-              <Hash label="" size={24} />
+              <Flame label="" size={24} />
             </button>
             
           </div>

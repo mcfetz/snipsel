@@ -39,7 +39,7 @@
 
   import MarkdownIt from 'markdown-it';
   import mermaid from 'mermaid';
-  import { api, type Attachment, type CollectionItem, type SearchSnipselHit } from '../lib/api';
+  import { api, type Attachment, type CollectionItem, type SearchSnipselHit, type Habit } from '../lib/api';
   import ImageModal from '../lib/ImageModal.svelte';
   import CollectionSelectModal from '../lib/CollectionSelectModal.svelte';
   import DeleteConfirmModal from '../lib/DeleteConfirmModal.svelte';
@@ -120,6 +120,10 @@
   let selectionPulse = $state(false);
   let previousSelectionSize = $state(0);
   let lastSelectedId = $state<string | null>(null);
+
+  // Habits for daily collections
+  let dailyHabits = $state<Habit[]>([]);
+  let habitsLoaded = $state(false);
 
   $effect(() => {
     const size = selectedIds.size;
@@ -305,11 +309,46 @@
     try {
       const res = await api.collections.throwback(day);
       throwbackLists = res.collections;
-      
+
       const dr = await api.collections.dicedMoment();
       dicedSnipsel = dr.snipsel;
     } catch (err) {
       console.error('Failed to load daily extras:', err);
+    }
+  }
+
+  async function loadDailyHabits() {
+    const day = $currentCollection?.list_for_day;
+    if (!day) {
+      dailyHabits = [];
+      habitsLoaded = false;
+      return;
+    }
+    try {
+      const res = await api.habits.list();
+      dailyHabits = res.habits.filter(h => !h.is_archived);
+      habitsLoaded = true;
+    } catch (err) {
+      console.error('Failed to load habits:', err);
+      dailyHabits = [];
+    }
+  }
+
+  async function toggleHabitComplete(habit: Habit) {
+    const original = dailyHabits.map(h => ({ ...h }));
+    dailyHabits = dailyHabits.map(h =>
+      h.id === habit.id ? { ...h, today_completed: !h.today_completed } : h
+    );
+
+    try {
+      if (habit.today_completed) {
+        await api.habits.uncomplete(habit.id);
+      } else {
+        await api.habits.complete(habit.id);
+      }
+    } catch (err) {
+      console.error('Failed to toggle habit:', err);
+      dailyHabits = original;
     }
   }
 
@@ -2379,6 +2418,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       loadItems();
       loadIncomingMentions();
       loadThrowback();
+      loadDailyHabits();
     }
   });
 
@@ -3113,6 +3153,39 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     </div>
   {:else}
     <div class="flex flex-col">
+      {#if $currentCollection?.list_for_day && dailyHabits.length > 0}
+        <div class="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-slate-900">
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Habits</span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {#each dailyHabits as habit (habit.id)}
+              <button
+                class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all"
+                class:border-indigo-500={habit.today_completed}
+                class:bg-indigo-500={habit.today_completed}
+                class:text-white={habit.today_completed}
+                class:border-slate-200={!habit.today_completed}
+                class:bg-white={!habit.today_completed}
+                class:text-slate-700={!habit.today_completed}
+                class:dark:border-slate-600={!habit.today_completed}
+                class:dark:bg-slate-800={!habit.today_completed}
+                class:dark:text-slate-200={!habit.today_completed}
+                onclick={() => toggleHabitComplete(habit)}
+                title={habit.name}
+              >
+                <span>{habit.icon}</span>
+                <span class="max-w-[120px] truncate">{habit.name}</span>
+                {#if habit.today_completed}
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
       {#each displayedItems as item (item.snipsel_id)}
         <div
           id={`snipsel-${item.snipsel_id}`}

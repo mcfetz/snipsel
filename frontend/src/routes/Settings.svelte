@@ -804,6 +804,24 @@
       </div>
     </div>
 
+    <!-- Tags & Mentions -->
+    <div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
+      <div class="text-xs uppercase text-slate-500">Navigation</div>
+      <button
+        class="mt-3 flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+        onclick={() => currentView.set({ type: 'tags_mentions' })}
+      >
+        <div class="flex items-center gap-3">
+          <span class="text-xl">#</span>
+          <div>
+            <div class="text-sm font-medium text-slate-900 dark:text-slate-100">Tags & Mentions</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Manage your tags and mentions</div>
+          </div>
+        </div>
+        <ChevronRight label="" size={18} className="text-slate-400" />
+      </button>
+    </div>
+
     <!-- Appearance -->
     <div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/60">
       <div class="text-xs uppercase text-slate-500">Appearance</div>

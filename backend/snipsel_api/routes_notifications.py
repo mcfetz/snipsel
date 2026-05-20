@@ -17,9 +17,11 @@ notifications_bp = Blueprint("notifications", __name__)
 @require_auth
 def list_notifications():
     user = current_user()
-    
-    from snipsel_api.reminders import process_reminders
+
+    from snipsel_api.reminders import process_reminders, process_habit_reminders
+
     process_reminders(user.id)
+    process_habit_reminders(user.id)
 
     q = (
         db.select(Notification)
@@ -87,14 +89,13 @@ def mark_all_read():
 @require_auth
 def delete_read_notifications():
     user = current_user()
-    
+
     db.session.execute(
         db.delete(Notification).where(
-            Notification.user_id == user.id,
-            Notification.is_read == True
+            Notification.user_id == user.id, Notification.is_read == True
         )
     )
-    
+
     db.session.commit()
     return json_response({"success": True})
 
@@ -103,6 +104,7 @@ def delete_read_notifications():
 @require_auth
 def get_vapid_public_key():
     from snipsel_api.config import Settings
+
     settings = Settings.from_env()
     if not settings.vapid_public_key:
         return json_response({"error": "VAPID not configured"}, 500)
@@ -113,14 +115,18 @@ def get_vapid_public_key():
 @require_auth
 def test_push():
     user = current_user()
-    
+
     from snipsel_api.push_service import send_push_notification
-    send_push_notification(user.id, {
-        "title": "Test Notification",
-        "body": "It works! 🎉",
-        "url": "/api/notifications"
-    })
-    
+
+    send_push_notification(
+        user.id,
+        {
+            "title": "Test Notification",
+            "body": "It works! 🎉",
+            "url": "/api/notifications",
+        },
+    )
+
     return json_response({"success": True})
 
 
@@ -155,10 +161,7 @@ def subscribe():
             db.session.commit()
     else:
         new_sub = PushSubscription(
-            user_id=user.id,
-            endpoint=endpoint,
-            keys_p256dh=p256dh,
-            keys_auth=auth
+            user_id=user.id, endpoint=endpoint, keys_p256dh=p256dh, keys_auth=auth
         )
         db.session.add(new_sub)
         db.session.commit()
@@ -179,8 +182,7 @@ def unsubscribe():
 
     existing = db.session.execute(
         db.select(PushSubscription).where(
-            PushSubscription.endpoint == endpoint,
-            PushSubscription.user_id == user.id
+            PushSubscription.endpoint == endpoint, PushSubscription.user_id == user.id
         )
     ).scalar_one_or_none()
 

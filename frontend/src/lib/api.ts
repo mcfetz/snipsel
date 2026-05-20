@@ -217,6 +217,41 @@ export type SearchResponse = {
 
 export type TagCount = { name: string; count: number };
 
+export type Habit = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string | null;
+  reminder_time: string | null;
+  reminder_rrule: string | null;
+  sort_position: number;
+  is_archived: boolean;
+  created_at: string;
+  modified_at: string;
+  today_completed: boolean;
+  current_streak: number;
+  longest_streak: number;
+};
+
+export type HabitCompletion = {
+  id: string;
+  habit_id: string;
+  completed_date: string;
+};
+
+export type HabitStats = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string | null;
+  total_days: number;
+  completed_days: number;
+  completion_rate: number;
+  current_streak: number;
+  longest_streak: number;
+  completions: string[];
+};
+
 /** Stable per-tab identifier sent with every API request so the backend can
  *  embed it as `origin_client_id` in SSE events. The originating tab then
  *  ignores those events since it already applied the optimistic update. */
@@ -1263,5 +1298,61 @@ export const api = {
       requestJson<{ results: any[]; total: number; total_pages: number }>(
         `/api/proxy/unsplash/search?query=${encodeURIComponent(query)}&page=${page}`
       ),
+  },
+
+  habits: {
+    list: (includeArchived = false) =>
+      requestJson<{ habits: Habit[] }>(
+        `/api/habits${includeArchived ? '?include_archived=1' : ''}`
+      ),
+    get: (id: string) =>
+      requestJson<{ habit: Habit }>(`/api/habits/${id}`),
+    create: (input: {
+      name: string;
+      icon?: string;
+      color?: string | null;
+      reminder_time?: string | null;
+      reminder_rrule?: string | null;
+    }) =>
+      requestJson<{ habit: Habit }>('/api/habits', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    update: (id: string, input: {
+      name?: string;
+      icon?: string;
+      color?: string | null;
+      reminder_time?: string | null;
+      reminder_rrule?: string | null;
+      sort_position?: number;
+      is_archived?: boolean;
+    }) =>
+      requestJson<{ habit: Habit }>(`/api/habits/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
+    delete: (id: string) =>
+      requestJson<{ ok: true }>(`/api/habits/${id}`, { method: 'DELETE' }),
+    complete: (id: string, date?: string) =>
+      requestJson<{ completion: HabitCompletion }>(`/api/habits/${id}/complete`, {
+        method: 'POST',
+        body: JSON.stringify({ date: date || undefined }),
+      }),
+    uncomplete: (id: string, date?: string) =>
+      requestJson<{ ok: true }>(`/api/habits/${id}/complete${date ? `?date=${date}` : ''}`, {
+        method: 'DELETE',
+      }),
+    stats: (from?: string, to?: string) => {
+      const sp = new URLSearchParams();
+      if (from) sp.set('from', from);
+      if (to) sp.set('to', to);
+      const qs = sp.toString();
+      return requestJson<{ habits: HabitStats[] }>(`/api/habits/stats${qs ? `?${qs}` : ''}`);
+    },
+    reorder: (items: Array<{ id: string; sort_position: number }>) =>
+      requestJson<{ ok: true }>('/api/habits/reorder', {
+        method: 'PATCH',
+        body: JSON.stringify({ items }),
+      }),
   },
 };
