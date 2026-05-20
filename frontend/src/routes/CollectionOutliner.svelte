@@ -35,7 +35,6 @@
   import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import RotateCcw from '@animated-color-icons/lucide-svelte/RotateCcw.svelte';
   import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
-import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
   import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
 
   import MarkdownIt from 'markdown-it';
@@ -2983,31 +2982,19 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   {:else if $sortedItems.length === 0}
     <div class="flex flex-col transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
       {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
-        <div class="mb-4 rounded-xl border border-slate-200/60 bg-white/40 p-3 shadow-sm backdrop-blur-sm transition-all hover:bg-white/60 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
-          <div class="mb-2 flex items-center justify-between">
-            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-              <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
-              <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
-            </div>
-          </div>
-          <div class="flex gap-2 overflow-x-auto pb-1">
-            {#each dailyHabits as habit (habit.id)}
-              <button
-                class="grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-base transition-all"
-                class:border-slate-200={!habit.today_completed}
-                class:bg-white={!habit.today_completed}
-                class:text-slate-700={!habit.today_completed}
-                class:dark:border-slate-600={!habit.today_completed}
-                class:dark:bg-slate-800={!habit.today_completed}
-                class:dark:text-slate-200={!habit.today_completed}
-                style={habit.today_completed ? `background-color: ${headerColor}; border-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}` : undefined}
-                onclick={() => toggleHabitComplete(habit)}
-                title={habit.name}
-              >
-                <span>{habit.icon}</span>
-              </button>
-            {/each}
-          </div>
+        <div class="flex gap-3 overflow-x-auto pb-2 pt-1">
+          {#each dailyHabits as habit (habit.id)}
+            <button
+              class="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition-all"
+              class:text-slate-400={!habit.today_completed}
+              class:dark:text-slate-500={!habit.today_completed}
+              style={habit.today_completed ? `background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}` : undefined}
+              onclick={() => toggleHabitComplete(habit)}
+              title={habit.name}
+            >
+              <span>{habit.icon}</span>
+            </button>
+          {/each}
         </div>
       {/if}
       <div class="py-8 text-center text-base text-slate-500">No snipsels yet</div>
@@ -3206,31 +3193,19 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   {:else}
     <div class="flex flex-col">
       {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
-        <div class="mb-4 rounded-xl border border-slate-200/60 bg-white/40 p-3 shadow-sm backdrop-blur-sm transition-all hover:bg-white/60 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
-          <div class="mb-2 flex items-center justify-between">
-            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-              <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
-              <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
-            </div>
-          </div>
-          <div class="flex gap-2 overflow-x-auto pb-1">
-            {#each dailyHabits as habit (habit.id)}
-              <button
-                class="grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-base transition-all"
-                class:border-slate-200={!habit.today_completed}
-                class:bg-white={!habit.today_completed}
-                class:text-slate-700={!habit.today_completed}
-                class:dark:border-slate-600={!habit.today_completed}
-                class:dark:bg-slate-800={!habit.today_completed}
-                class:dark:text-slate-200={!habit.today_completed}
-                style={habit.today_completed ? `background-color: ${headerColor}; border-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}` : undefined}
-                onclick={() => toggleHabitComplete(habit)}
-                title={habit.name}
-              >
-                <span>{habit.icon}</span>
-              </button>
-            {/each}
-          </div>
+        <div class="flex gap-3 overflow-x-auto pb-2 pt-1">
+          {#each dailyHabits as habit (habit.id)}
+            <button
+              class="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition-all"
+              class:text-slate-400={!habit.today_completed}
+              class:dark:text-slate-500={!habit.today_completed}
+              style={habit.today_completed ? `background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}` : undefined}
+              onclick={() => toggleHabitComplete(habit)}
+              title={habit.name}
+            >
+              <span>{habit.icon}</span>
+            </button>
+          {/each}
         </div>
       {/if}
       {#each displayedItems as item (item.snipsel_id)}
