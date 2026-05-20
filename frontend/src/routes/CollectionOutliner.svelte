@@ -127,14 +127,29 @@
   let habitsLoaded = $state(false);
   let showHabitsPopup = $state(false);
   let habitsPopupRef: HTMLDivElement | undefined = $state();
+  let showThrowbackPopup = $state(false);
+  let throwbackPopupRef: HTMLDivElement | undefined = $state();
 
   $effect(() => {
-    const size = selectedIds.size;
-    if (size !== previousSelectionSize && size > 0) {
-      selectionPulse = true;
-      setTimeout(() => { selectionPulse = false; }, 400);
-    }
-    previousSelectionSize = size;
+    if (!showHabitsPopup) return;
+    const onClick = (e: MouseEvent) => {
+      if (habitsPopupRef && !habitsPopupRef.contains(e.target as Node)) {
+        showHabitsPopup = false;
+      }
+    };
+    window.addEventListener('mousedown', onClick);
+    return () => window.removeEventListener('mousedown', onClick);
+  });
+
+  $effect(() => {
+    if (!showThrowbackPopup) return;
+    const onClick = (e: MouseEvent) => {
+      if (throwbackPopupRef && !throwbackPopupRef.contains(e.target as Node)) {
+        showThrowbackPopup = false;
+      }
+    };
+    window.addEventListener('mousedown', onClick);
+    return () => window.removeEventListener('mousedown', onClick);
   });
 
   // Debounced mermaid processing – avoids re-rendering diagrams on every keystroke
@@ -2867,6 +2882,44 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               {/if}
             </div>
           {/if}
+
+          {#if throwbackLists.length > 0}
+            <div bind:this={throwbackPopupRef} class="relative">
+              <button
+                class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full transition-colors {showThrowbackPopup
+                  ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
+                  : 'text-slate-400 hover:bg-black/5 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-slate-300'}"
+                type="button"
+                onclick={() => showThrowbackPopup = !showThrowbackPopup}
+                aria-label="Throwback"
+                title="Throwback"
+              >
+                <RotateCcw label="" size={20} />
+              </button>
+
+              {#if showThrowbackPopup}
+                <div class="absolute left-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
+                  <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Throwback</div>
+                  <div class="max-h-80 overflow-y-auto py-1">
+                    {#each throwbackLists as tb (tb.id)}
+                      <button
+                        class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
+                        type="button"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          showThrowbackPopup = false;
+                          currentView.set({ type: 'collection', id: tb.id });
+                        }}
+                      >
+                        <span class="text-xl shrink-0">{tb.icon}</span>
+                        <span class="truncate font-medium text-slate-800 dark:text-slate-200">{tb.year}</span>
+                      </button>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {/if}
         </div>
 
       </div>
@@ -2896,27 +2949,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           {/if}
         </div>
       </div>
-      {#if throwbackLists.length > 0}
-        <div class="mt-2 flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200/60 bg-slate-50/50 dark:border-white/10 dark:bg-white/5 transition-all hover:bg-slate-50 dark:hover:bg-white/10" in:fade={{ duration: 300 }}>
-          <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-            <RotateCcw label="" size={14} strokeWidth={2.5} className="opacity-80" />
-            <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Throwback</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            {#each throwbackLists as tb}
-              <button
-                type="button"
-                class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white border border-slate-200 shadow-sm transition-all hover:shadow-md active:scale-95 dark:bg-slate-800 dark:border-white/10 dark:text-slate-300 throwback-chip"
-                style="--accent-color: {headerColor}"
-                onclick={() => currentView.set({ type: 'collection', id: tb.id })}
-              >
-                {tb.year}
-              </button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
       {#if dicedSnipsel}
         <div class="mt-2 group relative overflow-hidden rounded-xl border border-slate-200/60 bg-white/40 dark:border-white/10 dark:bg-white/5 backdrop-blur-sm px-4 py-3 transition-all hover:bg-white/60 dark:hover:bg-white/10" in:fade={{ duration: 400 }}>
           <div class="flex items-center justify-between gap-2 mb-2 relative z-20">
@@ -4496,17 +4528,4 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     }
   }
 
-  .throwback-chip {
-    transition: all 0.2s ease;
-  }
-
-  .throwback-chip:hover {
-    color: var(--accent-color) !important;
-    border-color: var(--accent-color) !important;
-    background-color: rgba(from var(--accent-color) r g b / 0.05);
-  }
-
-  :global(.dark) .throwback-chip:hover {
-    background-color: rgba(from var(--accent-color) r g b / 0.1);
-  }
 </style>
