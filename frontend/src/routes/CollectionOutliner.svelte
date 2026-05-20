@@ -2985,10 +2985,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         <div class="flex justify-center gap-3 overflow-x-auto pb-2 pt-1">
           {#each dailyHabits as habit (habit.id)}
             <button
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition-all"
-              class:text-slate-400={!habit.today_completed}
-              class:dark:text-slate-500={!habit.today_completed}
-              style={!habit.today_completed ? `border: 1.5px solid ${headerColor}33` : `background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
+              class="grid h-10 w-10 shrink-0 place-items-center rounded-full border text-xl transition-all duration-150 hover:scale-110 active:scale-95 {!habit.today_completed ? 'border-slate-300 bg-white text-slate-400 dark:border-white/20 dark:bg-slate-900 dark:text-slate-500' : ''}"
+              style={habit.today_completed ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}` : undefined}
               onclick={() => toggleHabitComplete(habit)}
               title={habit.name}
             >
@@ -3196,10 +3194,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         <div class="flex justify-center gap-3 overflow-x-auto pb-2 pt-1">
           {#each dailyHabits as habit (habit.id)}
             <button
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition-all"
-              class:text-slate-400={!habit.today_completed}
-              class:dark:text-slate-500={!habit.today_completed}
-              style={!habit.today_completed ? `border: 1.5px solid ${headerColor}33` : `background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
+              class="grid h-10 w-10 shrink-0 place-items-center rounded-full border text-xl transition-all duration-150 hover:scale-110 active:scale-95 {!habit.today_completed ? 'border-slate-300 bg-white text-slate-400 dark:border-white/20 dark:bg-slate-900 dark:text-slate-500' : ''}"
+              style={habit.today_completed ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}` : undefined}
               onclick={() => toggleHabitComplete(habit)}
               title={habit.name}
             >
