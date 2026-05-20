@@ -728,19 +728,23 @@ import HabitDetail from './routes/HabitDetail.svelte';
             }
           }}
         />
-        <div bind:this={recentContainerRef} class="relative">
+        <div bind:this={recentContainerRef} class="relative" onmouseleave={() => showRecentPopup = false}>
           <button
             class="al-icon-wrapper grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {showRecentPopup
               ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white text-white'
               : 'text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
             type="button"
-            onclick={toggleRecentPopup}
-          aria-label="Recent collections"
-          title="Recent"
-        >
+            onmouseenter={() => {
+              if (!showRecentPopup) {
+                toggleRecentPopup();
+              }
+            }}
+            aria-label="Recent collections"
+            title="Recent"
+          >
             <Clock label="" size={20} />
           </button>
-          
+
           {#if showRecentPopup}
             <div class="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
               <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Recently visited</div>

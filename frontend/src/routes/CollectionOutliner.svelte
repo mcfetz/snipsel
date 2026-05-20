@@ -2839,7 +2839,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
           {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
             {@const allCompleted = dailyHabits.every(h => h.today_completed)}
-            <div bind:this={habitsPopupRef} class="relative">
+            <div bind:this={habitsPopupRef} class="relative" onmouseleave={() => showHabitsPopup = false}>
               <button
                 class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full transition-colors {showHabitsPopup
                   ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
@@ -2848,7 +2848,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                     : 'text-slate-400 hover:bg-black/5 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-slate-300'}"
                 style={!showHabitsPopup && allCompleted ? `color: ${headerColor}` : undefined}
                 type="button"
-                onclick={() => showHabitsPopup = !showHabitsPopup}
+                onmouseenter={() => showHabitsPopup = true}
                 aria-label="Habits"
                 title="Habits"
               >
@@ -2884,13 +2884,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           {/if}
 
           {#if throwbackLists.length > 0}
-            <div bind:this={throwbackPopupRef} class="relative">
+            <div bind:this={throwbackPopupRef} class="relative" onmouseleave={() => showThrowbackPopup = false}>
               <button
                 class="al-icon-wrapper grid h-9 w-9 place-items-center rounded-full transition-colors {showThrowbackPopup
                   ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
                   : 'text-slate-400 hover:bg-black/5 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-slate-300'}"
                 type="button"
-                onclick={() => showThrowbackPopup = !showThrowbackPopup}
+                onmouseenter={() => showThrowbackPopup = true}
                 aria-label="Throwback"
                 title="Throwback"
               >
