@@ -6,8 +6,8 @@
   import CalendarIcon from '@animated-color-icons/lucide-svelte/Calendar.svelte';
   import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
   import PlusIcon from '@animated-color-icons/lucide-svelte/Plus.svelte';
-  import List from '@animated-color-icons/lucide-svelte/List.svelte';
-  import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
+import List from '@animated-color-icons/lucide-svelte/List.svelte';
+import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
@@ -940,7 +940,6 @@ import HabitDetail from './routes/HabitDetail.svelte';
             >
               <Flame label="" size={24} />
             </button>
-            
           </div>
         </div>
       </nav>
