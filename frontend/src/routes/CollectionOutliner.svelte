@@ -3005,7 +3005,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                <span class="text-xl leading-none opacity-50">{habit.icon}</span>
                <span
                  class="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold shadow-sm"
-                 style={`background-color: ${headerColor}; color: white`}
+                 style={`background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
                  in:scale={{ start: 0.5, duration: 150 }}
                >✓</span>
                <span
