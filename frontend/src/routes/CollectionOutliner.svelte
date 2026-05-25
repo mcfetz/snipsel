@@ -3003,11 +3003,11 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                out:fade={{ duration: 150 }}
              >
                <span class="text-xl leading-none opacity-50">{habit.icon}</span>
-               <span
-                 class="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold shadow-sm"
-                 style={`background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
-                 in:scale={{ start: 0.5, duration: 150 }}
-               >✓</span>
+                <span
+                  class="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold shadow-sm"
+                  style={`background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
+                  in:scale={{ start: 0.5, duration: 150 }}
+                >✓</span>
                <span
                  class="ml-0.5 text-[10px] text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-500"
                  onclick={(e) => { e.stopPropagation(); currentView.set({ type: 'habit_detail', id: habit.id }); }}
