@@ -2961,11 +2961,11 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
              <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
              <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
            </div>
-           <div class="flex flex-row gap-2 overflow-x-auto pb-2" style="scrollbar-width: thin; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior-x: contain;"
-            ontouchstart={(e) => { const t = e.touches[0]; habitsTouchX = t.clientX; habitsTouchY = t.clientY; habitsTouchLocked = false; }}
-            ontouchmove={(e) => { if (habitsTouchLocked) { e.preventDefault(); return; } const t = e.touches[0]; const dx = Math.abs(t.clientX - habitsTouchX); const dy = Math.abs(t.clientY - habitsTouchY); if (dx > 10 && dx > dy) { habitsTouchLocked = true; e.preventDefault(); } }}
-            ontouchend={() => { habitsTouchLocked = false; }}
-            >
+            <div class="flex flex-row gap-2 overflow-x-auto pb-2" style="scrollbar-width: thin; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior-x: contain;"
+             ontouchstart={(e) => { e.stopPropagation(); const t = e.touches[0]; habitsTouchX = t.clientX; habitsTouchY = t.clientY; habitsTouchLocked = false; }}
+             ontouchmove={(e) => { e.stopPropagation(); if (habitsTouchLocked) { e.preventDefault(); return; } const t = e.touches[0]; const dx = Math.abs(t.clientX - habitsTouchX); const dy = Math.abs(t.clientY - habitsTouchY); if (dx > 10 && dx > dy) { habitsTouchLocked = true; e.preventDefault(); } }}
+             ontouchend={(e) => { e.stopPropagation(); habitsTouchLocked = false; }}
+             >
            {#each openDailyHabits as habit (habit.id)}
              <button
                class="group flex shrink-0 items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5"
