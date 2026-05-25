@@ -2838,23 +2838,25 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               </button>
 
               {#if showThrowbackPopup}
-                <div class="absolute left-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
-                  <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Throwback</div>
-                  <div class="max-h-80 overflow-y-auto py-1">
-                    {#each throwbackLists as tb (tb.id)}
-                      <button
-                        class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
-                        type="button"
-                        onclick={(e) => {
-                          e.stopPropagation();
-                          showThrowbackPopup = false;
-                          currentView.set({ type: 'collection', id: tb.id });
-                        }}
-                      >
-                        <span class="text-xl shrink-0">{tb.icon}</span>
-                        <span class="truncate font-medium text-slate-800 dark:text-slate-200">{tb.year}</span>
-                      </button>
-                    {/each}
+                <div class="absolute left-0 top-full z-50 w-56 pt-2" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
+                  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
+                    <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Throwback</div>
+                    <div class="max-h-80 overflow-y-auto py-1">
+                      {#each throwbackLists as tb (tb.id)}
+                        <button
+                          class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
+                          type="button"
+                          onclick={(e) => {
+                            e.stopPropagation();
+                            showThrowbackPopup = false;
+                            currentView.set({ type: 'collection', id: tb.id });
+                          }}
+                        >
+                          <span class="text-xl shrink-0">{tb.icon}</span>
+                          <span class="truncate font-medium text-slate-800 dark:text-slate-200">{tb.year}</span>
+                        </button>
+                      {/each}
+                    </div>
                   </div>
                 </div>
               {/if}

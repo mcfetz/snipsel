@@ -746,38 +746,40 @@ import HabitDetail from './routes/HabitDetail.svelte';
           </button>
 
           {#if showRecentPopup}
-            <div class="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
-              <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Recently visited</div>
-              <div class="max-h-80 overflow-y-auto py-1">
-                {#if $recentCollectionsStore.length === 0}
-                  <div class="px-4 py-3 text-sm text-slate-500 italic text-left dark:text-slate-400">No recent history</div>
-                {:else}
-                  {#each $recentCollectionsStore as rc (rc.id)}
-                    <button
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
-                      type="button"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        showRecentPopup = false;
-                        currentView.set({ type: 'collection', id: rc.id });
-                      }}
-                    >
-                      <span class="text-xl shrink-0">{rc.icon}</span>
-                      <span class="truncate font-medium text-slate-800 dark:text-slate-200">{rc.title}</span>
-                    </button>
-                  {/each}
-                {/if}
-                {#if $recentCollectionsStore.length > 0}
-                  <div class="border-t border-slate-100 mt-1 p-1 dark:border-white/5">
-                    <button
-                      class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors"
-                      type="button"
-                      onclick={(e) => { e.stopPropagation(); clearRecent(); }}
-                    >
-                      Clear history
-                    </button>
-                  </div>
-                {/if}
+            <div class="absolute right-0 top-full z-50 w-64 pt-2" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
+              <div class="overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
+                <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Recently visited</div>
+                <div class="max-h-80 overflow-y-auto py-1">
+                  {#if $recentCollectionsStore.length === 0}
+                    <div class="px-4 py-3 text-sm text-slate-500 italic text-left dark:text-slate-400">No recent history</div>
+                  {:else}
+                    {#each $recentCollectionsStore as rc (rc.id)}
+                      <button
+                        class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
+                        type="button"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          showRecentPopup = false;
+                          currentView.set({ type: 'collection', id: rc.id });
+                        }}
+                      >
+                        <span class="text-xl shrink-0">{rc.icon}</span>
+                        <span class="truncate font-medium text-slate-800 dark:text-slate-200">{rc.title}</span>
+                      </button>
+                    {/each}
+                  {/if}
+                  {#if $recentCollectionsStore.length > 0}
+                    <div class="border-t border-slate-100 mt-1 p-1 dark:border-white/5">
+                      <button
+                        class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors"
+                        type="button"
+                        onclick={(e) => { e.stopPropagation(); clearRecent(); }}
+                      >
+                        Clear history
+                      </button>
+                    </div>
+                  {/if}
+                </div>
               </div>
             </div>
           {/if}
