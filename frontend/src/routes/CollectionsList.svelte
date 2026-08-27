@@ -477,6 +477,18 @@
             {#if c.access_level === 'read' || c.access_level === 'write'}
               <span class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}>shared</span>
             {/if}
+            <button
+              class="al-icon-wrapper grid h-7 w-7 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors dark:hover:bg-white/10 dark:hover:text-slate-200"
+              type="button"
+              aria-label="Edit collection"
+              title="Edit"
+              onclick={(e) => {
+                e.stopPropagation();
+                editCollection(c);
+              }}
+            >
+              <Info label="" size={16} />
+            </button>
           </div>
         </div>
       {/each}
