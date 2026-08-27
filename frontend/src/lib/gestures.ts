@@ -1,4 +1,9 @@
-export function longPress(onLongPress: () => void, onShortPress: () => void, ms = 450) {
+export function longPress(
+  onLongPress: () => void,
+  onShortPress: () => void,
+  ms = 450,
+  triggerOnRelease = true
+) {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let firedLong = false;
   let handledByPointer = false;
@@ -29,13 +34,27 @@ export function longPress(onLongPress: () => void, onShortPress: () => void, ms 
       timer = setTimeout(() => {
         firedLong = true;
         handledByPointer = true;
-        onLongPress();
+        try {
+          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            navigator.vibrate(30);
+          }
+        } catch {
+          // Ignore
+        }
+        if (!triggerOnRelease) {
+          onLongPress();
+        }
       }, ms);
     },
     onpointerup: (e: PointerEvent) => {
       cancel();
 
-      if (!firedLong) {
+      if (firedLong) {
+        handledByPointer = true;
+        if (triggerOnRelease) {
+          onLongPress();
+        }
+      } else {
         handledByPointer = true;
         onShortPress();
       }
