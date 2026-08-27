@@ -184,37 +184,57 @@ import HabitDetail from './routes/HabitDetail.svelte';
     }
   }
 
+  let plusPressState = $state<'idle' | 'holding' | 'long'>('idle');
+
+  async function readClipboard(): Promise<{ text?: string; image?: File }> {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return {};
+
+    // 1. Try navigator.clipboard.read() first (supports images & rich content)
+    try {
+      if (typeof navigator.clipboard.read === 'function') {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find((t) => t.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            const ext = imageType.split('/')[1]?.replace('+xml', '') || 'png';
+            return { image: new File([blob], `pasted-image-${Date.now()}.${ext}`, { type: imageType }) };
+          }
+          if (item.types.includes('text/plain')) {
+            const blob = await item.getType('text/plain');
+            const text = await blob.text();
+            if (text) return { text };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('navigator.clipboard.read() failed:', err);
+    }
+
+    // 2. Fallback to navigator.clipboard.readText()
+    try {
+      if (typeof navigator.clipboard.readText === 'function') {
+        const text = await navigator.clipboard.readText();
+        if (text) return { text };
+      }
+    } catch (err) {
+      console.warn('navigator.clipboard.readText() failed:', err);
+    }
+
+    return {};
+  }
+
   async function onNewSnipselFromClipboard() {
     isLoading.set(true);
     try {
-      let clipText = '';
-      let clipImageFile: File | null = null;
+      const { text, image } = await readClipboard();
+      const clipText = text?.trim() || '';
+      const clipImageFile = image || null;
 
-      try {
-        if (navigator.clipboard && navigator.clipboard.read) {
-          const items = await navigator.clipboard.read();
-          for (const item of items) {
-            const imageType = item.types.find((t) => t.startsWith('image/'));
-            if (imageType) {
-              const blob = await item.getType(imageType);
-              const ext = imageType.split('/')[1]?.replace('+xml', '') || 'png';
-              clipImageFile = new File([blob], `pasted-image-${Date.now()}.${ext}`, { type: imageType });
-              break;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Clipboard read() failed, attempting readText():', err);
-      }
-
-      if (!clipImageFile) {
-        try {
-          if (navigator.clipboard && navigator.clipboard.readText) {
-            clipText = (await navigator.clipboard.readText()) || '';
-          }
-        } catch (err) {
-          console.warn('Clipboard readText() failed:', err);
-        }
+      // If clipboard was completely empty, fallback to normal new snipsel
+      if (!clipText && !clipImageFile) {
+        await onNewSnipsel();
+        return;
       }
 
       const today = getTodayDate();
@@ -222,7 +242,7 @@ import HabitDetail from './routes/HabitDetail.svelte';
       const col = res.collection;
 
       const createRes = await api.snipsels.create(col.id, {
-        content_markdown: clipText,
+        content_markdown: clipText || null,
         type: clipImageFile ? 'image' : (col.default_snipsel_type || 'text'),
       });
 
@@ -268,7 +288,9 @@ import HabitDetail from './routes/HabitDetail.svelte';
 
   const lpNewSnipsel = longPress(
     () => void onNewSnipselFromClipboard(),
-    () => void onNewSnipsel()
+    () => void onNewSnipsel(),
+    400,
+    (state) => { plusPressState = state; }
   );
 
   async function openToday() {
@@ -997,9 +1019,12 @@ import HabitDetail from './routes/HabitDetail.svelte';
             </button>
 
             <button
-              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg select-none"
-              style={`background-color: ${getNavPlusColor()}; color: ${getNavPlusIconColor()}`}
+              class="al-icon-wrapper relative grid h-12 w-12 place-items-center rounded-full transition-all duration-200 select-none {plusPressState === 'long' ? 'scale-115 ring-4 ring-indigo-300 dark:ring-indigo-400/50 shadow-2xl' : plusPressState === 'holding' ? 'scale-90 opacity-90' : 'hover:-translate-y-0.5 hover:shadow-lg'}"
+              style={`background-color: ${getNavPlusColor()}; color: ${getNavPlusIconColor()}; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none;`}
               type="button"
+              ontouchstart={lpNewSnipsel.ontouchstart}
+              ontouchend={lpNewSnipsel.ontouchend}
+              ontouchcancel={lpNewSnipsel.ontouchcancel}
               onpointerdown={lpNewSnipsel.onpointerdown}
               onpointerup={lpNewSnipsel.onpointerup}
               onpointercancel={lpNewSnipsel.onpointercancel}

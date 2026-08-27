@@ -1,87 +1,105 @@
 export function longPress(
   onLongPress: () => void,
   onShortPress: () => void,
-  ms = 450,
-  triggerOnRelease = true
+  ms = 400,
+  onStateChange?: (state: 'idle' | 'holding' | 'long') => void
 ) {
   let timer: ReturnType<typeof setTimeout> | null = null;
-  let firedLong = false;
-  let handledByPointer = false;
-  let activePointerId: number | null = null;
+  let isLong = false;
+  let isTouch = false;
+  let touchStartTime = 0;
 
-  function cancel() {
-    if (timer) clearTimeout(timer);
-    timer = null;
+  function clearTimer() {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
   }
 
-  function reset() {
-    cancel();
-    firedLong = false;
-    handledByPointer = false;
-    activePointerId = null;
+  function start() {
+    clearTimer();
+    isLong = false;
+    touchStartTime = Date.now();
+    onStateChange?.('holding');
+    timer = setTimeout(() => {
+      isLong = true;
+      onStateChange?.('long');
+      try {
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate(40);
+        }
+      } catch {}
+    }, ms);
+  }
+
+  function end(e?: Event) {
+    const elapsed = Date.now() - touchStartTime;
+    const wasLong = isLong || elapsed >= ms;
+    clearTimer();
+    isLong = false;
+    onStateChange?.('idle');
+
+    if (wasLong) {
+      if (e && e.cancelable) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      onLongPress();
+    } else {
+      onShortPress();
+    }
+  }
+
+  function cancel() {
+    clearTimer();
+    isLong = false;
+    onStateChange?.('idle');
   }
 
   return {
-    onpointerdown: (e: PointerEvent) => {
-      reset();
-      activePointerId = e.pointerId;
-      try {
-        (e.currentTarget as HTMLElement | null)?.setPointerCapture(e.pointerId);
-      } catch {
-        // Ignore (some browsers/targets may not support capture).
-      }
+    ontouchstart: (e: TouchEvent) => {
+      isTouch = true;
+      start();
+    },
+    ontouchend: (e: TouchEvent) => {
+      if (!isTouch) return;
+      end(e);
+      setTimeout(() => {
+        isTouch = false;
+      }, 500);
+    },
+    ontouchcancel: () => {
+      cancel();
+      isTouch = false;
+    },
 
-      timer = setTimeout(() => {
-        firedLong = true;
-        handledByPointer = true;
-        try {
-          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-            navigator.vibrate(30);
-          }
-        } catch {
-          // Ignore
-        }
-        if (!triggerOnRelease) {
-          onLongPress();
-        }
-      }, ms);
+    onpointerdown: (e: PointerEvent) => {
+      if (isTouch || e.pointerType === 'touch') return;
+      start();
     },
     onpointerup: (e: PointerEvent) => {
-      cancel();
-
-      if (firedLong) {
-        handledByPointer = true;
-        if (triggerOnRelease) {
-          onLongPress();
-        }
-      } else {
-        handledByPointer = true;
-        onShortPress();
-      }
-
-      if (activePointerId !== null) {
-        try {
-          (e.currentTarget as HTMLElement | null)?.releasePointerCapture(activePointerId);
-        } catch {
-          // Ignore.
-        }
-      }
-
-      activePointerId = null;
+      if (isTouch || e.pointerType === 'touch') return;
+      end(e);
     },
-    onpointercancel: () => reset(),
-    onpointerleave: () => cancel(),
+    onpointercancel: () => {
+      if (isTouch) return;
+      cancel();
+    },
+    onpointerleave: () => {
+      if (isTouch) return;
+      cancel();
+    },
+
     onclick: (e: MouseEvent) => {
-      if (handledByPointer) {
+      if (isTouch) {
         e.preventDefault();
         e.stopPropagation();
-        handledByPointer = false;
         return;
       }
-      onShortPress();
     },
     oncontextmenu: (e: MouseEvent) => {
-      if (firedLong) e.preventDefault();
+      e.preventDefault();
+      e.stopPropagation();
     },
   };
 }
