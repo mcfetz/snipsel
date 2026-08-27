@@ -435,22 +435,41 @@
   {:else if listView === 'cards'}
     <div class="grid grid-cols-2 gap-3">
       {#each visible as c (c.id)}
-        <button
+        <div
           class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900 cursor-pointer flex h-36 flex-col"
-          type="button"
+          role="button"
+          tabindex="0"
           onclick={() => openCollection(c)}
+          onkeydown={(e) => {
+            if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              openCollection(c);
+            }
+          }}
           in:fly={{ y: 10, duration: 200 }}
           out:fade={{ duration: 150 }}
         >
           <div
-            class="flex flex-1 items-center justify-center overflow-hidden dark:brightness-75"
+            class="relative flex flex-1 items-center justify-center overflow-hidden dark:brightness-75"
             style={cardHeaderStyle(c)}
           >
-            {#if c.is_favorite}
-              <span class="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-white/80 text-xs text-amber-500 shadow-sm dark:bg-slate-900/80">
-                <Heart label="" size={12} className="fill-current" />
-              </span>
-            {/if}
+            <button
+              class="al-icon-wrapper absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full border border-black/5 bg-white/80 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-white active:scale-95 dark:border-white/10 dark:bg-slate-900/80 dark:hover:bg-slate-900 {c.is_favorite ? '' : 'text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200'}"
+              type="button"
+              aria-label={c.is_favorite ? 'Unfavorite' : 'Favorite'}
+              title={c.is_favorite ? 'Unfavorite' : 'Favorite'}
+              onclick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(c);
+              }}
+              style={c.is_favorite ? `color: ${getAccent()}` : undefined}
+            >
+              {#if c.is_favorite}
+                <Heart label="" size={16} className="fill-current" />
+              {:else}
+                <Heart label="" size={16} />
+              {/if}
+            </button>
           </div>
           <div class="flex items-center gap-2 px-2.5 py-2">
             <span class="text-lg leading-none shrink-0">{c.icon}</span>
@@ -459,7 +478,7 @@
               <span class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}>shared</span>
             {/if}
           </div>
-        </button>
+        </div>
       {/each}
     </div>
     {#if filtered.length > VISIBLE_LIMIT}
