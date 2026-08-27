@@ -14,6 +14,7 @@
   import ChevronDown from '@animated-color-icons/lucide-svelte/ChevronDown.svelte';
   import ChevronUp from '@animated-color-icons/lucide-svelte/ChevronUp.svelte';
   import ChevronRight from '@animated-color-icons/lucide-svelte/ChevronRight.svelte';
+  import ChevronLeft from '@animated-color-icons/lucide-svelte/ChevronLeft.svelte';
   import ListPlus from '@animated-color-icons/lucide-svelte/ListPlus.svelte';
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import Repeat from '@animated-color-icons/lucide-svelte/Repeat.svelte';
@@ -127,8 +128,24 @@
   // Habits for daily collections
   let dailyHabits = $state<Habit[]>([]);
   let habitsLoaded = $state(false);
+  let habitsScrollRef: HTMLDivElement | undefined = $state();
+  let habitsCanScrollLeft = $state(false);
+  let habitsCanScrollRight = $state(false);
   let showThrowbackPopup = $state(false);
   let throwbackPopupRef: HTMLDivElement | undefined = $state();
+
+  $effect(() => {
+    const el = habitsScrollRef;
+    if (!el) return;
+    const update = () => {
+      habitsCanScrollLeft = el.scrollLeft > 0;
+      habitsCanScrollRight = el.scrollLeft < el.scrollWidth - el.clientWidth - 1;
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 
   $effect(() => {
     if (!showThrowbackPopup) return;
@@ -3039,10 +3056,30 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
               <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
             </div>
-             <div class="flex flex-wrap gap-2">
-           {#each openDailyHabits as habit (habit.id)}
+             <div class="flex items-center gap-1">
+               {#if habitsCanScrollLeft}
+                <button
+                  type="button"
+                  class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-slate-200/80 bg-white/80 text-slate-500 shadow-sm backdrop-blur-md hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400"
+                  aria-label="Scroll habits left"
+                  onclick={() => habitsScrollRef?.scrollBy({ left: -200, behavior: 'smooth' })}
+                >
+                  <ChevronLeft label="" size={16} strokeWidth={2.5} />
+                </button>
+              {/if}
+              <div
+                bind:this={habitsScrollRef}
+                class="flex flex-1 gap-2 overflow-x-auto scrollbar-hidden"
+                onscroll={() => {
+                  const el = habitsScrollRef;
+                  if (!el) return;
+                  habitsCanScrollLeft = el.scrollLeft > 0;
+                  habitsCanScrollRight = el.scrollLeft < el.scrollWidth - el.clientWidth - 1;
+                }}
+                >
+              {#each openDailyHabits as habit (habit.id)}
               <button
-                class="group flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5"
+                class="group flex shrink-0 items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5"
                 type="button"
                 onclick={(e) => { e.stopPropagation(); toggleHabitComplete(habit); }}
                 in:fly={{ y: -10, duration: 200 }}
@@ -3070,7 +3107,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
             {#each completedDailyHabits as habit (habit.id)}
               <button
-                class="group relative flex items-center rounded-full border border-slate-200/60 bg-white/50 px-2.5 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:opacity-80 active:scale-[0.97] dark:border-white/5 dark:bg-slate-900/50 dark:ring-white/5"
+                class="group relative flex shrink-0 items-center rounded-full border border-slate-200/60 bg-white/50 px-2.5 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:opacity-80 active:scale-[0.97] dark:border-white/5 dark:bg-slate-900/50 dark:ring-white/5"
                 type="button"
                 onclick={(e) => { e.stopPropagation(); toggleHabitComplete(habit); }}
                 in:fly={{ y: 10, duration: 200 }}
@@ -3091,7 +3128,18 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 ><ChevronRight label="" size={12} strokeWidth={2.5} className="text-slate-400 dark:text-slate-500" /></span>
               </button>
              {/each}
-          </div>
+              </div>
+              {#if habitsCanScrollRight}
+                <button
+                  type="button"
+                  class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-slate-200/80 bg-white/80 text-slate-500 shadow-sm backdrop-blur-md hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400"
+                  aria-label="Scroll habits right"
+                  onclick={() => habitsScrollRef?.scrollBy({ left: 200, behavior: 'smooth' })}
+                >
+                  <ChevronRight label="" size={16} strokeWidth={2.5} />
+                </button>
+              {/if}
+            </div>
         </div>
         {/if}
      {/if}
@@ -4449,6 +4497,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 {/if}
 
 <style>
+  :global(.scrollbar-hidden) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  :global(.scrollbar-hidden::-webkit-scrollbar) {
+    display: none;
+  }
+
   .day-nav {
     position: absolute;
     top: 0;
