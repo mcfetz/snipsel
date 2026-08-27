@@ -16,7 +16,7 @@
   import LayoutGrid from '@animated-color-icons/lucide-svelte/LayoutGrid.svelte';
   import { api, type Collection } from '../lib/api';
   import { currentUser } from '../lib/session';
-  import { collections, collectionAnchor, currentView, isLoading, pendingReference } from '../lib/stores';
+  import { collections, collectionAnchor, collectionItems, currentView, isLoading, pendingReference } from '../lib/stores';
 
   let showCreate = false;
   let newTitle = '';
@@ -159,6 +159,7 @@
   }
 
   async function openCollection(c: Collection) {
+    collectionItems.set([]);
     const pending = $pendingReference;
     if (pending) {
       for (const id of pending.snipselIds) {

@@ -28,18 +28,6 @@ registerRoute(
     })
 )
 
-// Cache API GET requests
-registerRoute(
-    ({ url, request }) => url.pathname.startsWith('/api/') && request.method === 'GET',
-    new NetworkFirst({
-        cacheName: 'snipsel-api-fallback',
-        networkTimeoutSeconds: 3,
-        plugins: [
-            new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 })
-        ]
-    })
-)
-
 self.addEventListener('push', (event) => {
     console.log('[ServiceWorker] Push event received!', event);
     let data: any = {}

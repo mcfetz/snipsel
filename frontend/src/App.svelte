@@ -369,6 +369,7 @@ import HabitDetail from './routes/HabitDetail.svelte';
   async function openToday() {
     isLoading.set(true);
     isSwitchingCollection = true;
+    collectionItems.set([]);
     try {
       const today = getTodayDate();
       const res = await api.collections.today(today);
@@ -401,6 +402,7 @@ import HabitDetail from './routes/HabitDetail.svelte';
   async function openCollectionById(id: string) {
     isLoading.set(true);
     isSwitchingCollection = true;
+    collectionItems.set([]);
     try {
       const res = await api.collections.get(id);
       currentCollection.set(res.collection);

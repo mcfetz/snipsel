@@ -416,6 +416,7 @@
     try {
       const targetDate = offsetDate(col.list_for_day, direction);
       const res = await api.collections.today(targetDate);
+      collectionItems.set([]);
       currentCollection.set(res.collection);
       currentView.set({ type: 'collection', id: res.collection.id });
       // Set enter animation (opposite direction to exit)

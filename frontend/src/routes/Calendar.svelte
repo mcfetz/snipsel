@@ -2,7 +2,7 @@
   import CalendarIcon from '@animated-color-icons/lucide-svelte/Calendar.svelte';
   import { api } from '../lib/api';
   import { fly } from 'svelte/transition';
-  import { collectionAnchor, currentCollection, currentView, isLoading, toLocalIsoDay } from '../lib/stores';
+  import { collectionAnchor, collectionItems, currentCollection, currentView, isLoading, toLocalIsoDay } from '../lib/stores';
   import { currentUser } from '../lib/session';
 
   let cursor = $state(new Date());
@@ -107,6 +107,7 @@
     await new Promise(resolve => setTimeout(resolve, 120));
     const iso = toLocalIsoDay(day);
     isLoading.set(true);
+    collectionItems.set([]);
     try {
       const res = await api.collections.today(iso);
       currentCollection.set(res.collection);

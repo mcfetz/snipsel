@@ -345,10 +345,25 @@ import {
   idbGetSyncQueue
 } from './db';
 
-/** Monotonically increasing counter. Incremented on every local mutation.
+/** Monotonically increasing counters. Incremented on local mutations.
  *  Background refresh functions capture this before issuing a GET and discard
- *  the response if the counter changed, preventing stale overwrites. */
-let mutationSeq = 0;
+ *  the response if the counter changed, preventing stale overwrites.
+ *  Tracked per collectionId so mutations on one collection do not discard
+ *  background refreshes for other collections. */
+const collectionMutationSeq = new Map<string, number>();
+let globalCollectionsMutationSeq = 0;
+
+function bumpCollectionMutation(collectionId?: string) {
+  globalCollectionsMutationSeq++;
+  if (collectionId) {
+    collectionMutationSeq.set(collectionId, (collectionMutationSeq.get(collectionId) ?? 0) + 1);
+  }
+}
+
+function getCollectionMutation(collectionId?: string): number {
+  if (collectionId) return collectionMutationSeq.get(collectionId) ?? 0;
+  return globalCollectionsMutationSeq;
+}
 
 export const api = {
   getConfig: () => requestJson<{ registration_enabled: boolean; oidc_enabled: boolean; oidc_disable_password_login: boolean }>('/api/auth/config'),
@@ -476,14 +491,14 @@ export const api = {
       const filteredLocal = includeArchived ? local : local.filter(c => !c.archived);
       
       const refresh = async () => {
-        const seqBefore = mutationSeq;
+        const seqBefore = getCollectionMutation();
         try {
           if (!navigator.onLine) return;
           const res = await requestJson<{ collections: Collection[] }>(
             `/api/collections${includeArchived ? '?include_archived=1' : ''}`,
             { timeout: 60000 }
           );
-          if (mutationSeq !== seqBefore) return; // Discard stale response
+          if (getCollectionMutation() !== seqBefore) return; // Discard stale response
           await idbSaveCollections(res.collections);
         } catch {}
       };
@@ -548,8 +563,12 @@ export const api = {
             return res;
           } catch (err: any) {
             if (err?.error?.code === 'passcode_required' || (err?.error?.code && err.error.code !== 'network_error' && err.error.code !== 'unknown_error')) throw err;
+            const targetDay = day || (() => {
+              const d = new Date();
+              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })();
             const all = await idbGetAllCollections();
-            const match = all.find(c => c.list_for_day === (day || new Date().toISOString().slice(0, 10)));
+            const match = all.find(c => c.list_for_day === targetDay);
             if (match) return { collection: match };
             throw err;
           } finally {
@@ -769,7 +788,7 @@ export const api = {
       const local = await idbGetCollectionItems(collectionId);
 
       const refresh = async () => {
-        const seqBefore = mutationSeq;
+        const seqBefore = getCollectionMutation(collectionId);
         try {
           if (!navigator.onLine) return;
           
@@ -780,7 +799,7 @@ export const api = {
             `/api/collections/${collectionId}/snipsels`,
             { timeout: 60000, cache: 'no-store' }
           );
-          if (mutationSeq !== seqBefore) return; // Discard stale response
+          if (getCollectionMutation(collectionId) !== seqBefore) return; // Discard stale response
           await idbReplaceCollectionItems(collectionId, res.items);
           // Notify UI to update store with fresh server data
           if (typeof window !== 'undefined') {
@@ -863,7 +882,7 @@ export const api = {
         snipsel
       };
       await idbSaveCollectionItem(item);
-      mutationSeq++;
+      bumpCollectionMutation(collectionId);
       const syncPayload = { ...input, _tempId: tempId, position: finalPosition };
       
       if (typeof window !== 'undefined' && navigator.onLine) {
@@ -898,7 +917,7 @@ export const api = {
       }
     ) => {
       await idbUpdateSnipselData(snipselId, input);
-      mutationSeq++;
+      bumpCollectionMutation();
       
       if (typeof window !== 'undefined' && navigator.onLine) {
         try {
@@ -917,7 +936,7 @@ export const api = {
     },
     delete: async (collectionId: string, snipselId: string) => {
       await idbDeleteCollectionItem(collectionId, snipselId);
-      mutationSeq++;
+      bumpCollectionMutation(collectionId);
       await idbEnqueueSync('DELETE', `/api/collections/${collectionId}/snipsels/${snipselId}`);
       return { ok: true as const };
     },
@@ -944,7 +963,7 @@ export const api = {
           await idbSaveCollectionItem(m);
         }
       }
-      mutationSeq++;
+      bumpCollectionMutation(collectionId);
       await idbEnqueueSync('PATCH', `/api/collections/${collectionId}/snipsels/reorder`, { items });
       return { ok: true as const };
     },
