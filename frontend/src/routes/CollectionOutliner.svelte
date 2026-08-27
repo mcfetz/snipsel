@@ -3070,12 +3070,16 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               <div
                 bind:this={habitsScrollRef}
                 class="flex flex-1 gap-2 overflow-x-auto scrollbar-hidden"
+                style="touch-action: pan-x; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;"
                 onscroll={() => {
                   const el = habitsScrollRef;
                   if (!el) return;
                   habitsCanScrollLeft = el.scrollLeft > 0;
                   habitsCanScrollRight = el.scrollLeft < el.scrollWidth - el.clientWidth - 1;
                 }}
+                ontouchstart={(e) => e.stopPropagation()}
+                ontouchmove={(e) => e.stopPropagation()}
+                ontouchend={(e) => e.stopPropagation()}
                 >
               {#each openDailyHabits as habit (habit.id)}
               <button
