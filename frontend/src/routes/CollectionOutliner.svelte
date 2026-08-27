@@ -854,6 +854,21 @@
     return rgba(mixed, 0.8);
   });
 
+  let cardTileBg = $derived.by(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    const baseColor = isDark ? '#1e293b' : '#ffffff';
+    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
+    const header = hexToRgb(headerColor);
+    const mixed = header ? mixRgb(base, header, isDark ? 0.22 : 0.14) : base;
+    return rgba(mixed, 0.96);
+  });
+
+  let cardTileBorder = $derived.by(() => {
+    const header = hexToRgb(headerColor);
+    if (!header) return 'rgba(0, 0, 0, 0.08)';
+    return rgba(header, 0.28);
+  });
+
   // Item lookup map — O(1) lookups instead of repeated O(n) .find() calls
   let itemById = $derived(new Map($sortedItems.map(i => [i.snipsel_id, i])));
 
@@ -2759,14 +2774,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 {#snippet snipselCard(item: CollectionItem)}
   <div
     id={`snipsel-${item.snipsel_id}`}
-    class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900 flex flex-col gap-2 {anchorHighlightId === item.snipsel_id ? 'ring-2' : ''} {selectedIds.has(item.snipsel_id) ? 'ring-2 !border-transparent' : ''} {item.snipsel.task_done > 0 ? 'task-faded' : ''} {item.snipsel.task_done === 2 ? 'task-cancelled' : ''}"
+    class="group relative overflow-hidden rounded-2xl border p-3 shadow-sm transition-all hover:shadow-md flex flex-col gap-2 {anchorHighlightId === item.snipsel_id ? 'ring-2' : ''} {selectedIds.has(item.snipsel_id) ? 'ring-2 !border-transparent' : ''} {item.snipsel.task_done > 0 ? 'task-faded' : ''} {item.snipsel.task_done === 2 ? 'task-cancelled' : ''}"
     class:blur-sm={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
     class:opacity-40={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
     class:pointer-events-none={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
     style={
       anchorHighlightId === item.snipsel_id || selectedIds.has(item.snipsel_id)
-        ? `--tw-ring-color: ${headerColor}`
-        : undefined
+        ? `--tw-ring-color: ${headerColor}; background-color: ${cardTileBg}; border-color: ${cardTileBorder};`
+        : `background-color: ${cardTileBg}; border-color: ${cardTileBorder};`
     }
     in:fly={{ y: 10, duration: 200 }}
     out:fade={{ duration: 150 }}
