@@ -2878,6 +2878,39 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         </div>
       </div>
     {:else}
+      {@const rangeLongPress = longPress(
+        () => handleSelectLongPress(item.snipsel_id),
+        () => handleSelectShortPress(item.snipsel_id)
+      )}
+      <button
+        type="button"
+        aria-label="Select snipsel"
+        class="absolute right-0 top-0 bottom-0 w-7 z-20 flex items-center justify-end transition-opacity select-none {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
+        onpointerdown={(e) => {
+          e.stopPropagation();
+          handleSelectPointerDown(e, item.snipsel_id);
+          rangeLongPress.onpointerdown(e);
+        }}
+        onpointerup={(e) => {
+          e.stopPropagation();
+          rangeLongPress.onpointerup();
+        }}
+        onpointercancel={rangeLongPress.onpointercancel}
+        onpointerleave={rangeLongPress.onpointerleave}
+        oncontextmenu={(e) => {
+          e.stopPropagation();
+          rangeLongPress.oncontextmenu(e);
+        }}
+        onclick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        <div
+          class="w-1.5 h-full transition-all duration-150 ease-out origin-right {selectedIds.has(item.snipsel_id) ? '' : 'scale-x-0 group-hover:scale-x-100'} hover:scale-x-150 active:scale-x-75"
+          style={selectedIds.has(item.snipsel_id) ? `background-color: ${headerColor}` : 'background-color: #94a3b8'}
+        ></div>
+      </button>
+
       {@const isImageAttachment = (a: Attachment) => Boolean(a.mime_type?.startsWith('image/') || (a.has_thumbnail && !a.mime_type?.startsWith('video/')))}
       {@const isVideoAttachment = (a: Attachment) => Boolean(a.mime_type?.startsWith('video/') || (a.has_thumbnail && a.filename.toLowerCase().match(/\.(mp4|mov|webm|avi|mkv)$/)))}
       {@const isMediaAttachment = (a: Attachment) => isImageAttachment(a) || isVideoAttachment(a)}
@@ -2977,7 +3010,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
       <!-- Main Card Body (Task checkbox + Content) -->
       <div
-        class="flex items-start gap-2 cursor-pointer"
+        class="flex items-start gap-2 cursor-pointer pr-3"
         role="button"
         tabindex="0"
         onclick={(e) => {
@@ -3067,7 +3100,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
       <!-- Footer: Tags, Mentions, Reminders, Reactions -->
       {#if (item.snipsel.tags?.length ?? 0) > 0 || (item.snipsel.mentions?.length ?? 0) > 0 || item.snipsel.reminder_at || (item.snipsel.reactions && item.snipsel.reactions.length > 0)}
-        <div class="mt-auto flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-100 dark:border-white/5">
+        <div class="mt-auto flex flex-wrap items-center gap-1.5 pt-1.5 pr-3 border-t border-slate-100 dark:border-white/5">
           {#each item.snipsel.tags ?? [] as t (t)}
             <span 
               class="rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider"
