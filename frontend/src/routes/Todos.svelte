@@ -154,17 +154,25 @@
 
 	async function toggleDone(id: string, current: number) {
 		collectionAnchor.set(null);
-		try {
-      // Cycle: 0 (Open) -> 1 (Done) -> 2 (Cancelled) -> 0 (Open)
-      const next = (current + 1) % 3;
-			await api.snipsels.update(id, { task_done: next });
-			saveStatuses[id] = 'success';
-			setTimeout(() => { if (saveStatuses[id] === 'success') saveStatuses[id] = null; }, 5000);
-			await load();
+    const next = (current + 1) % 3;
+
+    // Optimistic update — find and update the local item
+    const target = items.find(t => t.id === id);
+    if (!target) return;
+    const oldVal = target.task_done;
+    target.task_done = next;
+    saveStatuses[id] = 'success';
+    setTimeout(() => { if (saveStatuses[id] === 'success') saveStatuses[id] = null; }, 5000);
+
+    try {
+			api.snipsels.update(id, { task_done: next });
+      load();
 		} catch (err) {
-			console.error('Failed to toggle task:', err);
-			saveStatuses[id] = 'error';
-			setTimeout(() => { if (saveStatuses[id] === 'error') saveStatuses[id] = null; }, 5000);
+      console.error('Failed to toggle task:', err);
+      // Rollback
+      target.task_done = oldVal;
+      saveStatuses[id] = 'error';
+      setTimeout(() => { if (saveStatuses[id] === 'error') saveStatuses[id] = null; }, 5000);
 		}
 	}
 

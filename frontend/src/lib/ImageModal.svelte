@@ -25,27 +25,31 @@
   let error = $state<string | null>(null);
   let direction = $state<'left' | 'right'>('right');
 
+  let lastRequestedId: string | null = null;
+
   const currentAttachment = $derived(attachments[currentIndex]);
 
   function preloadAdjacentImages() {
     const prevIndex = currentIndex - 1;
     const nextIndex = currentIndex + 1;
     if (prevIndex >= 0 && !blobUrlCache[attachments[prevIndex].id]) {
-      loadImage(attachments[prevIndex].id);
+      loadImage(attachments[prevIndex].id, false);
     }
     if (nextIndex < attachments.length && !blobUrlCache[attachments[nextIndex].id]) {
-      loadImage(attachments[nextIndex].id);
+      loadImage(attachments[nextIndex].id, false);
     }
   }
 
-  async function loadImage(id: string) {
+  async function loadImage(id: string, setAsCurrent: boolean = true) {
     if (blobUrlCache[id]) {
-      currentBlobUrl = blobUrlCache[id];
+      if (setAsCurrent) currentBlobUrl = blobUrlCache[id];
       return;
     }
-    
-    loading = true;
-    error = null;
+    if (setAsCurrent) {
+      loading = true;
+      error = null;
+      lastRequestedId = id;
+    }
     try {
       const res = await fetch(`/api/attachments/${id}`, { credentials: 'include' });
       if (!res.ok) {
@@ -54,11 +58,17 @@
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       blobUrlCache[id] = url;
-      currentBlobUrl = url;
+      if (setAsCurrent && lastRequestedId === id) {
+        currentBlobUrl = url;
+      }
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load image';
+      if (setAsCurrent && lastRequestedId === id) {
+        error = e instanceof Error ? e.message : 'Failed to load image';
+      }
     } finally {
-      loading = false;
+      if (setAsCurrent && lastRequestedId === id) {
+        loading = false;
+      }
     }
   }
 
@@ -90,6 +100,9 @@
 
   $effect(() => {
     if (currentAttachment) {
+      currentBlobUrl = blobUrlCache[currentAttachment.id] ?? null;
+      loading = !currentBlobUrl;
+      error = null;
       loadImage(currentAttachment.id).then(() => {
         preloadAdjacentImages();
       });

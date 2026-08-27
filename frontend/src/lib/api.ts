@@ -900,7 +900,7 @@ export const api = {
         try {
           const res = await requestJson<{ snipsel: Snipsel }>(
             `/api/snipsels/${snipselId}`,
-            { method: 'PATCH', body: JSON.stringify(input) }
+            { method: 'PATCH', body: JSON.stringify(input), timeout: 5000 }
           );
           return res;
         } catch (err) {

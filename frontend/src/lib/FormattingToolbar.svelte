@@ -18,6 +18,7 @@
   import Outdent from '@animated-color-icons/lucide-svelte/Outdent.svelte';
   import ListPlus from '@animated-color-icons/lucide-svelte/ListPlus.svelte';
   import Network from '@animated-color-icons/lucide-svelte/Network.svelte';
+  import Paperclip from '@animated-color-icons/lucide-svelte/Paperclip.svelte';
 
   interface Props {
     textarea: HTMLTextAreaElement | undefined;
@@ -28,9 +29,10 @@
     onIndent?: () => void;
     onOutdent?: () => void;
     onNewSnipsel?: () => void;
+    onUploadAttachment?: () => void;
   }
 
-  let { textarea, onFormat, accentColor, isFullscreen, onToggleFullscreen, onIndent, onOutdent, onNewSnipsel }: Props = $props();
+  let { textarea, onFormat, accentColor, isFullscreen, onToggleFullscreen, onIndent, onOutdent, onNewSnipsel, onUploadAttachment }: Props = $props();
 
   function applyFormat(prefix: string, suffix: string = '') {
     if (!textarea) return;
@@ -174,6 +176,21 @@
       aria-label="Save & New Snipsel"
     >
       <ListPlus size={16} strokeWidth={2.5} />
+    </button>
+  {/if}
+
+  {#if onUploadAttachment}
+    <button
+      type="button"
+      class="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+      onpointerdown={(e) => e.preventDefault()}
+      onmousedown={(e) => e.preventDefault()}
+      ontouchstart={(e) => e.preventDefault()}
+      onclick={onUploadAttachment}
+      title="Upload Attachment"
+      aria-label="Upload Attachment"
+    >
+      <Paperclip size={16} strokeWidth={2.5} />
     </button>
   {/if}
 

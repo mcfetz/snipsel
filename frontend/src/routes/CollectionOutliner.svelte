@@ -13,6 +13,7 @@
   import Plus from '@animated-color-icons/lucide-svelte/Plus.svelte';
   import ChevronDown from '@animated-color-icons/lucide-svelte/ChevronDown.svelte';
   import ChevronUp from '@animated-color-icons/lucide-svelte/ChevronUp.svelte';
+  import ChevronRight from '@animated-color-icons/lucide-svelte/ChevronRight.svelte';
   import ListPlus from '@animated-color-icons/lucide-svelte/ListPlus.svelte';
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import Repeat from '@animated-color-icons/lucide-svelte/Repeat.svelte';
@@ -126,9 +127,6 @@
   // Habits for daily collections
   let dailyHabits = $state<Habit[]>([]);
   let habitsLoaded = $state(false);
-  let habitsTouchX = $state(0);
-  let habitsTouchY = $state(0);
-  let habitsTouchLocked = $state(false);
   let showThrowbackPopup = $state(false);
   let throwbackPopupRef: HTMLDivElement | undefined = $state();
 
@@ -211,6 +209,9 @@
 
   let attachmentsInputRef: HTMLInputElement | undefined = $state();
   let uploadingAttachments = $state(false);
+
+  let editAttachmentsInputRef: HTMLInputElement | undefined = $state();
+  let editUploadingAttachments = $state(false);
 
   let templates = $state<Array<{ id: string; title: string; icon: string }>>([]);
   let showTemplateMenu = $state(false);
@@ -811,6 +812,21 @@
 
   // Cached color values — avoids DOM reads and color math on every renderMarkdown call
   let headerColor = $derived(getHeaderColor());
+
+  let dayLabel = $derived.by(() => {
+    const day = $currentCollection?.list_for_day;
+    if (!day) return null;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
+    if (day === todayStr) return 'today';
+    if (day === yesterdayStr) return 'yesterday';
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const date = new Date(day + 'T12:00:00');
+    return weekdays[date.getDay()];
+  });
+
   let toolboxBg = $derived.by(() => {
     const isDark = document.documentElement.classList.contains('dark');
     const baseColor = isDark ? '#1e293b' : TOOLBOX_BASE_COLOR;
@@ -964,27 +980,29 @@
     // Cycle: 0 (Open) -> 1 (Done) -> 2 (Cancelled) -> 0 (Open)
     const nextDone = (item.snipsel.task_done + 1) % 3;
     const oldVal = item.snipsel.task_done;
-    
+
+    // Optimistic update — UI responds instantly
+    collectionItems.update((items) =>
+      items.map((i) => (i.snipsel_id === item.snipsel_id ? { ...i, snipsel: { ...i.snipsel, task_done: nextDone } } : i))
+    );
+    saveStatuses[item.snipsel_id] = 'success';
+    setTimeout(() => {
+      if (saveStatuses[item.snipsel_id] === 'success') saveStatuses[item.snipsel_id] = null;
+    }, 5000);
+
     try {
       await api.snipsels.update(item.snipsel_id, { task_done: nextDone });
-      collectionItems.update((items) =>
-        items.map((i) => (i.snipsel_id === item.snipsel_id ? { ...i, snipsel: { ...i.snipsel, task_done: nextDone } } : i))
-      );
-      
+
       // If we marked as done (1), reload to show potential new recurring tasks
-      // (Cancelled tasks (2) do not trigger recurrence)
       if (nextDone === 1) {
-        await loadItems();
+        loadItems();
       }
-      
-      // Set success indicator
-      saveStatuses[item.snipsel_id] = 'success';
-      setTimeout(() => {
-        if (saveStatuses[item.snipsel_id] === 'success') saveStatuses[item.snipsel_id] = null;
-      }, 5000);
     } catch (err) {
       console.error('Failed to toggle task:', err);
-      // Set error indicator
+      // Rollback optimistic update
+      collectionItems.update((items) =>
+        items.map((i) => (i.snipsel_id === item.snipsel_id ? { ...i, snipsel: { ...i.snipsel, task_done: oldVal } } : i))
+      );
       saveStatuses[item.snipsel_id] = 'error';
       setTimeout(() => {
         if (saveStatuses[item.snipsel_id] === 'error') saveStatuses[item.snipsel_id] = null;
@@ -997,19 +1015,21 @@
 
     // Cycle: 0 (Open) -> 1 (Done) -> 2 (Cancelled) -> 0 (Open)
     const nextDone = (snip.task_done + 1) % 3;
+    const oldVal = snip.task_done;
+
+    // Optimistic update
+    incomingMentions = incomingMentions.map(m => m.id === snip.id ? { ...m, task_done: nextDone } : m);
+    saveStatuses[snip.id] = 'success';
+    setTimeout(() => {
+      if (saveStatuses[snip.id] === 'success') saveStatuses[snip.id] = null;
+    }, 5000);
 
     try {
       await api.snipsels.update(snip.id, { task_done: nextDone });
-      incomingMentions = incomingMentions.map(m => m.id === snip.id ? { ...m, task_done: nextDone } : m);
-
-      // Set success indicator
-      saveStatuses[snip.id] = 'success';
-      setTimeout(() => {
-        if (saveStatuses[snip.id] === 'success') saveStatuses[snip.id] = null;
-      }, 5000);
     } catch (err) {
       console.error('Failed to toggle incoming mention task:', err);
-      // Set error indicator
+      // Rollback
+      incomingMentions = incomingMentions.map(m => m.id === snip.id ? { ...m, task_done: oldVal } : m);
       saveStatuses[snip.id] = 'error';
       setTimeout(() => {
         if (saveStatuses[snip.id] === 'error') saveStatuses[snip.id] = null;
@@ -1089,6 +1109,64 @@
       uploadProgress = null;
       uploadingAttachments = false;
       isLoading.set(false);
+      input.value = '';
+    }
+  }
+
+  async function uploadEditAttachment(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const files = input.files;
+    if (!files || files.length === 0) return;
+
+    const snipselId = $editingSnipselId;
+    if (!snipselId) {
+      input.value = '';
+      return;
+    }
+
+    const fileArray = Array.from(files);
+
+    const maxBytes = $currentUser?.max_upload_bytes ?? (10 * 1024 * 1024);
+    const oversizedFiles = fileArray.filter(f => f.size > maxBytes);
+    if (oversizedFiles.length > 0) {
+      errorModal = {
+        title: 'Datei zu groß',
+        message: `Die folgende(n) Datei(en) überschreiten das Limit von ${formatSize(maxBytes)}:\n${oversizedFiles.map(f => f.name).join(', ')}`
+      };
+      input.value = '';
+      return;
+    }
+
+    const hasMedia = fileArray.some((f) => f.type.startsWith('image/') || f.type.startsWith('video/'));
+
+    editUploadingAttachments = true;
+    try {
+      for (const file of fileArray) {
+        uploadProgress = { filename: file.name, percent: 0 };
+        await api.attachments.upload(snipselId, file, (p) => {
+          if (uploadProgress) uploadProgress.percent = p;
+        });
+      }
+      if (hasMedia) {
+        await api.snipsels.update(snipselId, { type: 'image' });
+      }
+      await loadItems();
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      if (err.error?.code === 'payload_too_large') {
+        errorModal = {
+          title: 'Datei zu groß',
+          message: err.error.message || 'Die Datei überschreitet das Upload-Limit von 10 MB.'
+        };
+      } else {
+        errorModal = {
+          title: 'Upload fehlgeschlagen',
+          message: err.error?.message || 'Ein unerwarteter Fehler ist aufgetreten.'
+        };
+      }
+    } finally {
+      uploadProgress = null;
+      editUploadingAttachments = false;
       input.value = '';
     }
   }
@@ -2814,7 +2892,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             type="button"
             onclick={() => $currentCollection && currentView.set({ type: 'collection_settings', id: $currentCollection.id })}
           >
-            {$currentCollection?.title}
+            {$currentCollection?.title}{#if dayLabel}{' · '}{dayLabel}{/if}
           </button>
 
           {#if throwbackLists.length > 0}
@@ -2956,67 +3034,63 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
        {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day) && dailyHabits.length > 0}
          {@const openDailyHabits = dailyHabits.filter(h => !h.today_completed)}
          {@const completedDailyHabits = dailyHabits.filter(h => h.today_completed)}
-         <div class="mt-2">
-           <div class="mb-1.5 flex items-center gap-2 text-slate-500 dark:text-slate-400">
-             <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
-             <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
-           </div>
-            <div class="flex flex-row gap-2 overflow-x-auto pb-2" style="scrollbar-width: thin; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior-x: contain;"
-             ontouchstart={(e) => { e.stopPropagation(); const t = e.touches[0]; habitsTouchX = t.clientX; habitsTouchY = t.clientY; habitsTouchLocked = false; }}
-             ontouchmove={(e) => { e.stopPropagation(); if (habitsTouchLocked) { e.preventDefault(); return; } const t = e.touches[0]; const dx = Math.abs(t.clientX - habitsTouchX); const dy = Math.abs(t.clientY - habitsTouchY); if (dx > 10 && dx > dy) { habitsTouchLocked = true; e.preventDefault(); } }}
-             ontouchend={(e) => { e.stopPropagation(); habitsTouchLocked = false; }}
-             >
+          <div class="mt-2">
+            <div class="mb-1.5 flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
+              <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
+            </div>
+             <div class="flex flex-wrap gap-2">
            {#each openDailyHabits as habit (habit.id)}
-             <button
-               class="group flex shrink-0 items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5"
-               type="button"
-               onclick={(e) => { e.stopPropagation(); toggleHabitComplete(habit); }}
-               in:fly={{ y: -10, duration: 200 }}
-               out:fade={{ duration: 150 }}
-             >
-               <span class="text-2xl leading-none">{habit.icon}</span>
-               <span class="max-w-[8rem] truncate text-sm font-medium text-slate-800 dark:text-slate-200">{habit.name}</span>
-               {#if habit.current_streak > 0}
-                 <span
-                   class="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
-                   style={`background-color: ${headerColor}20; color: ${headerColor}`}
-                 >
-                   {habit.current_streak}d
-                 </span>
-               {/if}
-               <span
-                 class="ml-0.5 text-[10px] text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-500"
-                 onclick={(e) => { e.stopPropagation(); currentView.set({ type: 'habit_detail', id: habit.id }); }}
-                 role="button"
-                 tabindex="0"
-                 title="View details"
-               >ⓘ</span>
-             </button>
-           {/each}
-
-           {#each completedDailyHabits as habit (habit.id)}
-             <button
-               class="group relative flex shrink-0 items-center rounded-full border border-slate-200/60 bg-white/50 px-2.5 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:opacity-80 active:scale-[0.97] dark:border-white/5 dark:bg-slate-900/50 dark:ring-white/5"
-               type="button"
-               onclick={(e) => { e.stopPropagation(); toggleHabitComplete(habit); }}
-               in:fly={{ y: 10, duration: 200 }}
-               out:fade={{ duration: 150 }}
-             >
-               <span class="text-xl leading-none opacity-50">{habit.icon}</span>
+              <button
+                class="group flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5"
+                type="button"
+                onclick={(e) => { e.stopPropagation(); toggleHabitComplete(habit); }}
+                in:fly={{ y: -10, duration: 200 }}
+                out:fade={{ duration: 150 }}
+              >
+                <span class="text-2xl leading-none">{habit.icon}</span>
+                <span class="max-w-[8rem] truncate text-sm font-medium text-slate-800 dark:text-slate-200">{habit.name}</span>
+                {#if habit.current_streak > 0}
+                  <span
+                    class="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
+                    style={`background-color: ${headerColor}20; color: ${headerColor}`}
+                  >
+                    {habit.current_streak}d
+                  </span>
+                {/if}
                 <span
-                  class="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold shadow-sm"
-                  style={`background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
-                  in:scale={{ start: 0.5, duration: 150 }}
-                >✓</span>
-               <span
-                 class="ml-0.5 text-[10px] text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-500"
-                 onclick={(e) => { e.stopPropagation(); currentView.set({ type: 'habit_detail', id: habit.id }); }}
-                 role="button"
-                 tabindex="0"
-                 title="View details"
-               >ⓘ</span>
-             </button>
+                  class="ml-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+                  onclick={(e) => { e.stopPropagation(); currentView.set({ type: 'habit_detail', id: habit.id }); }}
+                  role="button"
+                  tabindex="0"
+                  title="View details"
+                ><ChevronRight label="" size={12} strokeWidth={2.5} className="text-slate-400 dark:text-slate-500" /></span>
+              </button>
             {/each}
+
+            {#each completedDailyHabits as habit (habit.id)}
+              <button
+                class="group relative flex items-center rounded-full border border-slate-200/60 bg-white/50 px-2.5 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:opacity-80 active:scale-[0.97] dark:border-white/5 dark:bg-slate-900/50 dark:ring-white/5"
+                type="button"
+                onclick={(e) => { e.stopPropagation(); toggleHabitComplete(habit); }}
+                in:fly={{ y: 10, duration: 200 }}
+                out:fade={{ duration: 150 }}
+              >
+                <span class="text-xl leading-none opacity-50">{habit.icon}</span>
+                 <span
+                   class="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold shadow-sm"
+                   style={`background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
+                   in:scale={{ start: 0.5, duration: 150 }}
+                 >✓</span>
+                <span
+                  class="ml-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+                  onclick={(e) => { e.stopPropagation(); currentView.set({ type: 'habit_detail', id: habit.id }); }}
+                  role="button"
+                  tabindex="0"
+                  title="View details"
+                ><ChevronRight label="" size={12} strokeWidth={2.5} className="text-slate-400 dark:text-slate-500" /></span>
+              </button>
+             {/each}
           </div>
         </div>
         {/if}
@@ -3308,6 +3382,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 class:overflow-hidden={editFullscreen}
                 onfocusout={handleEditFocusOut}
               >
+                <input
+                  bind:this={editAttachmentsInputRef}
+                  class="hidden"
+                  type="file"
+                  multiple
+                  onchange={uploadEditAttachment}
+                  disabled={editUploadingAttachments}
+                />
                 <FormattingToolbar 
                   textarea={textareaRef} 
                   onFormat={(content) => { editContent = content; handleEditInput(); }} 
@@ -3317,6 +3399,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                   onIndent={() => { editIndent = Math.min(6, editIndent + 1); textareaRef?.focus(); }}
                   onOutdent={() => { editIndent = Math.max(0, editIndent - 1); textareaRef?.focus(); }}
                   onNewSnipsel={handleSaveAndNew}
+                  onUploadAttachment={() => editAttachmentsInputRef?.click()}
                 />
                 <div class="px-2 py-3 rounded-b-lg overflow-y-auto" class:flex-1={editFullscreen} class:flex={editFullscreen} class:flex-col={editFullscreen}>
                   <textarea
@@ -3329,7 +3412,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 onkeydown={handleKeydown}
                 onpaste={handlePaste}
               ></textarea>
-              {#if uploadingAttachments}
+              {#if uploadingAttachments || editUploadingAttachments}
                 <div class="absolute right-3 top-3 flex items-center gap-2 text-xs text-slate-400">
                   <div class="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500"></div>
                   Uploading...
