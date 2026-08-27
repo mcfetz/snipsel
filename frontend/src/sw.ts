@@ -1,14 +1,18 @@
 /// <reference lib="webworker" />
 declare let self: ServiceWorkerGlobalScope
 
+import { clientsClaim } from 'workbox-core'
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst, NetworkFirst } from 'workbox-strategies'
+import { CacheFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
 // Precache assets built by Vite
 precacheAndRoute(self.__WB_MANIFEST || [])
+
+// Claim any active clients immediately on activation
+clientsClaim()
 
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {

@@ -192,6 +192,21 @@ import HabitDetail from './routes/HabitDetail.svelte';
   let needPwaRefresh = $state(false);
   let updateServiceWorker: ((reloadPage?: boolean) => Promise<void>) | undefined;
 
+  async function reloadPwa() {
+    needPwaRefresh = false;
+    try {
+      if (updateServiceWorker) {
+        await updateServiceWorker(true);
+      }
+    } catch (err) {
+      console.warn('updateServiceWorker failed:', err);
+    }
+    // Guaranteed fallback reload in case controllerchange didn't fire immediately
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  }
+
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     updateServiceWorker = registerSW({
       immediate: true,
@@ -1177,7 +1192,7 @@ import HabitDetail from './routes/HabitDetail.svelte';
             <button
               type="button"
               class="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 active:scale-95 transition-all"
-              onclick={() => updateServiceWorker?.(true)}
+              onclick={reloadPwa}
             >
               Reload now
             </button>
