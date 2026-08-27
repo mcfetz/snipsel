@@ -94,6 +94,11 @@
   import { currentUser } from '../lib/session';
   import { getCurrentUrl } from '../lib/router';
 
+  interface Props {
+    collectionId?: string;
+  }
+  let { collectionId }: Props = $props();
+
   const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
   const defaultRender = md.renderer.rules.fence || function (tokens, idx, options, env, self) {
@@ -331,10 +336,11 @@
   let dicedSnipsel = $state<import('../lib/api').Snipsel | null>(null);
   let showDicedBanModal = $state(false);
 
-  async function loadThrowback() {
+  async function loadThrowback(targetCol?: Collection | null) {
     throwbackLists = [];
     dicedSnipsel = null;
-    const day = $currentCollection?.list_for_day;
+    const col = targetCol !== undefined ? targetCol : $currentCollection;
+    const day = col?.list_for_day;
     if (!day) return;
     try {
       const res = await api.collections.throwback(day);
@@ -347,8 +353,9 @@
     }
   }
 
-  async function loadDailyHabits() {
-    const day = $currentCollection?.list_for_day;
+  async function loadDailyHabits(targetCol?: Collection | null) {
+    const col = targetCol !== undefined ? targetCol : $currentCollection;
+    const day = col?.list_for_day;
     if (!day || isFutureDate(day)) {
       dailyHabits = [];
       habitsLoaded = false;
@@ -1245,13 +1252,14 @@
     }
   }
 
-  async function loadItems() {
-    if (!$currentCollection) return;
+  async function loadItems(targetId?: string) {
+    const colId = targetId || collectionId || $currentCollection?.id;
+    if (!colId) return;
     const loadSeq = ++itemsLoadSeq;
     const mutationAtStart = itemsMutationSeq;
     isLoading.set(true);
     try {
-      const res = await api.snipsels.list($currentCollection.id);
+      const res = await api.snipsels.list(colId);
       if (loadSeq !== itemsLoadSeq) return;
       if (mutationAtStart !== itemsMutationSeq) return;
       collectionItems.set(res.items);
@@ -1260,14 +1268,15 @@
     }
   }
 
-  async function loadIncomingMentions() {
-    if (!$currentCollection?.list_for_day) {
+  async function loadIncomingMentions(targetCol?: Collection | null) {
+    const col = targetCol !== undefined ? targetCol : $currentCollection;
+    if (!col?.list_for_day) {
       incomingMentions = [];
       return;
     }
     incomingMentionsLoading = true;
     try {
-      const res = await api.mentions.getIncomingDayMentions($currentCollection.list_for_day);
+      const res = await api.mentions.getIncomingDayMentions(col.list_for_day);
       incomingMentions = res.snipsels;
     } catch {
       incomingMentions = [];
@@ -2496,13 +2505,11 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   });
 
   $effect(() => {
-    const nextId = $currentCollection?.id ?? null;
-    if (nextId && nextId !== lastCollectionId) {
-      // Initialize hideDoneTasks based on collection setting
-      if ($currentCollection) {
-        hideDoneTasks = !$currentCollection.show_completed_tasks;
-      }
-      lastCollectionId = nextId;
+    const targetId = collectionId || ($currentView.type === 'collection' ? $currentView.id : $currentCollection?.id);
+    if (!targetId) return;
+
+    if (targetId !== lastCollectionId || $currentCollection?.id !== targetId) {
+      lastCollectionId = targetId;
       collectionItems.set([]);
       lastAnchorKey = null;
       anchorHighlightId = null;
@@ -2516,10 +2523,26 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         navHideTimeout = null;
       }
 
-      loadItems();
-      loadIncomingMentions();
-      loadThrowback();
-      loadDailyHabits();
+      if ($currentCollection?.id !== targetId) {
+        api.collections.get(targetId).then((res) => {
+          if (res.collection) {
+            currentCollection.set(res.collection);
+            hideDoneTasks = !res.collection.show_completed_tasks;
+          }
+          loadItems(targetId);
+          loadIncomingMentions(res.collection);
+          loadThrowback(res.collection);
+          loadDailyHabits(res.collection);
+        });
+      } else {
+        if ($currentCollection) {
+          hideDoneTasks = !$currentCollection.show_completed_tasks;
+        }
+        loadItems(targetId);
+        loadIncomingMentions($currentCollection);
+        loadThrowback($currentCollection);
+        loadDailyHabits($currentCollection);
+      }
     }
   });
 

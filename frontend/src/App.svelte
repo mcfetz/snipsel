@@ -1027,7 +1027,9 @@ import HabitDetail from './routes/HabitDetail.svelte';
     {:else if $currentView.type === 'collections'}
       <CollectionsList />
     {:else if $currentView.type === 'collection'}
-      <CollectionOutliner />
+      {#key $currentView.id}
+        <CollectionOutliner collectionId={$currentView.id} />
+      {/key}
     {:else if $currentView.type === 'search'}
       <Search />
     {:else if $currentView.type === 'tags_mentions'}
