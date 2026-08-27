@@ -555,7 +555,7 @@ function goBack() {
                   style={viewMode === 'list' || !viewMode ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   <LayoutList label="" size={14} />
-                  <span>List / Outline</span>
+                  <span>Lists</span>
                 </button>
                 <button
                   class="border-l border-black/5 dark:border-white/5 flex items-center justify-center gap-2 px-2 py-2.5 text-xs font-medium transition-colors {viewMode === 'cards' ? '' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
@@ -564,7 +564,7 @@ function goBack() {
                   style={viewMode === 'cards' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   <LayoutGrid label="" size={14} />
-                  <span>Cards / Pinterest</span>
+                  <span>Cards</span>
                 </button>
               </div>
             </div>

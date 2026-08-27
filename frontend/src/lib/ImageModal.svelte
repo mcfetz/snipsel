@@ -114,7 +114,7 @@
 
 {#if attachments.length > 0 && currentIndex >= 0}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
     aria-label="Image preview"
@@ -122,72 +122,77 @@
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}
   >
-    <div class="relative max-h-full max-w-full" in:scale={{ start: 0.9, duration: 150 }} out:fade={{ duration: 100 }}>
+    <div class="relative max-h-full max-w-full flex items-center justify-center" in:scale={{ start: 0.9, duration: 150 }} out:fade={{ duration: 100 }}>
       {#if currentBlobUrl}
         {#key currentIndex}
           <img
-            class="max-h-[85vh] max-w-[85vw] rounded-lg object-contain shadow-2xl"
+            class="max-h-[92vh] max-w-[96vw] rounded-xl object-contain shadow-2xl select-none block"
             src={currentBlobUrl}
             alt={currentAttachment?.filename ?? ''}
             in:fly={{ x: direction === 'right' ? 40 : -40, duration: 350, opacity: 0, easing: (t) => 1 - Math.pow(1 - t, 3) }}
           />
         {/key}
       {:else if error}
-        <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
+        <div class="flex h-48 w-48 items-center justify-center rounded-xl bg-white/10">
           <div class="text-sm text-red-400">{error}</div>
         </div>
       {:else}
-        <div class="flex h-48 w-48 items-center justify-center rounded-lg bg-white/10">
+        <div class="flex h-48 w-48 items-center justify-center rounded-xl bg-white/10">
           <div class="text-sm text-white/70">Loading...</div>
         </div>
       {/if}
 
       {#if attachments.length > 1}
-        <button
-          class="nav-arrow nav-arrow-left"
-          type="button"
-          onclick={() => navigate(-1)}
-          disabled={currentIndex === 0}
-          aria-label="Previous image"
-          style="opacity: {currentIndex === 0 ? '0.2' : '0.6'}"
-        >
-          <ChevronLeft label="" size={32} strokeWidth={2} />
-        </button>
+        {#if currentIndex > 0}
+          <button
+            class="nav-arrow nav-arrow-left"
+            type="button"
+            onclick={(e) => { e.stopPropagation(); navigate(-1); }}
+            aria-label="Previous image"
+          >
+            <div class="nav-arrow-pill">
+              <ChevronLeft label="" size={28} strokeWidth={2.5} />
+            </div>
+          </button>
+        {/if}
         
-        <button
-          class="nav-arrow nav-arrow-right"
-          type="button"
-          onclick={() => navigate(1)}
-          disabled={currentIndex === attachments.length - 1}
-          aria-label="Next image"
-          style="opacity: {currentIndex === attachments.length - 1 ? '0.2' : '0.6'}"
-        >
-          <ChevronRight label="" size={32} strokeWidth={2} />
-        </button>
+        {#if currentIndex < attachments.length - 1}
+          <button
+            class="nav-arrow nav-arrow-right"
+            type="button"
+            onclick={(e) => { e.stopPropagation(); navigate(1); }}
+            aria-label="Next image"
+          >
+            <div class="nav-arrow-pill">
+              <ChevronRight label="" size={28} strokeWidth={2.5} />
+            </div>
+          </button>
+        {/if}
 
-        <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3.5 py-1 text-xs font-medium text-white shadow-lg backdrop-blur-md pointer-events-none">
           {currentIndex + 1} / {attachments.length}
         </div>
       {/if}
 
       {#if currentBlobUrl}
-        <div class="modal-controls absolute right-2 top-2 flex items-center overflow-hidden rounded-full bg-white/40 shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white/90 hover:scale-105">
+        <div class="modal-controls absolute right-3 top-3 z-30 flex items-center overflow-hidden rounded-full bg-black/50 shadow-xl backdrop-blur-md transition-all duration-300 hover:bg-black/75">
           <a
-            class="flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white/50"
+            class="flex h-9 w-9 items-center justify-center text-white/90 transition-colors hover:text-white"
             href={currentBlobUrl}
             download={currentAttachment?.filename ?? ''}
             aria-label="Download image"
+            onclick={(e) => e.stopPropagation()}
           >
-            <Download label="" size={20} strokeWidth={2} />
+            <Download label="" size={18} strokeWidth={2} />
           </a>
-          <div class="h-5 w-px bg-slate-300/50"></div>
+          <div class="h-4 w-px bg-white/20"></div>
           <button
-            class="al-icon-wrapper flex h-10 w-10 items-center justify-center text-slate-700 transition-colors hover:bg-white/50"
+            class="al-icon-wrapper flex h-9 w-9 items-center justify-center text-white/90 transition-colors hover:text-white"
             type="button"
             aria-label="Close"
-            onclick={onClose}
+            onclick={(e) => { e.stopPropagation(); onClose(); }}
           >
-            <X label="" size={20} strokeWidth={2} />
+            <X label="" size={18} strokeWidth={2} />
           </button>
         </div>
       {/if}
@@ -198,41 +203,57 @@
 <style>
   .nav-arrow {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 48px;
-    height: 80px;
+    top: 0;
+    bottom: 0;
+    width: 15%;
+    min-width: 60px;
+    max-width: 120px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
+    background: transparent;
     border: none;
-    border-radius: 8px;
-    color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
-  }
-
-  .nav-arrow:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.25);
-    opacity: 1 !important;
-  }
-
-  .nav-arrow:disabled {
-    cursor: not-allowed;
+    z-index: 20;
+    padding: 0 12px;
   }
 
   .nav-arrow-left {
-    left: -64px;
+    left: 0;
+    justify-content: flex-start;
   }
 
   .nav-arrow-right {
-    right: -64px;
+    right: 0;
+    justify-content: flex-end;
+  }
+
+  .nav-arrow-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.45);
+    color: white;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+    opacity: 0.7;
+  }
+
+  .nav-arrow:hover .nav-arrow-pill {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.75);
+    transform: scale(1.08);
+  }
+
+  .nav-arrow:active .nav-arrow-pill {
+    transform: scale(0.95);
   }
 
   .modal-controls {
-    opacity: 0.7;
+    opacity: 0.85;
   }
 
   .modal-controls:hover {
@@ -241,16 +262,15 @@
 
   @media (max-width: 768px) {
     .nav-arrow {
-      width: 40px;
-      height: 60px;
-    }
-    
-    .nav-arrow-left {
-      left: -48px;
+      width: 20%;
+      min-width: 48px;
+      padding: 0 8px;
     }
 
-    .nav-arrow-right {
-      right: -48px;
+    .nav-arrow-pill {
+      width: 38px;
+      height: 38px;
+      opacity: 0.85;
     }
   }
 </style>
