@@ -12,6 +12,8 @@
   import ArrowUp from '@animated-color-icons/lucide-svelte/ArrowUp.svelte';
   import ArrowDown from '@animated-color-icons/lucide-svelte/ArrowDown.svelte';
   import Info from '@animated-color-icons/lucide-svelte/Info.svelte';
+  import LayoutList from '@animated-color-icons/lucide-svelte/LayoutList.svelte';
+  import LayoutGrid from '@animated-color-icons/lucide-svelte/LayoutGrid.svelte';
   import { api, type Collection } from '../lib/api';
   import { currentUser } from '../lib/session';
   import { collections, collectionAnchor, currentView, isLoading, pendingReference } from '../lib/stores';
@@ -77,6 +79,14 @@
   let sortKey: SortKey = 'modified';
   let sortDir: SortDir = 'desc';
 
+  type ListView = 'list' | 'cards';
+  let listView: ListView = (localStorage.getItem('snipsel_collections_view') as ListView) ?? 'list';
+
+  function setListView(v: ListView) {
+    listView = v;
+    localStorage.setItem('snipsel_collections_view', v);
+  }
+
   let didInitialLoad = false;
 
   function cmpString(a: string, b: string): number {
@@ -119,6 +129,14 @@
     const q = qRaw.trim().toLowerCase();
     if (!q) return true;
     return c.title.toLowerCase().includes(q);
+  }
+
+  function cardHeaderStyle(c: Collection): string {
+    if (c.header_image_url) {
+      const thumb = c.header_image_url.startsWith('/api/attachments/') ? '/thumbnail' : '';
+      return `background-image: url('${c.header_image_url}${thumb}'); background-size: cover; background-position: ${c.header_image_x_position ?? '50%'} ${c.header_image_position ?? '50%'};`;
+    }
+    return `background-color: ${c.header_color || getAccent()};`;
   }
 
   $: filtered = sortCollections(
@@ -307,6 +325,28 @@
       bind:value={titleFilter}
     />
 
+    {#if listView === 'list'}
+      <button
+        class="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-all dark:border-white/10 dark:bg-slate-900 dark:ring-white/5 dark:hover:bg-white/5"
+        type="button"
+        onclick={() => setListView('cards')}
+        aria-label="Switch to card view"
+        title="Card view"
+      >
+        <LayoutGrid label="" size={20} color={getAccent()} />
+      </button>
+    {:else}
+      <button
+        class="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 hover:bg-slate-50 transition-all dark:border-white/10 dark:bg-slate-900 dark:ring-white/5 dark:hover:bg-white/5"
+        type="button"
+        onclick={() => setListView('list')}
+        aria-label="Switch to list view"
+        title="List view"
+      >
+        <LayoutList label="" size={20} color={getAccent()} />
+      </button>
+    {/if}
+
     <div class="ml-auto flex items-center gap-2">
       <div class="overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900">
         <div class="flex">
@@ -392,6 +432,42 @@
     <div class="py-8 text-center text-sm text-slate-500 font-medium" in:fade={{ duration: 200 }}>Loading collections...</div>
   {:else if filtered.length === 0}
     <div class="py-8 text-center text-sm text-slate-500 font-medium" in:fade={{ duration: 200 }}>No collections found</div>
+  {:else if listView === 'cards'}
+    <div class="grid grid-cols-2 gap-3">
+      {#each visible as c (c.id)}
+        <button
+          class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900 cursor-pointer flex h-36 flex-col"
+          type="button"
+          onclick={() => openCollection(c)}
+          in:fly={{ y: 10, duration: 200 }}
+          out:fade={{ duration: 150 }}
+        >
+          <div
+            class="flex flex-1 items-center justify-center overflow-hidden dark:brightness-75"
+            style={cardHeaderStyle(c)}
+          >
+            {#if c.is_favorite}
+              <span class="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-white/80 text-xs text-amber-500 shadow-sm dark:bg-slate-900/80">
+                <Heart label="" size={12} className="fill-current" />
+              </span>
+            {/if}
+          </div>
+          <div class="flex items-center gap-2 px-2.5 py-2">
+            <span class="text-lg leading-none shrink-0">{c.icon}</span>
+            <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">{c.title}</span>
+            {#if c.access_level === 'read' || c.access_level === 'write'}
+              <span class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={`background-color: ${getAccentTint()}; color: ${getAccent()}`}>shared</span>
+            {/if}
+          </div>
+        </button>
+      {/each}
+    </div>
+    {#if filtered.length > VISIBLE_LIMIT}
+      <div class="mt-4 py-6 text-center text-sm text-slate-500 font-medium bg-slate-50/50 rounded-xl border border-slate-200/50 dark:bg-slate-900/30 dark:border-white/5">
+        Showing <span class="font-bold text-slate-700 dark:text-slate-300">{VISIBLE_LIMIT}</span> of <span class="font-bold text-slate-700 dark:text-slate-300">{filtered.length}</span> collections.<br/>
+        Use the filter above to find more.
+      </div>
+    {/if}
   {:else}
     <div class="space-y-2">
       {#each visible as c (c.id)}
