@@ -2,7 +2,8 @@ export function longPress(
   onLongPress: () => void,
   onShortPress: () => void,
   ms = 400,
-  onStateChange?: (state: 'idle' | 'holding' | 'long') => void
+  onStateChange?: (state: 'idle' | 'holding' | 'long') => void,
+  debug?: (msg: string) => void
 ) {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let isLong = false;
@@ -25,9 +26,11 @@ export function longPress(
     ended = false;
     startTime = Date.now();
     onStateChange?.('holding');
+    debug?.('start() — timer armed');
     timer = setTimeout(() => {
       isLong = true;
       onStateChange?.('long');
+      debug?.('timer fired — isLong=true');
       try {
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
           navigator.vibrate(40);
@@ -37,17 +40,24 @@ export function longPress(
   }
 
   function end() {
-    if (ended) return;
+    if (ended) {
+      debug?.('end() called but already ended — ignored');
+      return;
+    }
     ended = true;
-    const wasLong = isLong || Date.now() - startTime >= ms;
+    const elapsed = Date.now() - startTime;
+    const wasLong = isLong || elapsed >= ms;
     clearTimer();
     isLong = false;
     onStateChange?.('idle');
+    debug?.(`end() elapsed=${elapsed}ms wasLong=${wasLong}`);
 
     if (wasLong) {
       suppressClickUntil = Date.now() + 800;
+      debug?.('calling onLongPress()');
       onLongPress();
     } else {
+      debug?.('calling onShortPress()');
       onShortPress();
     }
   }
@@ -58,33 +68,46 @@ export function longPress(
     clearTimer();
     isLong = false;
     onStateChange?.('idle');
+    debug?.('cancel()');
   }
 
   return {
     onpointerdown: (e: PointerEvent) => {
       sawPointer = true;
       activePointerId = e.pointerId;
+      debug?.(`pointerdown type=${e.pointerType} id=${e.pointerId}`);
       // Capture keeps pointerup on the button even if the pointer drifts
       // (e.g. while the button shrinks/grows during the hold animation).
       try {
         (e.currentTarget as HTMLElement | null)?.setPointerCapture(e.pointerId);
-      } catch {}
+        debug?.('setPointerCapture ok');
+      } catch (err) {
+        debug?.(`setPointerCapture failed: ${err}`);
+      }
       start();
     },
     onpointerup: (e: PointerEvent) => {
-      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      debug?.(`pointerup type=${e.pointerType} id=${e.pointerId} activeId=${activePointerId}`);
+      if (activePointerId !== null && e.pointerId !== activePointerId) {
+        debug?.('pointerup ignored — id mismatch');
+        return;
+      }
       activePointerId = null;
       end();
     },
-    onpointercancel: () => {
+    onpointercancel: (e: PointerEvent) => {
+      debug?.(`pointercancel type=${e.pointerType} id=${e.pointerId}`);
       activePointerId = null;
       cancel();
     },
     // Intentionally a no-op: pointer capture keeps the event stream on the
     // original target, so drifting off the element must not abort a hold.
-    onpointerleave: () => {},
+    onpointerleave: (e: PointerEvent) => {
+      debug?.(`pointerleave type=${e.pointerType} (ignored)`);
+    },
 
     onclick: (e: MouseEvent) => {
+      debug?.(`click suppressUntilDelta=${suppressClickUntil - Date.now()} sawPointer=${sawPointer}`);
       if (Date.now() < suppressClickUntil) {
         e.preventDefault();
         e.stopPropagation();

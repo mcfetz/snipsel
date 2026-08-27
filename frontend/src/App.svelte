@@ -13,6 +13,7 @@ import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
   import { currentUser } from './lib/session';
   import { initLiveUpdates, destroyLiveUpdates } from './lib/liveUpdates';
   import { longPress } from './lib/gestures';
+  import { debugLog, logDebug, clearDebugLog } from './lib/debugLog';
   import { collections, collectionAnchor, collectionItems, currentView, currentCollection, editingSnipselId, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest, newSnipselInCurrentCollectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
@@ -185,6 +186,20 @@ import HabitDetail from './routes/HabitDetail.svelte';
   }
 
   let plusPressState = $state<'idle' | 'holding' | 'long'>('idle');
+  let showDebugPanel = $state(false);
+  let debugCopyFeedback = $state(false);
+
+  function copyDebugLog() {
+    const text = $debugLog.join('\n');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          debugCopyFeedback = true;
+          setTimeout(() => { debugCopyFeedback = false; }, 1500);
+        }).catch(() => {});
+      }
+    } catch {}
+  }
 
   function isAppleDevice(): boolean {
     if (typeof navigator === 'undefined') return false;
@@ -203,36 +218,53 @@ import HabitDetail from './routes/HabitDetail.svelte';
    * and issues its FIRST clipboard call before any await.
    */
   async function readClipboard(): Promise<{ text?: string; image?: File }> {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return {};
+    logDebug(`readClipboard() start; hasClipboard=${typeof navigator !== 'undefined' && !!navigator.clipboard}`);
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      logDebug('no navigator.clipboard — abort');
+      return {};
+    }
 
-    if (isAppleDevice()) {
+    const apple = isAppleDevice();
+    logDebug(`isAppleDevice=${apple} ua="${navigator.userAgent}" platform="${navigator.platform}" maxTouchPoints=${navigator.maxTouchPoints} secureContext=${window.isSecureContext} standalone=${(navigator as any).standalone} displayMode=${window.matchMedia('(display-mode: standalone)').matches}`);
+    logDebug(`hasReadText=${typeof navigator.clipboard.readText === 'function'} hasRead=${typeof navigator.clipboard.read === 'function'}`);
+
+    if (apple) {
       // readText() is the most reliable Safari path: it shows the native
       // paste prompt when called directly from the user gesture.
       try {
         if (typeof navigator.clipboard.readText === 'function') {
+          logDebug('calling navigator.clipboard.readText()...');
           const text = await navigator.clipboard.readText();
+          logDebug(`readText() resolved: length=${text?.length ?? 0} preview="${(text || '').slice(0, 30)}"`);
           if (text && text.trim()) return { text };
+        } else {
+          logDebug('readText is not a function');
         }
-      } catch (err) {
-        console.warn('navigator.clipboard.readText() failed:', err);
+      } catch (err: any) {
+        logDebug(`readText() THREW: ${err?.name}: ${err?.message}`);
         return {};
       }
 
       // No text — maybe an image is on the clipboard (best effort).
       try {
         if (typeof navigator.clipboard.read === 'function') {
+          logDebug('calling navigator.clipboard.read()...');
           const items = await navigator.clipboard.read();
+          logDebug(`read() resolved: ${items.length} item(s), types=${items.map(i => i.types.join('|')).join(', ')}`);
           for (const item of items) {
             const imageType = item.types.find((t) => t.startsWith('image/'));
             if (imageType) {
               const blob = await item.getType(imageType);
               const ext = imageType.split('/')[1]?.replace('+xml', '') || 'png';
+              logDebug(`found image type=${imageType} size=${blob.size}`);
               return { image: new File([blob], `pasted-image-${Date.now()}.${ext}`, { type: imageType }) };
             }
           }
+        } else {
+          logDebug('read is not a function');
         }
-      } catch (err) {
-        console.warn('navigator.clipboard.read() failed:', err);
+      } catch (err: any) {
+        logDebug(`read() THREW: ${err?.name}: ${err?.message}`);
       }
       return {};
     }
@@ -273,14 +305,17 @@ import HabitDetail from './routes/HabitDetail.svelte';
   }
 
   async function onNewSnipselFromClipboard() {
+    logDebug('onNewSnipselFromClipboard() called');
     isLoading.set(true);
     try {
       const { text, image } = await readClipboard();
       const clipText = text?.trim() || '';
       const clipImageFile = image || null;
+      logDebug(`clipboard result: textLen=${clipText.length} hasImage=${!!clipImageFile}`);
 
       // If clipboard was completely empty, fallback to normal new snipsel
       if (!clipText && !clipImageFile) {
+        logDebug('empty clipboard result -> falling back to onNewSnipsel()');
         await onNewSnipsel();
         return;
       }
@@ -338,7 +373,8 @@ import HabitDetail from './routes/HabitDetail.svelte';
     () => void onNewSnipselFromClipboard(),
     () => void onNewSnipsel(),
     400,
-    (state) => { plusPressState = state; }
+    (state) => { plusPressState = state; },
+    (msg) => logDebug(msg)
   );
 
   async function openToday() {
@@ -1116,5 +1152,52 @@ import HabitDetail from './routes/HabitDetail.svelte';
       aria-hidden="true"
     />
     <div class="h-24"></div>
+  {/if}
+
+  <!-- Temporary debug toggle for diagnosing the clipboard long-press on iOS -->
+  <button
+    type="button"
+    class="fixed right-2 z-[999] grid h-8 w-8 place-items-center rounded-full bg-black/60 text-sm text-white shadow-lg"
+    style="top: calc(env(safe-area-inset-top) + 0.5rem);"
+    onclick={() => (showDebugPanel = !showDebugPanel)}
+    aria-label="Toggle debug panel"
+  >
+    🐛
+  </button>
+
+  {#if showDebugPanel}
+    <div
+      class="fixed inset-x-2 z-[998] flex max-h-[50vh] flex-col overflow-hidden rounded-xl border border-white/10 bg-black/90 text-[10px] text-green-300 shadow-2xl"
+      style="top: calc(env(safe-area-inset-top) + 2.75rem);"
+    >
+      <div class="flex items-center justify-between gap-2 border-b border-white/10 px-2 py-1.5">
+        <span class="font-bold text-white">Debug Log ({$debugLog.length})</span>
+        <div class="flex gap-1.5">
+          <button
+            type="button"
+            class="rounded bg-white/10 px-2 py-1 text-white"
+            onclick={copyDebugLog}
+          >
+            {debugCopyFeedback ? 'Copied!' : 'Copy'}
+          </button>
+          <button
+            type="button"
+            class="rounded bg-white/10 px-2 py-1 text-white"
+            onclick={clearDebugLog}
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 font-mono leading-tight">
+        {#if $debugLog.length === 0}
+          <div class="text-white/40">No log entries yet. Long-press the + button.</div>
+        {:else}
+          {#each $debugLog as line}
+            <div class="whitespace-pre-wrap break-all">{line}</div>
+          {/each}
+        {/if}
+      </div>
+    </div>
   {/if}
 </div>
