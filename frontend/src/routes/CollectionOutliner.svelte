@@ -338,18 +338,37 @@
   let dicedSnipsel = $state<import('../lib/api').Snipsel | null>(null);
   let showDicedBanModal = $state(false);
 
+  // Memory cache for daily collection extras (habits, throwback, diced moments)
+  // so switching days or swiping renders them immediately in 0ms without layout jump.
+  const habitsCache = new Map<string, Habit[]>();
+  const throwbackCache = new Map<string, { collections: Array<{ id: string; year: number; title: string; icon: string }>; diced: import('../lib/api').Snipsel | null }>();
+
   async function loadThrowback(targetCol?: Collection | null) {
-    throwbackLists = [];
-    dicedSnipsel = null;
     const col = targetCol !== undefined ? targetCol : $currentCollection;
     const day = col?.list_for_day;
-    if (!day) return;
-    try {
-      const res = await api.collections.throwback(day);
-      throwbackLists = res.collections;
+    if (!day) {
+      throwbackLists = [];
+      dicedSnipsel = null;
+      return;
+    }
 
-      const dr = await api.collections.dicedMoment();
+    const cached = throwbackCache.get(day);
+    if (cached) {
+      throwbackLists = cached.collections;
+      dicedSnipsel = cached.diced;
+    } else {
+      throwbackLists = [];
+      dicedSnipsel = null;
+    }
+
+    try {
+      const [res, dr] = await Promise.all([
+        api.collections.throwback(day),
+        api.collections.dicedMoment(),
+      ]);
+      throwbackLists = res.collections;
       dicedSnipsel = dr.snipsel;
+      throwbackCache.set(day, { collections: res.collections, diced: dr.snipsel });
     } catch (err) {
       console.error('Failed to load daily extras:', err);
     }
@@ -363,13 +382,25 @@
       habitsLoaded = false;
       return;
     }
+
+    const cached = habitsCache.get(day);
+    if (cached) {
+      dailyHabits = cached;
+      habitsLoaded = true;
+    } else {
+      dailyHabits = [];
+      habitsLoaded = false;
+    }
+
     try {
       const res = await api.habits.list(true, day);
-      dailyHabits = res.habits.filter(h => !h.is_archived || h.today_completed);
+      const filtered = res.habits.filter(h => !h.is_archived || h.today_completed);
+      dailyHabits = filtered;
       habitsLoaded = true;
+      habitsCache.set(day, filtered);
     } catch (err) {
       console.error('Failed to load habits:', err);
-      dailyHabits = [];
+      if (!cached) dailyHabits = [];
     }
   }
 
@@ -380,6 +411,9 @@
     );
 
     const day = $currentCollection?.list_for_day;
+    if (day) {
+      habitsCache.set(day, dailyHabits);
+    }
     try {
       if (habit.today_completed) {
         await api.habits.uncomplete(habit.id, day);
@@ -389,6 +423,7 @@
     } catch (err) {
       console.error('Failed to toggle habit:', err);
       dailyHabits = original;
+      if (day) habitsCache.set(day, original);
     }
   }
 
@@ -493,7 +528,9 @@
         pullActive = false;
         pullDeltaY = 0;
         try {
-          await Promise.all([loadItems(), loadIncomingMentions()]);
+          if ($currentCollection) {
+            await loadAllData($currentCollection.id, $currentCollection);
+          }
         } finally {
           pullReloading = false;
           pullTriggered = false;
@@ -2506,6 +2543,15 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     return { total, done, ratio: total > 0 ? done / total : 0 };
   });
 
+  async function loadAllData(targetId: string, col: Collection | null) {
+    await Promise.all([
+      loadItems(targetId),
+      loadDailyHabits(col),
+      loadThrowback(col),
+      loadIncomingMentions(col),
+    ]);
+  }
+
   $effect(() => {
     const targetId = collectionId || ($currentView.type === 'collection' ? $currentView.id : $currentCollection?.id);
     if (!targetId) return;
@@ -2531,19 +2577,13 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             currentCollection.set(res.collection);
             hideDoneTasks = !res.collection.show_completed_tasks;
           }
-          loadItems(targetId);
-          loadIncomingMentions(res.collection);
-          loadThrowback(res.collection);
-          loadDailyHabits(res.collection);
+          loadAllData(targetId, res.collection);
         });
       } else {
         if ($currentCollection) {
           hideDoneTasks = !$currentCollection.show_completed_tasks;
         }
-        loadItems(targetId);
-        loadIncomingMentions($currentCollection);
-        loadThrowback($currentCollection);
-        loadDailyHabits($currentCollection);
+        loadAllData(targetId, $currentCollection);
       }
     }
   });
