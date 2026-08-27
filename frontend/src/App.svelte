@@ -194,6 +194,18 @@ import HabitDetail from './routes/HabitDetail.svelte';
 
   async function reloadPwa() {
     needPwaRefresh = false;
+
+    // Send skipWaiting directly to any waiting ServiceWorker
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg?.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      } catch {}
+    }
+
+    // Also trigger update through vite-plugin-pwa
     try {
       if (updateServiceWorker) {
         await updateServiceWorker(true);
@@ -201,10 +213,29 @@ import HabitDetail from './routes/HabitDetail.svelte';
     } catch (err) {
       console.warn('updateServiceWorker failed:', err);
     }
-    // Guaranteed fallback reload in case controllerchange didn't fire immediately
+
+    // Listen for controllerchange to reload cleanly once the new SW activates
+    let reloaded = false;
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener(
+        'controllerchange',
+        () => {
+          if (!reloaded) {
+            reloaded = true;
+            window.location.reload();
+          }
+        },
+        { once: true }
+      );
+    }
+
+    // Safety timeout in case controllerchange doesn't fire
     setTimeout(() => {
-      window.location.reload();
-    }, 500);
+      if (!reloaded) {
+        reloaded = true;
+        window.location.reload();
+      }
+    }, 1500);
   }
 
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
