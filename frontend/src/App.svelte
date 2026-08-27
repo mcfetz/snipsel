@@ -12,7 +12,8 @@ import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
   import { initLiveUpdates, destroyLiveUpdates } from './lib/liveUpdates';
-import { collections, collectionAnchor, currentView, currentCollection, editingSnipselId, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest, newSnipselInCurrentCollectionRequest } from './lib/stores';
+  import { longPress } from './lib/gestures';
+  import { collections, collectionAnchor, collectionItems, currentView, currentCollection, editingSnipselId, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest, newSnipselInCurrentCollectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
     parseRouteFromLocation,
@@ -182,6 +183,93 @@ import HabitDetail from './routes/HabitDetail.svelte';
       focusProxyNavRef?.blur();
     }
   }
+
+  async function onNewSnipselFromClipboard() {
+    isLoading.set(true);
+    try {
+      let clipText = '';
+      let clipImageFile: File | null = null;
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.read) {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            const imageType = item.types.find((t) => t.startsWith('image/'));
+            if (imageType) {
+              const blob = await item.getType(imageType);
+              const ext = imageType.split('/')[1]?.replace('+xml', '') || 'png';
+              clipImageFile = new File([blob], `pasted-image-${Date.now()}.${ext}`, { type: imageType });
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Clipboard read() failed, attempting readText():', err);
+      }
+
+      if (!clipImageFile) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            clipText = (await navigator.clipboard.readText()) || '';
+          }
+        } catch (err) {
+          console.warn('Clipboard readText() failed:', err);
+        }
+      }
+
+      const today = getTodayDate();
+      const res = await api.collections.today(today);
+      const col = res.collection;
+
+      const createRes = await api.snipsels.create(col.id, {
+        content_markdown: clipText,
+        type: clipImageFile ? 'image' : (col.default_snipsel_type || 'text'),
+      });
+
+      if (createRes?.item) {
+        const snipselId = createRes.item.snipsel_id;
+
+        if (clipImageFile) {
+          try {
+            const uploadRes = await api.attachments.upload(snipselId, clipImageFile);
+            if (uploadRes?.attachment) {
+              createRes.item.snipsel.attachments = [uploadRes.attachment];
+              createRes.item.snipsel.type = 'image';
+            }
+          } catch (uploadErr) {
+            console.error('Failed to upload image from clipboard:', uploadErr);
+          }
+        }
+
+        collectionItems.update((items) => {
+          if ($currentCollection?.id === col.id) {
+            return items.some((i) => i.snipsel_id === snipselId)
+              ? items.map((i) => (i.snipsel_id === snipselId ? createRes.item : i))
+              : [...items, createRes.item];
+          }
+          return items;
+        });
+
+        collectionAnchor.set({
+          collectionId: col.id,
+          snipselId: snipselId,
+          pos: createRes.item.position,
+        });
+      }
+
+      currentCollection.set(col);
+      currentView.set({ type: 'collection', id: col.id });
+    } catch (err) {
+      console.error('Failed to create snipsel from clipboard:', err);
+    } finally {
+      isLoading.set(false);
+    }
+  }
+
+  const lpNewSnipsel = longPress(
+    () => void onNewSnipselFromClipboard(),
+    () => void onNewSnipsel()
+  );
 
   async function openToday() {
     isLoading.set(true);
@@ -909,12 +997,17 @@ import HabitDetail from './routes/HabitDetail.svelte';
             </button>
 
             <button
-              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-all hover:-translate-y-0.5 hover:shadow-lg select-none"
               style={`background-color: ${getNavPlusColor()}; color: ${getNavPlusIconColor()}`}
               type="button"
-              onclick={onNewSnipsel}
-              aria-label="New snipsel (today)"
-              title="New snipsel (today)"
+              onpointerdown={lpNewSnipsel.onpointerdown}
+              onpointerup={lpNewSnipsel.onpointerup}
+              onpointercancel={lpNewSnipsel.onpointercancel}
+              onpointerleave={lpNewSnipsel.onpointerleave}
+              oncontextmenu={lpNewSnipsel.oncontextmenu}
+              onclick={lpNewSnipsel.onclick}
+              aria-label="New snipsel (today) - long press to paste clipboard"
+              title="New snipsel (today) - long press to paste clipboard"
             >
               <PlusIcon label="" size={24} strokeWidth={2.5} />
             </button>
