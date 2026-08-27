@@ -611,6 +611,19 @@ export const api = {
         modified_at: new Date().toISOString(),
         access_level: 'owner',
       };
+      if (typeof window !== 'undefined' && navigator.onLine) {
+        try {
+          const res = await requestJson<{ collection: Collection }>(
+            '/api/collections',
+            { method: 'POST', body: JSON.stringify({ ...input, _tempId: tempId }) }
+          );
+          await idbSaveCollection(res.collection);
+          return res;
+        } catch (err) {
+          console.error("Online collection create failed, falling back to offline", err);
+        }
+      }
+
       await idbSaveCollection(collection);
       await idbEnqueueSync('POST', '/api/collections', { ...input, _tempId: tempId });
       return { collection };

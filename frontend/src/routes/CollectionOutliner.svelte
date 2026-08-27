@@ -276,11 +276,12 @@
             });
           }
         }
-      } else if (e.detail?.type === 'collection' && e.detail?.id === $currentCollection?.id) {
+      } else if (e.detail?.type === 'collection' && (e.detail?.id === $currentCollection?.id || e.detail?.oldId === $currentCollection?.id)) {
         const oldId = e.detail.oldId;
         const newItem = e.detail.item;
         if (oldId && newItem) {
           currentCollection.set(newItem);
+          currentView.set({ type: 'collection', id: newItem.id });
         }
       }
     };
