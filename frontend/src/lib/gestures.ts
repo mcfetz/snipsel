@@ -6,8 +6,10 @@ export function longPress(
 ) {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let isLong = false;
-  let isTouch = false;
+  let fired = false;
+  let activeTouchId: number | null = null;
   let touchStartTime = 0;
+  let suppressClickUntil = 0;
 
   function clearTimer() {
     if (timer) {
@@ -16,9 +18,11 @@ export function longPress(
     }
   }
 
-  function start() {
+  function start(touchId?: number) {
     clearTimer();
     isLong = false;
+    fired = false;
+    if (touchId !== undefined) activeTouchId = touchId;
     touchStartTime = Date.now();
     onStateChange?.('holding');
     timer = setTimeout(() => {
@@ -32,69 +36,77 @@ export function longPress(
     }, ms);
   }
 
-  function end(e?: Event) {
+  function finish(syntheticClick: boolean) {
     const elapsed = Date.now() - touchStartTime;
     const wasLong = isLong || elapsed >= ms;
     clearTimer();
-    isLong = false;
-    onStateChange?.('idle');
 
     if (wasLong) {
-      if (e && e.cancelable) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      fired = true;
+      suppressClickUntil = Date.now() + 800;
       onLongPress();
-    } else {
+    } else if (!fired) {
+      fired = true;
       onShortPress();
     }
+
+    isLong = false;
+    activeTouchId = null;
+    onStateChange?.('idle');
+
+    // If a synthetic click is arriving, suppress it
+    void syntheticClick;
   }
 
   function cancel() {
     clearTimer();
     isLong = false;
+    activeTouchId = null;
     onStateChange?.('idle');
   }
 
   return {
+    // Native touch events (preferred path on iOS / Android)
     ontouchstart: (e: TouchEvent) => {
-      isTouch = true;
-      start();
+      const t = e.changedTouches[0] ?? e.touches[0];
+      if (!t) return;
+      start(t.identifier);
+    },
+    ontouchmove: () => {
+      // Touch is moving → user is scrolling, cancel long press
+      cancel();
     },
     ontouchend: (e: TouchEvent) => {
-      if (!isTouch) return;
-      end(e);
-      setTimeout(() => {
-        isTouch = false;
-      }, 500);
+      finish(true);
     },
     ontouchcancel: () => {
       cancel();
-      isTouch = false;
     },
 
+    // Pointer events (desktop path)
     onpointerdown: (e: PointerEvent) => {
-      if (isTouch || e.pointerType === 'touch') return;
+      if (e.pointerType === 'touch') return;
       start();
     },
-    onpointerup: (e: PointerEvent) => {
-      if (isTouch || e.pointerType === 'touch') return;
-      end(e);
+    onpointerup: () => {
+      if (activeTouchId !== null) return;
+      finish(true);
     },
     onpointercancel: () => {
-      if (isTouch) return;
+      if (activeTouchId !== null) return;
       cancel();
     },
     onpointerleave: () => {
-      if (isTouch) return;
+      if (activeTouchId !== null) return;
       cancel();
     },
 
+    // Synthetic click (e.g. desktop mouse or iOS post-touch)
     onclick: (e: MouseEvent) => {
-      if (isTouch) {
+      if (Date.now() < suppressClickUntil) {
         e.preventDefault();
         e.stopPropagation();
-        return;
+        suppressClickUntil = 0;
       }
     },
     oncontextmenu: (e: MouseEvent) => {
