@@ -188,6 +188,7 @@ import HabitDetail from './routes/HabitDetail.svelte';
   let plusPressState = $state<'idle' | 'holding' | 'long'>('idle');
   let showDebugPanel = $state(false);
   let debugCopyFeedback = $state(false);
+  let showIOSPasteHint = $state(false);
 
   function copyDebugLog() {
     const text = $debugLog.join('\n');
@@ -199,6 +200,32 @@ import HabitDetail from './routes/HabitDetail.svelte';
         }).catch(() => {});
       }
     } catch {}
+  }
+
+  function isAppleStandalone(): boolean {
+    if (!isAppleDevice()) return false;
+    try {
+      return (navigator as any).standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * iOS/WebKit hard-disables navigator.clipboard.read*() for installed
+   * ("standalone") web apps — no permission prompt is ever shown, and there
+   * is no JS workaround. Show a one-time hint so the user knows to paste
+   * manually (long-press the text field → "Paste") instead of assuming the
+   * feature is broken.
+   */
+  function maybeShowIOSPasteHint() {
+    if (!isAppleStandalone()) return;
+    try {
+      if (localStorage.getItem('snipsel_ios_paste_hint_shown') === '1') return;
+      localStorage.setItem('snipsel_ios_paste_hint_shown', '1');
+    } catch {}
+    showIOSPasteHint = true;
+    setTimeout(() => { showIOSPasteHint = false; }, 7000);
   }
 
   function isAppleDevice(): boolean {
@@ -316,6 +343,7 @@ import HabitDetail from './routes/HabitDetail.svelte';
       // If clipboard was completely empty, fallback to normal new snipsel
       if (!clipText && !clipImageFile) {
         logDebug('empty clipboard result -> falling back to onNewSnipsel()');
+        maybeShowIOSPasteHint();
         await onNewSnipsel();
         return;
       }
@@ -1198,6 +1226,17 @@ import HabitDetail from './routes/HabitDetail.svelte';
           {/each}
         {/if}
       </div>
+    </div>
+  {/if}
+
+  {#if showIOSPasteHint}
+    <div
+      class="fixed inset-x-4 z-[997] rounded-xl bg-slate-900/95 px-4 py-3 text-sm text-white shadow-2xl backdrop-blur-md"
+      style="bottom: calc(env(safe-area-inset-bottom) + 6.5rem);"
+      in:fly={{ y: 20, duration: 200 }}
+      out:fade={{ duration: 150 }}
+    >
+      📋 iOS blocks automatic paste in installed apps. Long-press the text field and tap "Paste" to insert your clipboard content.
     </div>
   {/if}
 </div>
