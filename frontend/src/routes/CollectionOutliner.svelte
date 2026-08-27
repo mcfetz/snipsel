@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, onMount } from 'svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import ChevronsUp from '@animated-color-icons/lucide-svelte/ChevronsUp.svelte';
   import ChevronsDown from '@animated-color-icons/lucide-svelte/ChevronsDown.svelte';
@@ -162,12 +162,14 @@
   // Debounced mermaid processing – avoids re-rendering diagrams on every keystroke
   let mermaidTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
-    // Track only the data sources that produce new mermaid blocks
-    const _items = $sortedItems;
-    const _searchRes = $searchResults;
-    const _editing = $editingSnipselId;
+    // Fast check: skip completely if no mermaid blocks exist
+    const hasMermaid = $sortedItems.some(i => i.snipsel.content_markdown?.includes('mermaid')) ||
+                       $searchResults.some(s => s.content_markdown?.includes('mermaid')) ||
+                       Boolean(editContent && editContent.includes('mermaid'));
 
     if (mermaidTimer) clearTimeout(mermaidTimer);
+    if (!hasMermaid) return;
+
     mermaidTimer = setTimeout(() => {
       tick().then(async () => {
         const containers = document.querySelectorAll('.mermaid-unprocessed');
@@ -1846,12 +1848,15 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     }
   });
 
-  $effect(() => {
+  onMount(() => {
     loadTemplates();
   });
 
   $effect(() => {
-    loadShareCount();
+    const colId = $currentCollection?.id;
+    if (colId) {
+      loadShareCount();
+    }
   });
 
   $effect(() => {
@@ -2345,15 +2350,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     collectionItems.set(list.map((i, index) => ({ ...i, position: index + 1 })));
   }
 
-  function renderMarkdown(text: string | null): string {
-    if (!text) return '';
-    // Replace blank lines with &nbsp; so they render as visible empty lines.
-    // markdown-it with breaks:true then wraps them as <br>&nbsp;<br>, giving
-    // the correct "empty line" appearance without creating separate paragraphs.
+  // High-performance LRU cache for rendered markdown and wiki links — prevents
+  // re-parsing identical markdown on every keystroke, scroll, or reactive pulse.
+  const mdCache = new Map<string, string>();
+  const MAX_MD_CACHE = 500;
+
+  function renderMarkdownCore(text: string, tokenBg: string, tokenFg: string): string {
     const preprocessed = text.trim().replace(/^[ \t]*$/gm, '\u00a0');
     const html = md.render(preprocessed).trim();
-    const tokenBg = toolboxBg;
-    const tokenFg = headerColor;
     return html
       .replace(
         /(^|[^\p{L}\p{N}_])(#[A-Za-z\p{L}][\p{L}\p{N}_-]*|@[A-Za-z\p{L}][\p{L}\p{N}_-]*)/gu,
@@ -2371,31 +2375,64 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       .replace(/<br>\n/g, '<br>');
   }
 
+  function renderMarkdown(text: string | null): string {
+    if (!text) return '';
+    const tokenBg = toolboxBg;
+    const tokenFg = headerColor;
+    const key = `${tokenBg}|${tokenFg}|__raw__|${text}`;
+    const cached = mdCache.get(key);
+    if (cached !== undefined) return cached;
+
+    const html = renderMarkdownCore(text, tokenBg, tokenFg);
+    if (mdCache.size >= MAX_MD_CACHE) {
+      const first = mdCache.keys().next().value;
+      if (first) mdCache.delete(first);
+    }
+    mdCache.set(key, html);
+    return html;
+  }
+
   function renderWithWikiLinks(content: string, refs: Array<{title: string; collection_id: string}> | undefined): string {
-    let html = renderMarkdown(content);
-    const refMap = new Map<string, string>();
-    if (refs) {
+    if (!content) return '';
+    const tokenBg = toolboxBg;
+    const tokenFg = headerColor;
+    const refsKey = refs && refs.length > 0 ? refs.map(r => `${r.title}:${r.collection_id}`).join(',') : '';
+    const key = `${tokenBg}|${tokenFg}|${refsKey}|${content}`;
+
+    const cached = mdCache.get(key);
+    if (cached !== undefined) return cached;
+
+    let html = renderMarkdownCore(content, tokenBg, tokenFg);
+    if (refs && refs.length > 0) {
+      const refMap = new Map<string, string>();
       for (const r of refs) {
         refMap.set(r.title.toLowerCase(), r.collection_id);
       }
-    }
-    const tokenBg = toolboxBg;
-    const tokenFg = headerColor;
-    html = html.replace(/\[\[([^\]]+)\]\]/g, (_match, title: string) => {
-      // Unescape HTML entities (like &amp;) because markdown-it escapes them
-      const unescapedTitle = title
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
+      html = html.replace(/\[\[([^\]]+)\]\]/g, (_match, title: string) => {
+        const unescapedTitle = title
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'");
 
-      const collectionId = refMap.get(unescapedTitle.toLowerCase());
-      if (collectionId) {
-        return `<a class="snip-token cursor-pointer" style="background-color:${tokenBg}; color:${tokenFg}" data-collection-id="${collectionId}">[[${title}]]</a>`;
-      }
-      return `<span class="text-slate-400 text-xs">[[${title}]]</span>`;
-    });
+        const collectionId = refMap.get(unescapedTitle.toLowerCase());
+        if (collectionId) {
+          return `<a class="snip-token cursor-pointer" style="background-color:${tokenBg}; color:${tokenFg}" data-collection-id="${collectionId}">[[${title}]]</a>`;
+        }
+        return `<span class="text-slate-400 text-xs">[[${title}]]</span>`;
+      });
+    } else {
+      html = html.replace(/\[\[([^\]]+)\]\]/g, (_match, title: string) => {
+        return `<span class="text-slate-400 text-xs">[[${title}]]</span>`;
+      });
+    }
+
+    if (mdCache.size >= MAX_MD_CACHE) {
+      const first = mdCache.keys().next().value;
+      if (first) mdCache.delete(first);
+    }
+    mdCache.set(key, html);
     return html;
   }
 
@@ -2486,12 +2523,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   });
 
   $effect(() => {
-    const day = $currentCollection?.list_for_day;
-    void day;
-    loadDailyHabits();
-  });
-
-  $effect(() => {
     const a = $collectionAnchor;
     const c = $currentCollection;
     if (!a || !c) return;
@@ -2532,8 +2563,18 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   }
 
   $effect(() => {
+    let ticking = false;
     const onScroll = () => {
-      showScrollTop = window.scrollY > 300;
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const next = window.scrollY > 300;
+          if (showScrollTop !== next) {
+            showScrollTop = next;
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -2636,6 +2677,63 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     return null;
   }
 
+  type ParsedEmbeds = {
+    deezer: { type: 'track' | 'album' | 'artist' | null; id: string | null; url: string } | null;
+    spotify: { url: string } | null;
+    youtube: { id: string; url: string } | null;
+    map: { lat?: number; lng?: number; url: string } | null;
+    generic: { url: string } | null;
+    collectionId: string | null;
+    strippedText: string;
+  };
+
+  const embedCache = new Map<string, ParsedEmbeds>();
+  const MAX_EMBED_CACHE = 400;
+
+  function parseSnipselEmbeds(text: string | null, refs?: Array<{title: string; collection_id: string}>): ParsedEmbeds {
+    if (!text) {
+      return { deezer: null, spotify: null, youtube: null, map: null, generic: null, collectionId: null, strippedText: '' };
+    }
+    const refsKey = refs && refs.length > 0 ? refs.map(r => `${r.title}:${r.collection_id}`).join(',') : '';
+    const cacheKey = `${refsKey}|${text}`;
+    const cached = embedCache.get(cacheKey);
+    if (cached) return cached;
+
+    const dz = getDeezerLink(text);
+    const sp = getSpotifyLink(text);
+    const yt = getYouTubeLink(text);
+    const ml = getMapLink(text);
+    let gl: { url: string } | null = null;
+    if (!dz && !sp && !yt && !ml) {
+      const trimmed = text.trim();
+      const urlMatch = trimmed.match(/^(https?:\/\/\S+)$/);
+      if (urlMatch) {
+        gl = { url: urlMatch[1] };
+      }
+    }
+    const cid = getCollectionLink(text, refs);
+
+    let stripped = text;
+    if (dz) stripped = stripped.replace(dz.url, '');
+    if (sp) stripped = stripped.replace(sp.url, '');
+    if (yt) stripped = stripped.replace(yt.url, '');
+    if (ml) stripped = stripped.replace(ml.url, '');
+    if (gl) stripped = stripped.replace(gl.url, '');
+    if (cid) {
+      stripped = '';
+    } else {
+      stripped = stripped.trim();
+    }
+
+    const result: ParsedEmbeds = { deezer: dz, spotify: sp, youtube: yt, map: ml, generic: gl, collectionId: cid, strippedText: stripped };
+    if (embedCache.size >= MAX_EMBED_CACHE) {
+      const first = embedCache.keys().next().value;
+      if (first) embedCache.delete(first);
+    }
+    embedCache.set(cacheKey, result);
+    return result;
+  }
+
   function getGenericLink(text: string | null) {
     if (!text) return null;
     if (getDeezerLink(text)) return null;
@@ -2652,30 +2750,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
   function stripMediaLinks(text: string | null, refs?: Array<{title: string; collection_id: string}>): string {
     if (!text) return '';
-    let result = text;
-    
-    const dz = getDeezerLink(text);
-    if (dz) result = result.replace(dz.url, '');
-    
-    const sp = getSpotifyLink(text);
-    if (sp) result = result.replace(sp.url, '');
-    
-    const yt = getYouTubeLink(text);
-    if (yt) result = result.replace(yt.url, '');
-    
-    const ml = getMapLink(text);
-    if (ml) result = result.replace(ml.url, '');
-    
-    const gl = getGenericLink(text);
-    if (gl) result = result.replace(gl.url, '');
-
-    const cid = getCollectionLink(text, refs);
-    if (cid) {
-      // If it's only a collection link, we return empty so the text area is empty (card only)
-      return '';
-    }
-    
-    return result.trim();
+    return parseSnipselEmbeds(text, refs).strippedText;
   }
 
   function getCollectionLink(text: string | null, refs: Array<{title: string; collection_id: string}> | undefined): string | null {
@@ -2908,29 +2983,24 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
       <!-- Embed Cards -->
       {#if item.snipsel.content_markdown && item.snipsel.card_view !== false}
-        {#if getDeezerLink(item.snipsel.content_markdown)}
-          {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
-          <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={headerColor} />
+        {@const embeds = parseSnipselEmbeds(item.snipsel.content_markdown, item.collection_refs)}
+        {#if embeds.deezer}
+          <DeezerCard type={embeds.deezer.type} id={embeds.deezer.id} url={embeds.deezer.url} accentColor={headerColor} />
         {/if}
-        {#if getSpotifyLink(item.snipsel.content_markdown)}
-          {@const sp = getSpotifyLink(item.snipsel.content_markdown)!}
-          <SpotifyCard url={sp.url} accentColor={headerColor} />
+        {#if embeds.spotify}
+          <SpotifyCard url={embeds.spotify.url} accentColor={headerColor} />
         {/if}
-        {#if getYouTubeLink(item.snipsel.content_markdown)}
-          {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
-          <YouTubeCard url={yt.url} accentColor={headerColor} />
+        {#if embeds.youtube}
+          <YouTubeCard url={embeds.youtube.url} accentColor={headerColor} />
         {/if}
-        {#if getMapLink(item.snipsel.content_markdown)}
-          {@const ml = getMapLink(item.snipsel.content_markdown)!}
-          <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
+        {#if embeds.map}
+          <MapCard lat={embeds.map.lat} lng={embeds.map.lng} url={embeds.map.url} accentColor={headerColor} />
         {/if}
-        {#if getGenericLink(item.snipsel.content_markdown)}
-          {@const gl = getGenericLink(item.snipsel.content_markdown)!}
-          <HyperlinkCard url={gl.url} accentColor={headerColor} />
+        {#if embeds.generic}
+          <HyperlinkCard url={embeds.generic.url} accentColor={headerColor} />
         {/if}
-        {#if getCollectionLink(item.snipsel.content_markdown, item.collection_refs)}
-          {@const cid = getCollectionLink(item.snipsel.content_markdown, item.collection_refs)!}
-          <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
+        {#if embeds.collectionId}
+          <CollectionLinkCard collectionId={embeds.collectionId} accentColor={headerColor} />
         {/if}
       {/if}
 
@@ -3004,7 +3074,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               class="prose prose-sm max-w-none text-sm prose-p:my-0 prose-headings:my-1.5 prose-h1:text-lg prose-h2:text-base prose-h3:text-sm whitespace-pre-wrap dark:prose-invert break-words"
               style="--accent-light: {toolboxBg}"
             >
-              {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown, item.collection_refs) : item.snipsel.content_markdown, item.collection_refs)}
+              {@html renderWithWikiLinks(item.snipsel.card_view !== false ? parseSnipselEmbeds(item.snipsel.content_markdown, item.collection_refs).strippedText : item.snipsel.content_markdown, item.collection_refs)}
             </div>
           {:else if !item.snipsel.attachments || !item.snipsel.attachments.length}
             <span class="text-xs italic text-slate-400 dark:text-slate-500">Empty snipsel</span>
@@ -3564,29 +3634,26 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 {/if}
 
                 {#if snip.content_markdown}
-                  {#if getDeezerLink(snip.content_markdown)}
-                    {@const dz = getDeezerLink(snip.content_markdown)!}
-                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getSpotifyLink(snip.content_markdown)}
-                    {@const sp = getSpotifyLink(snip.content_markdown)!}
-                    <SpotifyCard url={sp.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getYouTubeLink(snip.content_markdown)}
-                    {@const yt = getYouTubeLink(snip.content_markdown)!}
-                    <YouTubeCard url={yt.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getMapLink(snip.content_markdown)}
-                    {@const ml = getMapLink(snip.content_markdown)!}
-                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getGenericLink(snip.content_markdown)}
-                    {@const gl = getGenericLink(snip.content_markdown)!}
-                    <HyperlinkCard url={gl.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getCollectionLink(snip.content_markdown, snip.collection_refs)}
-                    {@const cid = getCollectionLink(snip.content_markdown, snip.collection_refs)!}
-                    <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
+                  {#if snip.card_view !== false}
+                    {@const embeds = parseSnipselEmbeds(snip.content_markdown, snip.collection_refs)}
+                    {#if embeds.deezer}
+                      <DeezerCard type={embeds.deezer.type} id={embeds.deezer.id} url={embeds.deezer.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.spotify}
+                      <SpotifyCard url={embeds.spotify.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.youtube}
+                      <YouTubeCard url={embeds.youtube.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.map}
+                      <MapCard lat={embeds.map.lat} lng={embeds.map.lng} url={embeds.map.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.generic}
+                      <HyperlinkCard url={embeds.generic.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.collectionId}
+                      <CollectionLinkCard collectionId={embeds.collectionId} accentColor={headerColor} />
+                    {/if}
                   {/if}
                   <div class="flex items-start gap-3">
                     {#if snip.type === 'task'}
@@ -3610,7 +3677,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                       </button>
                     {/if}
                     <div class="prose prose-sm max-w-none text-lg prose-p:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
-                      {@html renderWithWikiLinks(snip.card_view !== false ? stripMediaLinks(snip.content_markdown, snip.collection_refs) : snip.content_markdown, snip.collection_refs)}
+                      {@html renderWithWikiLinks(snip.card_view !== false ? parseSnipselEmbeds(snip.content_markdown, snip.collection_refs).strippedText : snip.content_markdown, snip.collection_refs)}
                     </div>
 
                     {#if snip.created_by_id !== $currentUser?.id && snip.created_by_username !== $currentUser?.username}
@@ -4006,29 +4073,24 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
             >
               {#if item.snipsel.content_markdown}
                   {#if item.snipsel.card_view !== false}
-                    {#if getDeezerLink(item.snipsel.content_markdown)}
-                      {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
-                      <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={headerColor} />
+                    {@const embeds = parseSnipselEmbeds(item.snipsel.content_markdown, item.collection_refs)}
+                    {#if embeds.deezer}
+                      <DeezerCard type={embeds.deezer.type} id={embeds.deezer.id} url={embeds.deezer.url} accentColor={headerColor} />
                     {/if}
-                    {#if getSpotifyLink(item.snipsel.content_markdown)}
-                      {@const sp = getSpotifyLink(item.snipsel.content_markdown)!}
-                      <SpotifyCard url={sp.url} accentColor={headerColor} />
+                    {#if embeds.spotify}
+                      <SpotifyCard url={embeds.spotify.url} accentColor={headerColor} />
                     {/if}
-                    {#if getYouTubeLink(item.snipsel.content_markdown)}
-                      {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
-                      <YouTubeCard url={yt.url} accentColor={headerColor} />
+                    {#if embeds.youtube}
+                      <YouTubeCard url={embeds.youtube.url} accentColor={headerColor} />
                     {/if}
-                    {#if getMapLink(item.snipsel.content_markdown)}
-                      {@const ml = getMapLink(item.snipsel.content_markdown)!}
-                      <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
+                    {#if embeds.map}
+                      <MapCard lat={embeds.map.lat} lng={embeds.map.lng} url={embeds.map.url} accentColor={headerColor} />
                     {/if}
-                    {#if getGenericLink(item.snipsel.content_markdown)}
-                      {@const gl = getGenericLink(item.snipsel.content_markdown)!}
-                      <HyperlinkCard url={gl.url} accentColor={headerColor} />
+                    {#if embeds.generic}
+                      <HyperlinkCard url={embeds.generic.url} accentColor={headerColor} />
                     {/if}
-                    {#if getCollectionLink(item.snipsel.content_markdown, item.collection_refs)}
-                      {@const cid = getCollectionLink(item.snipsel.content_markdown, item.collection_refs)!}
-                      <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
+                    {#if embeds.collectionId}
+                      <CollectionLinkCard collectionId={embeds.collectionId} accentColor={headerColor} />
                     {/if}
                   {/if}
 
@@ -4037,7 +4099,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                       class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words"
                       style="--accent-light: {toolboxBg}"
                     >
-                      {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown, item.collection_refs) : item.snipsel.content_markdown, item.collection_refs)}
+                      {@html renderWithWikiLinks(item.snipsel.card_view !== false ? parseSnipselEmbeds(item.snipsel.content_markdown, item.collection_refs).strippedText : item.snipsel.content_markdown, item.collection_refs)}
                     </div>
 
                     {#if item.snipsel.created_by_id !== $currentUser?.id}
@@ -4248,29 +4310,26 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                 {/if}
 
                 {#if snip.content_markdown}
-                  {#if getDeezerLink(snip.content_markdown)}
-                    {@const dz = getDeezerLink(snip.content_markdown)!}
-                    <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getSpotifyLink(snip.content_markdown)}
-                    {@const sp = getSpotifyLink(snip.content_markdown)!}
-                    <SpotifyCard url={sp.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getYouTubeLink(snip.content_markdown)}
-                    {@const yt = getYouTubeLink(snip.content_markdown)!}
-                    <YouTubeCard url={yt.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getMapLink(snip.content_markdown)}
-                    {@const ml = getMapLink(snip.content_markdown)!}
-                    <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getGenericLink(snip.content_markdown)}
-                    {@const gl = getGenericLink(snip.content_markdown)!}
-                    <HyperlinkCard url={gl.url} accentColor={headerColor} />
-                  {/if}
-                  {#if getCollectionLink(snip.content_markdown, snip.collection_refs)}
-                    {@const cid = getCollectionLink(snip.content_markdown, snip.collection_refs)!}
-                    <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
+                  {#if snip.card_view !== false}
+                    {@const embeds = parseSnipselEmbeds(snip.content_markdown, snip.collection_refs)}
+                    {#if embeds.deezer}
+                      <DeezerCard type={embeds.deezer.type} id={embeds.deezer.id} url={embeds.deezer.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.spotify}
+                      <SpotifyCard url={embeds.spotify.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.youtube}
+                      <YouTubeCard url={embeds.youtube.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.map}
+                      <MapCard lat={embeds.map.lat} lng={embeds.map.lng} url={embeds.map.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.generic}
+                      <HyperlinkCard url={embeds.generic.url} accentColor={headerColor} />
+                    {/if}
+                    {#if embeds.collectionId}
+                      <CollectionLinkCard collectionId={embeds.collectionId} accentColor={headerColor} />
+                    {/if}
                   {/if}
                   <div class="flex items-start gap-3">
                     {#if snip.type === 'task'}
@@ -4294,7 +4353,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
                       </button>
                     {/if}
                     <div class="prose prose-sm max-w-none text-lg prose-p:my-0 whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words">
-                      {@html renderWithWikiLinks(snip.card_view !== false ? stripMediaLinks(snip.content_markdown, snip.collection_refs) : snip.content_markdown, snip.collection_refs)}
+                      {@html renderWithWikiLinks(snip.card_view !== false ? parseSnipselEmbeds(snip.content_markdown, snip.collection_refs).strippedText : snip.content_markdown, snip.collection_refs)}
                     </div>
 
                     {#if snip.created_by_id !== $currentUser?.id && snip.created_by_username !== $currentUser?.username}

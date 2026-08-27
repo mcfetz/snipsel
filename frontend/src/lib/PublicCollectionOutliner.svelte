@@ -53,36 +53,38 @@
   $effect(() => {
     // Process mermaid diagrams when data changes
     const _items = sortedItems;
+    if (!_items.some(i => i.snipsel?.content_markdown?.includes('mermaid'))) return;
 
     tick().then(async () => {
-      const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+      // Check if we are in browser to prevent SSR errors
+      if (typeof document === 'undefined') return;
+      const containers = document.querySelectorAll('.mermaid-unprocessed');
+      if (containers.length === 0) return;
+
+      const isDark = document.documentElement.classList.contains('dark');
       mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' });
 
-      // Check if we are in browser to prevent SSR errors
-      if (typeof document !== 'undefined') {
-        const containers = document.querySelectorAll('.mermaid-unprocessed');
-        for (const el of Array.from(containers)) {
-          try {
-            let content = el.getAttribute('data-mermaid');
-            if (content) {
-              el.className = 'mermaid my-4'; 
-              
-              content = content
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'");
+      for (const el of Array.from(containers)) {
+        try {
+          let content = el.getAttribute('data-mermaid');
+          if (content) {
+            el.className = 'mermaid my-4'; 
+            
+            content = content
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'");
 
-              const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-              const { svg } = await mermaid.render(id, content);
-              el.innerHTML = svg;
-            }
-          } catch (err) {
-            console.error("Mermaid error", err);
-            el.className = 'mermaid-error my-4';
-            el.innerHTML = `<pre style="color:#ef4444;font-size:12px;background:rgba(239,68,68,0.1);padding:10px;border-radius:4px;overflow-x:auto;">Mermaid syntax error:\n${err}</pre>`;
+            const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+            const { svg } = await mermaid.render(id, content);
+            el.innerHTML = svg;
           }
+        } catch (err) {
+          console.error("Mermaid error", err);
+          el.className = 'mermaid-error my-4';
+          el.innerHTML = `<pre style="color:#ef4444;font-size:12px;background:rgba(239,68,68,0.1);padding:10px;border-radius:4px;overflow-x:auto;">Mermaid syntax error:\n${err}</pre>`;
         }
       }
     });
@@ -216,13 +218,20 @@
     return isDark ? 'rgba(30, 41, 59, 0.96)' : 'rgba(255, 255, 255, 0.96)';
   }
 
+  const publicMdCache = new Map<string, string>();
+  const MAX_PUBLIC_MD_CACHE = 300;
+
   function renderMarkdown(text: string | null): string {
     if (!text) return '';
-    const preprocessed = text.trim().replace(/^[ \t]*$/gm, '\u00a0');
-    const html = md.render(preprocessed).trim();
     const tokenBg = getToolboxBg();
     const tokenFg = getHeaderColor();
-    return html
+    const cacheKey = `${tokenBg}|${tokenFg}|${text}`;
+    const cached = publicMdCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
+    const preprocessed = text.trim().replace(/^[ \t]*$/gm, '\u00a0');
+    const html = md.render(preprocessed).trim();
+    const result = html
       .replace(
         /(^|[^\p{L}\p{N}_])(#[A-Za-z\p{L}][\p{L}\p{N}_-]*|@[A-Za-z\p{L}][\p{L}\p{N}_-]*)/gu,
         (m, p1, token) =>
@@ -233,6 +242,13 @@
       .replace(/<blockquote>/g, `<blockquote style="border-left: 3px solid ${tokenFg}; background-color:${tokenBg}; margin: 0.25rem 0; padding: 0.25rem 0.75rem; border-radius: 0 0.25rem 0.25rem 0; opacity: 0.9;">`)
       .replace(/>\s+</g, '><')
       .replace(/<br>\n/g, '<br>');
+
+    if (publicMdCache.size >= MAX_PUBLIC_MD_CACHE) {
+      const first = publicMdCache.keys().next().value;
+      if (first) publicMdCache.delete(first);
+    }
+    publicMdCache.set(cacheKey, result);
+    return result;
   }
 
   function isImageAttachment(a: any) {
