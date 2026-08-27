@@ -290,6 +290,7 @@ def sync_all_data():
                 "header_image_zoom": c.header_image_zoom,
                 "is_template": bool(c.is_template),
                 "default_snipsel_type": c.default_snipsel_type,
+                "view_mode": c.view_mode or "list",
                 "archived": c.archived_at is not None,
                 "is_passcode_protected": bool(c.is_passcode_protected),
                 "show_completed_tasks": bool(c.show_completed_tasks),
@@ -700,6 +701,8 @@ def _get_or_create_daily_collection(user_id: str, day: date) -> Collection:
             c.show_completed_tasks = tpl.show_completed_tasks
             if tpl.default_snipsel_type:
                 c.default_snipsel_type = tpl.default_snipsel_type
+            if tpl.view_mode:
+                c.view_mode = tpl.view_mode
     db.session.add(c)
     db.session.flush()
 
@@ -1173,6 +1176,7 @@ def create_collection():
     header_image_url = (data.get("header_image_url") or "").strip() or None
     header_color = (data.get("header_color") or "").strip() or None
     default_snipsel_type = (data.get("default_snipsel_type") or "").strip() or None
+    view_mode = (data.get("view_mode") or "").strip() or "list"
     show_completed_tasks = (
         data.get("show_completed_tasks") if "show_completed_tasks" in data else True
     )
@@ -1187,6 +1191,7 @@ def create_collection():
         header_image_url=header_image_url,
         header_color=header_color,
         default_snipsel_type=default_snipsel_type,
+        view_mode=view_mode,
         show_completed_tasks=show_completed_tasks,
         mute_notifications=data.get("mute_notifications")
         if "mute_notifications" in data
@@ -1240,6 +1245,7 @@ def duplicate_collection(collection_id: str):
         mute_notifications=source.mute_notifications,
         exclude_from_todo_list=source.exclude_from_todo_list,
         default_snipsel_type=source.default_snipsel_type,
+        view_mode=source.view_mode,
         created_by_id=user.id,
         modified_by_id=user.id,
     )
@@ -1460,6 +1466,10 @@ def update_collection(collection_id: str):
         c.default_snipsel_type = (
             data.get("default_snipsel_type") or ""
         ).strip() or None
+    if "view_mode" in data:
+        c.view_mode = (
+            data.get("view_mode") or "list"
+        ).strip() or "list"
     if "show_completed_tasks" in data:
         c.show_completed_tasks = bool(data.get("show_completed_tasks"))
     if "mute_notifications" in data:
@@ -1719,6 +1729,7 @@ def _collection_json(c: Collection) -> dict:
         "header_image_zoom": c.header_image_zoom,
         "is_template": bool(c.is_template),
         "default_snipsel_type": c.default_snipsel_type,
+        "view_mode": c.view_mode or "list",
         "archived": c.archived_at is not None,
         "is_passcode_protected": bool(c.is_passcode_protected),
         "show_completed_tasks": bool(c.show_completed_tasks),

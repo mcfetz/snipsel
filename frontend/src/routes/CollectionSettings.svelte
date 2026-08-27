@@ -9,6 +9,8 @@
   import UnsplashSearchModal from '../lib/UnsplashSearchModal.svelte';
   import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import Archive from '@animated-color-icons/lucide-svelte/Archive.svelte';
+  import LayoutList from '@animated-color-icons/lucide-svelte/LayoutList.svelte';
+  import LayoutGrid from '@animated-color-icons/lucide-svelte/LayoutGrid.svelte';
   import { api, type Collection, type CollectionShare, type UserLite, type CollectionBacklink } from '../lib/api';
   import { collectionAnchor, collections, currentCollection, currentView, isLoading } from '../lib/stores';
   import { currentUser } from '../lib/session';
@@ -34,6 +36,7 @@ import CollectionExportModal from '../lib/CollectionExportModal.svelte';
   let headerImageZoom = $state(1.0);
   let isFavorite = $state(false);
   let defaultSnipselType = $state('');
+  let viewMode = $state<'list' | 'cards'>('list');
   let showCompletedTasks = $state(true);
   let muteNotifications = $state(false);
   let excludeFromTodoList = $state(false);
@@ -130,6 +133,7 @@ let showSavedFeedback = $state(false);
       headerImageZoom = collection.header_image_zoom ?? 1.0;
       isFavorite = Boolean(collection.is_favorite);
       defaultSnipselType = collection.default_snipsel_type ?? '';
+      viewMode = (collection.view_mode as 'list' | 'cards') ?? 'list';
       showCompletedTasks = collection.show_completed_tasks ?? true;
       muteNotifications = collection.mute_notifications ?? false;
       excludeFromTodoList = collection.exclude_from_todo_list ?? false;
@@ -192,6 +196,7 @@ let showSavedFeedback = $state(false);
         is_template: Boolean(collection.is_template),
         is_passcode_protected: Boolean(collection.is_passcode_protected),
         default_snipsel_type: defaultSnipselType.trim() || null,
+        view_mode: viewMode,
         show_completed_tasks: showCompletedTasks,
         mute_notifications: muteNotifications,
         exclude_from_todo_list: excludeFromTodoList,
@@ -534,6 +539,32 @@ function goBack() {
                   style={defaultSnipselType === 'task' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
                 >
                   Task
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="block">
+            <span class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Layout view</span>
+            <div class="overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10">
+              <div class="grid grid-cols-2">
+                <button
+                  class="flex items-center justify-center gap-2 px-2 py-2.5 text-xs font-medium transition-colors {viewMode === 'list' || !viewMode ? '' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+                  type="button"
+                  onclick={() => (viewMode = 'list')}
+                  style={viewMode === 'list' || !viewMode ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
+                >
+                  <LayoutList label="" size={14} />
+                  <span>List / Outline</span>
+                </button>
+                <button
+                  class="border-l border-black/5 dark:border-white/5 flex items-center justify-center gap-2 px-2 py-2.5 text-xs font-medium transition-colors {viewMode === 'cards' ? '' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
+                  type="button"
+                  onclick={() => (viewMode = 'cards')}
+                  style={viewMode === 'cards' ? `background-color: ${getAccent()}; color: ${getContrastColor(getAccent())}` : undefined}
+                >
+                  <LayoutGrid label="" size={14} />
+                  <span>Cards / Pinterest</span>
                 </button>
               </div>
             </div>

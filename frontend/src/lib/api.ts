@@ -64,6 +64,7 @@ export type Collection = {
   mute_notifications: boolean;
   exclude_from_todo_list: boolean;
   default_snipsel_type: string | null;
+  view_mode?: 'list' | 'cards' | null;
   archived: boolean;
   list_for_day: string | null;
   created_at: string;
@@ -566,6 +567,7 @@ export const api = {
       header_image_url?: string | null;
       header_color?: string | null;
       default_snipsel_type?: string | null;
+      view_mode?: string | null;
       show_completed_tasks?: boolean;
       mute_notifications?: boolean;
       exclude_from_todo_list?: boolean;
@@ -583,6 +585,7 @@ export const api = {
         mute_notifications: input.mute_notifications ?? false,
         exclude_from_todo_list: input.exclude_from_todo_list ?? false,
         default_snipsel_type: input.default_snipsel_type || null,
+        view_mode: (input.view_mode as 'list' | 'cards') || 'list',
         archived: false,
         list_for_day: null,
         created_at: new Date().toISOString(),
@@ -603,6 +606,7 @@ export const api = {
         archived?: boolean;
         is_template?: boolean;
         default_snipsel_type?: string | null;
+        view_mode?: string | null;
         is_passcode_protected?: boolean;
         show_completed_tasks?: boolean;
         mute_notifications?: boolean;
@@ -1240,6 +1244,7 @@ export const api = {
           is_passcode_protected: boolean;
           is_unlocked: boolean;
           default_snipsel_type: string | null;
+          view_mode: string | null;
         }
       }>(`/api/public/collections/${token}`),
     verifyPasscode: (token: string, passcode: string) =>

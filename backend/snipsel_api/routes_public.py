@@ -64,6 +64,7 @@ def get_public_collection(token: str):
             "is_passcode_protected": c.is_passcode_protected,
             "is_unlocked": is_unlocked,
             "default_snipsel_type": c.default_snipsel_type,
+            "view_mode": c.view_mode or "list",
         }
     })
 

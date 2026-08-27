@@ -829,6 +829,7 @@
 
   // Cached color values — avoids DOM reads and color math on every renderMarkdown call
   let headerColor = $derived(getHeaderColor());
+  let isCardsView = $derived($currentCollection?.view_mode === 'cards');
 
   let dayLabel = $derived.by(() => {
     const day = $currentCollection?.list_for_day;
@@ -3403,6 +3404,364 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           <div class="text-sm text-slate-400">Loading mentions...</div>
         </div>
       {/if}
+    </div>
+{#snippet snipselCard(item: CollectionItem)}
+  <div
+    id={`snipsel-${item.snipsel_id}`}
+    class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900 flex flex-col gap-2 {anchorHighlightId === item.snipsel_id ? 'ring-2' : ''} {selectedIds.has(item.snipsel_id) ? 'ring-2 !border-transparent' : ''} {item.snipsel.task_done > 0 ? 'task-faded' : ''} {item.snipsel.task_done === 2 ? 'task-cancelled' : ''}"
+    class:blur-sm={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
+    class:opacity-40={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
+    class:pointer-events-none={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
+    style={
+      anchorHighlightId === item.snipsel_id || selectedIds.has(item.snipsel_id)
+        ? `--tw-ring-color: ${headerColor}`
+        : undefined
+    }
+    in:fly={{ y: 10, duration: 200 }}
+    out:fade={{ duration: 150 }}
+  >
+    {#if item.snipsel_id === $editingSnipselId}
+      <div
+        bind:this={editContainerRef}
+        class="relative rounded-xl bg-slate-50 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
+        class:!fixed={editFullscreen}
+        class:inset-[5%]={editFullscreen}
+        class:!z-50={editFullscreen}
+        class:!flex={editFullscreen}
+        class:!flex-col={editFullscreen}
+        class:shadow-2xl={editFullscreen}
+        class:overflow-hidden={editFullscreen}
+        onfocusout={handleEditFocusOut}
+      >
+        <input
+          bind:this={editAttachmentsInputRef}
+          class="hidden"
+          type="file"
+          multiple
+          onchange={uploadEditAttachment}
+          disabled={editUploadingAttachments}
+        />
+        <FormattingToolbar 
+          textarea={textareaRef} 
+          onFormat={(content) => { editContent = content; handleEditInput(); }} 
+          accentColor={headerColor} 
+          isFullscreen={editFullscreen}
+          onToggleFullscreen={() => { editFullscreen = !editFullscreen; tick().then(autosizeTextarea); textareaRef?.focus(); }}
+          onIndent={() => { editIndent = Math.min(6, editIndent + 1); textareaRef?.focus(); }}
+          onOutdent={() => { editIndent = Math.max(0, editIndent - 1); textareaRef?.focus(); }}
+          onNewSnipsel={handleSaveAndNew}
+          onUploadAttachment={() => editAttachmentsInputRef?.click()}
+        />
+        <div class="px-2.5 py-3 rounded-b-lg overflow-y-auto" class:flex-1={editFullscreen} class:flex={editFullscreen} class:flex-col={editFullscreen}>
+          <textarea
+            bind:this={textareaRef}
+            class="w-full resize-none bg-transparent text-base outline-none dark:text-slate-100"
+            class:flex-1={editFullscreen}
+            rows="2"
+            bind:value={editContent}
+            oninput={handleEditInput}
+            onkeydown={handleKeydown}
+            onpaste={handlePaste}
+          ></textarea>
+          {#if uploadingAttachments || editUploadingAttachments}
+            <div class="absolute right-3 top-3 flex items-center gap-2 text-xs text-slate-400">
+              <div class="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500"></div>
+              Uploading...
+            </div>
+          {/if}
+          {#if getEditingSnipselCardView()}
+            {#if getDeezerLink(editContent)}
+              {@const dz = getDeezerLink(editContent)!}
+              <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={headerColor} />
+            {/if}
+            {#if getSpotifyLink(editContent)}
+              {@const sp = getSpotifyLink(editContent)!}
+              <SpotifyCard url={sp.url} accentColor={headerColor} />
+            {/if}
+            {#if getYouTubeLink(editContent)}
+              {@const yt = getYouTubeLink(editContent)!}
+              <YouTubeCard url={yt.url} accentColor={headerColor} />
+            {/if}
+            {#if getMapLink(editContent)}
+              {@const ml = getMapLink(editContent)!}
+              <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
+            {/if}
+            {#if getGenericLink(editContent)}
+              {@const gl = getGenericLink(editContent)!}
+              <HyperlinkCard url={gl.url} accentColor={headerColor} />
+            {/if}
+            {#if getCollectionLink(editContent, $editingSnipselId ? itemById.get($editingSnipselId)?.collection_refs : undefined)}
+              {@const cid = getCollectionLink(editContent, $editingSnipselId ? itemById.get($editingSnipselId)?.collection_refs : undefined)!}
+              <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
+            {/if}
+          {/if}
+          {#if showAutocomplete && suggestions.length > 0}
+            <div class="mt-2 rounded-xl border border-slate-200 bg-white/95 p-1 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95">
+              {#each suggestions as s, idx}
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors {idx === autocompleteSelectedIndex ? 'bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200' : 'hover:bg-slate-50 dark:hover:bg-white/5'}"
+                  onmousedown={(e) => { e.preventDefault(); applySuggestion(s); }}
+                >
+                  <span class="text-base">{s.icon || (s.type === 'tag' ? '#' : s.type === 'mention' ? '@' : '📁')}</span>
+                  <span class="font-medium truncate">{s.label}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      </div>
+    {:else}
+      {@const isImageAttachment = (a: Attachment) => Boolean(a.mime_type?.startsWith('image/') || (a.has_thumbnail && !a.mime_type?.startsWith('video/')))}
+      {@const isVideoAttachment = (a: Attachment) => Boolean(a.mime_type?.startsWith('video/') || (a.has_thumbnail && a.filename.toLowerCase().match(/\.(mp4|mov|webm|avi|mkv)$/)))}
+      {@const isMediaAttachment = (a: Attachment) => isImageAttachment(a) || isVideoAttachment(a)}
+      {@const media = item.snipsel.attachments ? item.snipsel.attachments.filter(isMediaAttachment) : []}
+      {@const others = item.snipsel.attachments ? item.snipsel.attachments.filter((a) => !isMediaAttachment(a)) : []}
+      {@const images = media.filter(isImageAttachment)}
+
+      <!-- Media Banner on top of Card -->
+      {#if media.length > 0 && item.snipsel.card_view !== false}
+        <div class="overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 -mx-1 -mt-1">
+          {#if media.length === 1}
+            {@const a = media[0]}
+            <button
+              type="button"
+              class="relative block w-full overflow-hidden"
+              onclick={(e) => {
+                e.stopPropagation();
+                if (isVideoAttachment(a)) openVideoModal(a.id, a.filename);
+                else openImageModal(images.map(img => ({ id: img.id, filename: img.filename })), 0);
+              }}
+            >
+              <img
+                class="max-h-60 w-full object-cover transition-transform duration-300 hover:scale-105"
+                src={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : api.attachments.downloadUrl(a.id)}
+                alt={a.filename}
+                loading="lazy"
+              />
+              {#if isVideoAttachment(a)}
+                <div class="absolute inset-0 flex items-center justify-center bg-black/25">
+                  <CirclePlay label="" size={32} className="text-white drop-shadow-md" />
+                </div>
+              {/if}
+            </button>
+          {:else}
+            <div class="grid grid-cols-2 gap-1">
+              {#each media.slice(0, 4) as a, mediaIdx}
+                {@const imgIdx = images.findIndex(img => img.id === a.id)}
+                <button
+                  type="button"
+                  class="relative aspect-square w-full overflow-hidden"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    if (isVideoAttachment(a)) openVideoModal(a.id, a.filename);
+                    else openImageModal(images.map(img => ({ id: img.id, filename: img.filename })), imgIdx);
+                  }}
+                >
+                  <img
+                    class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                    src={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : api.attachments.downloadUrl(a.id)}
+                    alt={a.filename}
+                    loading="lazy"
+                  />
+                  {#if isVideoAttachment(a)}
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/25">
+                      <CirclePlay label="" size={24} className="text-white drop-shadow-md" />
+                    </div>
+                  {/if}
+                  {#if mediaIdx === 3 && media.length > 4}
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-bold text-white">
+                      +{media.length - 4}
+                    </div>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Embed Cards -->
+      {#if item.snipsel.content_markdown && item.snipsel.card_view !== false}
+        {#if getDeezerLink(item.snipsel.content_markdown)}
+          {@const dz = getDeezerLink(item.snipsel.content_markdown)!}
+          <DeezerCard type={dz.type} id={dz.id} url={dz.url} accentColor={headerColor} />
+        {/if}
+        {#if getSpotifyLink(item.snipsel.content_markdown)}
+          {@const sp = getSpotifyLink(item.snipsel.content_markdown)!}
+          <SpotifyCard url={sp.url} accentColor={headerColor} />
+        {/if}
+        {#if getYouTubeLink(item.snipsel.content_markdown)}
+          {@const yt = getYouTubeLink(item.snipsel.content_markdown)!}
+          <YouTubeCard url={yt.url} accentColor={headerColor} />
+        {/if}
+        {#if getMapLink(item.snipsel.content_markdown)}
+          {@const ml = getMapLink(item.snipsel.content_markdown)!}
+          <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
+        {/if}
+        {#if getGenericLink(item.snipsel.content_markdown)}
+          {@const gl = getGenericLink(item.snipsel.content_markdown)!}
+          <HyperlinkCard url={gl.url} accentColor={headerColor} />
+        {/if}
+        {#if getCollectionLink(item.snipsel.content_markdown, item.collection_refs)}
+          {@const cid = getCollectionLink(item.snipsel.content_markdown, item.collection_refs)!}
+          <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
+        {/if}
+      {/if}
+
+      <!-- Main Card Body (Task checkbox + Content) -->
+      <div
+        class="flex items-start gap-2 cursor-pointer"
+        role="button"
+        tabindex="0"
+        onclick={(e) => {
+          const colTarget = (e.target as HTMLElement).closest('[data-collection-id]');
+          if (colTarget) {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = colTarget.getAttribute('data-collection-id');
+            if (id) currentView.set({ type: 'collection', id });
+            return;
+          }
+          const tagTarget = (e.target as HTMLElement).closest('[data-tag]');
+          if (tagTarget) {
+            e.preventDefault();
+            e.stopPropagation();
+            const tag = tagTarget.getAttribute('data-tag');
+            if (tag) {
+              searchQuery.set('#' + tag);
+              currentView.set({ type: 'search' });
+            }
+            return;
+          }
+          const mentionTarget = (e.target as HTMLElement).closest('[data-mention]');
+          if (mentionTarget) {
+            e.preventDefault();
+            e.stopPropagation();
+            const mention = mentionTarget.getAttribute('data-mention');
+            if (mention) {
+              searchQuery.set('@' + mention);
+              currentView.set({ type: 'search' });
+            }
+            return;
+          }
+          startEdit(item);
+        }}
+        onkeydown={(e) => {
+          if (e.target === e.currentTarget && e.key === 'Enter') startEdit(item);
+        }}
+      >
+        {#if item.snipsel.type === 'task'}
+          <button
+            class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800"
+            type="button"
+            aria-label={item.snipsel.task_done ? 'Toggle task status' : 'Mark task done'}
+            title={item.snipsel.task_done === 1 ? 'Done' : item.snipsel.task_done === 2 ? 'Cancelled' : 'Open'}
+            onclick={(e) => {
+              e.stopPropagation();
+              toggleTaskDone(item);
+            }}
+            style={item.snipsel.task_done > 0
+              ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}; font-size: 10px`
+              : ''}
+          >
+            {#if item.snipsel.task_done === 1}
+              <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
+            {:else if item.snipsel.task_done === 2}
+              <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
+            {/if}
+          </button>
+        {/if}
+
+        <div class="min-w-0 flex-1">
+          {#if item.snipsel.content_markdown}
+            <div
+              class="prose prose-sm max-w-none text-sm prose-p:my-0 prose-headings:my-1.5 prose-h1:text-lg prose-h2:text-base prose-h3:text-sm whitespace-pre-wrap dark:prose-invert break-words"
+              style="--accent-light: {toolboxBg}"
+            >
+              {@html renderWithWikiLinks(item.snipsel.card_view !== false ? stripMediaLinks(item.snipsel.content_markdown, item.collection_refs) : item.snipsel.content_markdown, item.collection_refs)}
+            </div>
+          {:else if !item.snipsel.attachments || !item.snipsel.attachments.length}
+            <span class="text-xs italic text-slate-400 dark:text-slate-500">Empty snipsel</span>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Non-media files -->
+      {#if others.length > 0}
+        <div class="space-y-1.5">
+          {#each others.slice(0, 2) as a}
+            <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} accentColor={headerColor} />
+          {/each}
+          {#if others.length > 2}
+            <div class="text-[10px] text-slate-400">+{others.length - 2} more files</div>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Footer: Tags, Mentions, Reminders, Reactions -->
+      {#if (item.snipsel.tags?.length ?? 0) > 0 || (item.snipsel.mentions?.length ?? 0) > 0 || item.snipsel.reminder_at || (item.snipsel.reactions && item.snipsel.reactions.length > 0)}
+        <div class="mt-auto flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-100 dark:border-white/5">
+          {#each item.snipsel.tags ?? [] as t (t)}
+            <span 
+              class="rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider"
+              style="background-color: {toolboxBg}; color: ${headerColor}; border: 1px solid rgba(0,0,0,0.05)"
+            >
+              #{t}
+            </span>
+          {/each}
+          {#each item.snipsel.mentions ?? [] as m (m)}
+            <span 
+              class="rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider"
+              style="background-color: {toolboxBg}; color: ${headerColor}; border: 1px solid rgba(0,0,0,0.05)"
+            >
+              @{m}
+            </span>
+          {/each}
+          {#if item.snipsel.reminder_at}
+            {@const expired = isExpired(item.snipsel.reminder_at)}
+            <span 
+              class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] {expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : ''}"
+              style={expired 
+                ? undefined 
+                : `background-color: ${toolboxBg}; color: ${headerColor}`}
+            >
+              <Bell label="" size={9} strokeWidth={2.5} />
+              {new Date(item.snipsel.reminder_at).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}
+            </span>
+          {/if}
+          {#if item.snipsel.reactions && item.snipsel.reactions.length > 0}
+            {#each item.snipsel.reactions as r (r.emoji)}
+              <button
+                type="button"
+                class="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-colors {r.me ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-400'}"
+                onclick={(e) => { e.stopPropagation(); toggleSnipselReaction(item.snipsel_id, r.emoji); }}
+              >
+                <span>{r.emoji}</span>
+                <span class="opacity-60">{r.count}</span>
+              </button>
+            {/each}
+          {/if}
+        </div>
+      {/if}
+    {/if}
+  </div>
+{/snippet}
+
+  {:else if isCardsView}
+    {@const col1 = displayedItems.filter((_, i) => i % 2 === 0)}
+    {@const col2 = displayedItems.filter((_, i) => i % 2 === 1)}
+    <div class="grid grid-cols-2 gap-3 items-start">
+      <div class="flex flex-col gap-3 min-w-0">
+        {#each col1 as item (item.snipsel_id)}
+          {@render snipselCard(item)}
+        {/each}
+      </div>
+      <div class="flex flex-col gap-3 min-w-0">
+        {#each col2 as item (item.snipsel_id)}
+          {@render snipselCard(item)}
+        {/each}
+      </div>
     </div>
   {:else}
     <div class="flex flex-col">

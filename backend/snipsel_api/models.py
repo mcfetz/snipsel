@@ -124,6 +124,9 @@ class Collection(db.Model):
     default_snipsel_type: Mapped[Optional[str]] = mapped_column(
         String(32), nullable=True
     )
+    view_mode: Mapped[Optional[str]] = mapped_column(
+        String(32), nullable=True, default="list"
+    )
 
     archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     list_for_day: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
