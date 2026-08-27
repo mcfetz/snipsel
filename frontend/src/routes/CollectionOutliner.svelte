@@ -2967,9 +2967,12 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         }}
         onpointerup={(e) => {
           e.stopPropagation();
-          rangeLongPress.onpointerup();
+          rangeLongPress.onpointerup(e);
         }}
-        onpointercancel={rangeLongPress.onpointercancel}
+        onpointercancel={(e) => {
+          e.stopPropagation();
+          rangeLongPress.onpointercancel();
+        }}
         onpointerleave={rangeLongPress.onpointerleave}
         oncontextmenu={(e) => {
           e.stopPropagation();
@@ -2977,6 +2980,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         }}
         onclick={(e) => {
           e.stopPropagation();
+          rangeLongPress.onclick(e);
         }}
       >
         <div
@@ -3889,24 +3893,25 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         </div>
       {/if}
     </div>
-  {:else if isCardsView}
-    {@const col1 = displayedItems.filter((_, i) => i % 2 === 0)}
-    {@const col2 = displayedItems.filter((_, i) => i % 2 === 1)}
-    <div class="grid grid-cols-2 gap-3 items-start">
-      <div class="flex flex-col gap-3 min-w-0">
-        {#each col1 as item (item.snipsel_id)}
-          {@render snipselCard(item)}
-        {/each}
-      </div>
-      <div class="flex flex-col gap-3 min-w-0">
-        {#each col2 as item (item.snipsel_id)}
-          {@render snipselCard(item)}
-        {/each}
-      </div>
-    </div>
   {:else}
-    <div class="flex flex-col">
-      {#each displayedItems as item (item.snipsel_id)}
+    {#if isCardsView}
+      {@const col1 = displayedItems.filter((_, i) => i % 2 === 0)}
+      {@const col2 = displayedItems.filter((_, i) => i % 2 === 1)}
+      <div class="grid grid-cols-2 gap-3 items-start">
+        <div class="flex flex-col gap-3 min-w-0">
+          {#each col1 as item (item.snipsel_id)}
+            {@render snipselCard(item)}
+          {/each}
+        </div>
+        <div class="flex flex-col gap-3 min-w-0">
+          {#each col2 as item (item.snipsel_id)}
+            {@render snipselCard(item)}
+          {/each}
+        </div>
+      </div>
+    {:else}
+      <div class="flex flex-col">
+        {#each displayedItems as item (item.snipsel_id)}
         <div
           id={`snipsel-${item.snipsel_id}`}
           class="group relative pr-4 transition-all duration-500 {anchorHighlightId === item.snipsel_id ? 'ring-2 rounded-lg' : ''}"
@@ -4391,6 +4396,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           {/if}
         </div>
       {/each}
+    </div>
+  {/if}
 
       {#if incomingMentions.length > 0}
         <div class="mt-6 border-t border-slate-200 pt-4 transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
@@ -4565,31 +4572,30 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         </div>
       {/if}
 
-      <button
-        class="mt-6 flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-base text-slate-400 transition-all hover:scale-[1.01] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-500 active:scale-[0.99] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
-        class:blur-sm={$editingSnipselId}
-        class:opacity-40={$editingSnipselId}
-        class:pointer-events-none={$editingSnipselId}
-        type="button"
-        aria-label="Add new snipsel"
-        onclick={() => {
-          if (selectedIds.size > 0) {
-            clearSelection();
-            return;
-          }
-          createSnipselFromUserGesture();
-        }}
-        disabled={!canWrite()}
-      >
-        add new snipsel
-      </button>
+        <button
+          class="mt-6 flex h-24 w-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 text-base text-slate-400 transition-all hover:scale-[1.01] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-500 active:scale-[0.99] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+          class:blur-sm={$editingSnipselId}
+          class:opacity-40={$editingSnipselId}
+          class:pointer-events-none={$editingSnipselId}
+          type="button"
+          aria-label="Add new snipsel"
+          onclick={() => {
+            if (selectedIds.size > 0) {
+              clearSelection();
+              return;
+            }
+            createSnipselFromUserGesture();
+          }}
+          disabled={!canWrite()}
+        >
+          add new snipsel
+        </button>
 
-      {#if hideDoneTasks && hiddenDone > 0}
-        <div class="mt-3 text-center text-sm text-slate-500 transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId}>
-          {hiddenDone} completed tasks hidden
-        </div>
-      {/if}
-    </div>
+        {#if hideDoneTasks && hiddenDone > 0}
+          <div class="mt-3 text-center text-sm text-slate-500 transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId}>
+            {hiddenDone} completed tasks hidden
+          </div>
+        {/if}
   {/if}
 </div>
 
