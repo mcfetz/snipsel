@@ -6,10 +6,11 @@ export function longPress(
 ) {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let isLong = false;
-  let fired = false;
-  let activeTouchId: number | null = null;
-  let touchStartTime = 0;
+  let ended = true;
+  let sawPointer = false;
+  let startTime = 0;
   let suppressClickUntil = 0;
+  let activePointerId: number | null = null;
 
   function clearTimer() {
     if (timer) {
@@ -18,12 +19,11 @@ export function longPress(
     }
   }
 
-  function start(touchId?: number) {
+  function start() {
     clearTimer();
     isLong = false;
-    fired = false;
-    if (touchId !== undefined) activeTouchId = touchId;
-    touchStartTime = Date.now();
+    ended = false;
+    startTime = Date.now();
     onStateChange?.('holding');
     timer = setTimeout(() => {
       isLong = true;
@@ -36,82 +36,74 @@ export function longPress(
     }, ms);
   }
 
-  function finish(syntheticClick: boolean) {
-    const elapsed = Date.now() - touchStartTime;
-    const wasLong = isLong || elapsed >= ms;
+  function end() {
+    if (ended) return;
+    ended = true;
+    const wasLong = isLong || Date.now() - startTime >= ms;
     clearTimer();
-
-    if (wasLong) {
-      fired = true;
-      suppressClickUntil = Date.now() + 800;
-      onLongPress();
-    } else if (!fired) {
-      fired = true;
-      onShortPress();
-    }
-
     isLong = false;
-    activeTouchId = null;
     onStateChange?.('idle');
 
-    // If a synthetic click is arriving, suppress it
-    void syntheticClick;
+    if (wasLong) {
+      suppressClickUntil = Date.now() + 800;
+      onLongPress();
+    } else {
+      onShortPress();
+    }
   }
 
   function cancel() {
+    if (ended) return;
+    ended = true;
     clearTimer();
     isLong = false;
-    activeTouchId = null;
     onStateChange?.('idle');
   }
 
   return {
-    // Native touch events (preferred path on iOS / Android)
-    ontouchstart: (e: TouchEvent) => {
-      const t = e.changedTouches[0] ?? e.touches[0];
-      if (!t) return;
-      start(t.identifier);
-    },
-    ontouchmove: () => {
-      // Touch is moving → user is scrolling, cancel long press
-      cancel();
-    },
-    ontouchend: (e: TouchEvent) => {
-      finish(true);
-    },
-    ontouchcancel: () => {
-      cancel();
-    },
-
-    // Pointer events (desktop path)
     onpointerdown: (e: PointerEvent) => {
-      if (e.pointerType === 'touch') return;
+      sawPointer = true;
+      activePointerId = e.pointerId;
+      // Capture keeps pointerup on the button even if the pointer drifts
+      // (e.g. while the button shrinks/grows during the hold animation).
+      try {
+        (e.currentTarget as HTMLElement | null)?.setPointerCapture(e.pointerId);
+      } catch {}
       start();
     },
-    onpointerup: () => {
-      if (activeTouchId !== null) return;
-      finish(true);
+    onpointerup: (e: PointerEvent) => {
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      activePointerId = null;
+      end();
     },
     onpointercancel: () => {
-      if (activeTouchId !== null) return;
+      activePointerId = null;
       cancel();
     },
-    onpointerleave: () => {
-      if (activeTouchId !== null) return;
-      cancel();
-    },
+    // Intentionally a no-op: pointer capture keeps the event stream on the
+    // original target, so drifting off the element must not abort a hold.
+    onpointerleave: () => {},
 
-    // Synthetic click (e.g. desktop mouse or iOS post-touch)
     onclick: (e: MouseEvent) => {
       if (Date.now() < suppressClickUntil) {
         e.preventDefault();
         e.stopPropagation();
         suppressClickUntil = 0;
+        return;
       }
+      if (sawPointer) {
+        // Already handled via pointerup
+        sawPointer = false;
+        return;
+      }
+      // Keyboard activation fallback
+      onShortPress();
     },
     oncontextmenu: (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
+      // Suppress the long-press context menu on touch devices
+      if (isLong || Date.now() < suppressClickUntil) {
+        e.preventDefault();
+      }
     },
   };
 }

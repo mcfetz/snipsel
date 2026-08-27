@@ -226,13 +226,16 @@ import HabitDetail from './routes/HabitDetail.svelte';
       const el = document.createElement('div');
       el.setAttribute('contenteditable', 'true');
       el.setAttribute('aria-hidden', 'true');
-      el.style.cssText = 'position:fixed;top:0;left:-9999px;width:1px;height:1px;opacity:0.01;pointer-events:none;';
+      // Keep the element inside the viewport — iOS refuses to focus
+      // fully off-screen elements reliably.
+      el.style.cssText = 'position:fixed;bottom:0;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;';
       document.body.appendChild(el);
 
       let done = false;
       const settle = (result: { text?: string; image?: File }) => {
         if (done) return;
         done = true;
+        try { el.blur(); } catch {}
         try { el.remove(); } catch {}
         resolve(result);
       };
@@ -244,35 +247,38 @@ import HabitDetail from './routes/HabitDetail.svelte';
           settle(result);
           return;
         }
-        // Safari sometimes inserts content directly (e.g. <img>) without exposing clipboardData
+        // WebKit may insert content directly (e.g. <img>) without exposing clipboardData
         setTimeout(() => {
           const img = el.querySelector('img');
           if (img && img.src) {
             fetch(img.src)
               .then((r) => r.blob())
               .then((blob) => {
-                if (blob.size > 0) {
-                  settle({ image: new File([blob], `pasted-image-${Date.now()}.png`, { type: blob.type || 'image/png' }) });
-                } else {
-                  settle({});
-                }
+                settle(blob.size > 0
+                  ? { image: new File([blob], `pasted-image-${Date.now()}.png`, { type: blob.type || 'image/png' }) }
+                  : {});
               })
               .catch(() => settle({}));
           } else {
             const text = (el.textContent || '').trim();
             settle(text ? { text } : {});
           }
-        }, 50);
+        }, 60);
       }, { once: true });
 
       // Focus + execCommand must run synchronously inside the user gesture
       try { el.focus(); } catch {}
       let ok = false;
       try { ok = document.execCommand('paste'); } catch { ok = false; }
-      try { el.blur(); } catch {}
+
+      // Release focus soon to avoid a lingering keyboard, but keep the element
+      // alive in case the paste event arrives asynchronously.
+      setTimeout(() => {
+        try { el.blur(); } catch {}
+      }, 120);
 
       // Safety timeout in case no paste event fires
-      setTimeout(() => settle({}), ok ? 150 : 80);
+      setTimeout(() => settle({}), ok ? 1000 : 150);
     });
   }
 
@@ -1121,13 +1127,9 @@ import HabitDetail from './routes/HabitDetail.svelte';
               class="al-icon-wrapper relative grid h-12 w-12 place-items-center rounded-full transition-all duration-200 select-none {plusPressState === 'long' ? 'scale-115 ring-4 ring-indigo-300 dark:ring-indigo-400/50 shadow-2xl' : plusPressState === 'holding' ? 'scale-90 opacity-90' : 'hover:-translate-y-0.5 hover:shadow-lg'}"
               style={`background-color: ${getNavPlusColor()}; color: ${getNavPlusIconColor()}; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none;`}
               type="button"
-              ontouchstart={lpNewSnipsel.ontouchstart}
-              ontouchend={lpNewSnipsel.ontouchend}
-              ontouchcancel={lpNewSnipsel.ontouchcancel}
               onpointerdown={lpNewSnipsel.onpointerdown}
               onpointerup={lpNewSnipsel.onpointerup}
               onpointercancel={lpNewSnipsel.onpointercancel}
-              onpointerleave={lpNewSnipsel.onpointerleave}
               oncontextmenu={lpNewSnipsel.oncontextmenu}
               onclick={lpNewSnipsel.onclick}
               aria-label="New snipsel (today) - long press to paste clipboard"
