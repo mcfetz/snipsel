@@ -1762,7 +1762,7 @@
     </div>
 
     <div class="py-4 text-center text-xs text-slate-400">
-      More settings coming soon.
+      snipsel · {__APP_COMMIT_HASH__}
     </div>
   </div>
 </div>

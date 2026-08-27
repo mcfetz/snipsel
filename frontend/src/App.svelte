@@ -8,6 +8,8 @@
   import PlusIcon from '@animated-color-icons/lucide-svelte/Plus.svelte';
 import List from '@animated-color-icons/lucide-svelte/List.svelte';
 import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
+import Sparkles from '@animated-color-icons/lucide-svelte/Sparkles.svelte';
+import { registerSW } from 'virtual:pwa-register';
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
@@ -186,6 +188,37 @@ import HabitDetail from './routes/HabitDetail.svelte';
 
   let plusPressState = $state<'idle' | 'holding' | 'long'>('idle');
   let showIOSPasteHint = $state(false);
+
+  let needPwaRefresh = $state(false);
+  let updateServiceWorker: ((reloadPage?: boolean) => Promise<void>) | undefined;
+
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    updateServiceWorker = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        needPwaRefresh = true;
+      },
+      onOfflineReady() {
+        console.log('[PWA] Ready to work offline');
+      },
+      onRegistered(r) {
+        if (r) {
+          // Periodically check for updates (every 15 minutes) and when user returns to tab
+          setInterval(() => {
+            r.update().catch(() => {});
+          }, 15 * 60 * 1000);
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              r.update().catch(() => {});
+            }
+          });
+        }
+      },
+      onRegisterError(error) {
+        console.error('[PWA] ServiceWorker registration error:', error);
+      },
+    });
+  }
 
   function isAppleDevice(): boolean {
     if (typeof navigator === 'undefined') return false;
@@ -1118,6 +1151,44 @@ import HabitDetail from './routes/HabitDetail.svelte';
       out:fade={{ duration: 150 }}
     >
       📋 iOS blocks automatic paste. Long-press the text field and tap "Paste" to insert your clipboard content.
+    </div>
+  {/if}
+
+  {#if needPwaRefresh}
+    <div
+      class="fixed bottom-24 left-4 right-4 z-[999] mx-auto max-w-md overflow-hidden rounded-2xl border border-indigo-200/80 bg-white/95 p-4 text-slate-900 shadow-2xl ring-1 ring-black/5 backdrop-blur-xl dark:border-indigo-500/30 dark:bg-slate-900/95 dark:text-slate-100"
+      in:fly={{ y: 50, duration: 250 }}
+      out:fade={{ duration: 150 }}
+    >
+      <div class="flex items-start gap-3">
+        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+          <Sparkles label="" size={22} strokeWidth={2.5} />
+        </div>
+        <div class="min-w-0 flex-1">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">
+            Update available
+          </h4>
+          <p class="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+            A new version of snipsel is ready. Reload to get the latest features and improvements.
+          </p>
+          <div class="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              class="flex-1 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 active:scale-95 transition-all"
+              onclick={() => updateServiceWorker?.(true)}
+            >
+              Reload now
+            </button>
+            <button
+              type="button"
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-800 dark:text-slate-300"
+              onclick={() => (needPwaRefresh = false)}
+            >
+              Later
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   {/if}
 </div>

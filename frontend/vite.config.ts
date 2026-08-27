@@ -2,8 +2,23 @@ import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'node:child_process'
+
+const commitHash = (() => {
+  if (process.env.VITE_COMMIT_HASH) {
+    return process.env.VITE_COMMIT_HASH.slice(0, 7);
+  }
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'main';
+  }
+})();
 
 export default defineConfig({
+  define: {
+    __APP_COMMIT_HASH__: JSON.stringify(commitHash),
+  },
   plugins: [
     svelte(),
     tailwindcss(),
@@ -11,7 +26,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       manifest: {
         name: 'snipsel',
         short_name: 'snipsel',

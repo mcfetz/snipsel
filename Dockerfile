@@ -1,6 +1,8 @@
 # Stage 1: Build Frontend
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
+ARG VITE_COMMIT_HASH=""
+ENV VITE_COMMIT_HASH=$VITE_COMMIT_HASH
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend ./

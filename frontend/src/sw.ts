@@ -10,6 +10,12 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 // Precache assets built by Vite
 precacheAndRoute(self.__WB_MANIFEST || [])
 
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+})
+
 // Cache attachment images
 registerRoute(
     ({ url }) => url.pathname.startsWith('/api/attachments/') || url.pathname.includes('/header-image'),
