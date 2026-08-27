@@ -186,12 +186,111 @@ import HabitDetail from './routes/HabitDetail.svelte';
 
   let plusPressState = $state<'idle' | 'holding' | 'long'>('idle');
 
-  async function readClipboard(): Promise<{ text?: string; image?: File }> {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return {};
-
-    // 1. Try navigator.clipboard.read() first (supports images & rich content)
+  function extractClipboardData(cd: DataTransfer | null | undefined): { text?: string; image?: File } {
+    if (!cd) return {};
     try {
-      if (typeof navigator.clipboard.read === 'function') {
+      if (cd.items && cd.items.length) {
+        for (let i = 0; i < cd.items.length; i++) {
+          const item = cd.items[i];
+          if (item.kind === 'file' && item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (file && file.size > 0) {
+              const ext = item.type.split('/')[1]?.replace('+xml', '') || 'png';
+              return { image: new File([file], `pasted-image-${Date.now()}.${ext}`, { type: item.type }) };
+            }
+          }
+        }
+      }
+      const text = cd.getData('text/plain') || '';
+      if (text) return { text };
+    } catch {}
+    return {};
+  }
+
+  function isAppleDevice(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    const platform = navigator.platform || '';
+    return /iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  /**
+   * iOS / Safari (especially standalone PWA mode) blocks navigator.clipboard.read*().
+   * Workaround: focus a hidden contenteditable and run document.execCommand('paste')
+   * synchronously within the user gesture — WebKit then fires a paste event
+   * with clipboardData (text and image files) that we can read.
+   * MUST be called before any await to keep the user activation alive.
+   */
+  function readClipboardViaPasteEvent(): Promise<{ text?: string; image?: File }> {
+    return new Promise((resolve) => {
+      const el = document.createElement('div');
+      el.setAttribute('contenteditable', 'true');
+      el.setAttribute('aria-hidden', 'true');
+      el.style.cssText = 'position:fixed;top:0;left:-9999px;width:1px;height:1px;opacity:0.01;pointer-events:none;';
+      document.body.appendChild(el);
+
+      let done = false;
+      const settle = (result: { text?: string; image?: File }) => {
+        if (done) return;
+        done = true;
+        try { el.remove(); } catch {}
+        resolve(result);
+      };
+
+      el.addEventListener('paste', (ev: Event) => {
+        const ce = ev as ClipboardEvent;
+        const result = extractClipboardData(ce.clipboardData);
+        if (result.text || result.image) {
+          settle(result);
+          return;
+        }
+        // Safari sometimes inserts content directly (e.g. <img>) without exposing clipboardData
+        setTimeout(() => {
+          const img = el.querySelector('img');
+          if (img && img.src) {
+            fetch(img.src)
+              .then((r) => r.blob())
+              .then((blob) => {
+                if (blob.size > 0) {
+                  settle({ image: new File([blob], `pasted-image-${Date.now()}.png`, { type: blob.type || 'image/png' }) });
+                } else {
+                  settle({});
+                }
+              })
+              .catch(() => settle({}));
+          } else {
+            const text = (el.textContent || '').trim();
+            settle(text ? { text } : {});
+          }
+        }, 50);
+      }, { once: true });
+
+      // Focus + execCommand must run synchronously inside the user gesture
+      try { el.focus(); } catch {}
+      let ok = false;
+      try { ok = document.execCommand('paste'); } catch { ok = false; }
+      try { el.blur(); } catch {}
+
+      // Safety timeout in case no paste event fires
+      setTimeout(() => settle({}), ok ? 150 : 80);
+    });
+  }
+
+  async function readClipboard(): Promise<{ text?: string; image?: File }> {
+    if (typeof navigator === 'undefined') return {};
+
+    // 1. On Apple devices try the paste-event trick FIRST (while user activation is fresh),
+    //    because async clipboard reads are blocked in iOS standalone PWA mode.
+    if (isAppleDevice()) {
+      try {
+        const viaPaste = await readClipboardViaPasteEvent();
+        if (viaPaste.text || viaPaste.image) return viaPaste;
+      } catch {}
+    }
+
+    // 2. navigator.clipboard.read() (supports images & rich content; Chrome, Safari browser)
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.read === 'function') {
         const items = await navigator.clipboard.read();
         for (const item of items) {
           const imageType = item.types.find((t) => t.startsWith('image/'));
@@ -211,9 +310,9 @@ import HabitDetail from './routes/HabitDetail.svelte';
       console.warn('navigator.clipboard.read() failed:', err);
     }
 
-    // 2. Fallback to navigator.clipboard.readText()
+    // 3. Fallback to navigator.clipboard.readText()
     try {
-      if (typeof navigator.clipboard.readText === 'function') {
+      if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
         const text = await navigator.clipboard.readText();
         if (text) return { text };
       }
