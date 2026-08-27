@@ -168,9 +168,11 @@
   let mermaidTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
     // Fast check: skip completely if no mermaid blocks exist
-    const hasMermaid = $sortedItems.some(i => i.snipsel.content_markdown?.includes('mermaid')) ||
-                       $searchResults.some(s => s.content_markdown?.includes('mermaid')) ||
-                       Boolean(editContent && editContent.includes('mermaid'));
+    const hasMermaid = Boolean(
+      ($sortedItems && $sortedItems.some(i => i.snipsel?.content_markdown?.includes('mermaid'))) ||
+      ($searchResults?.snipsels?.some(s => s.content_markdown?.includes('mermaid'))) ||
+      (editContent && editContent.includes('mermaid'))
+    );
 
     if (mermaidTimer) clearTimeout(mermaidTimer);
     if (!hasMermaid) return;

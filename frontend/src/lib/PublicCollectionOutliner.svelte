@@ -53,7 +53,7 @@
   $effect(() => {
     // Process mermaid diagrams when data changes
     const _items = sortedItems;
-    if (!_items.some(i => i.snipsel?.content_markdown?.includes('mermaid'))) return;
+    if (!_items || !_items.some(i => i?.snipsel?.content_markdown?.includes('mermaid'))) return;
 
     tick().then(async () => {
       // Check if we are in browser to prevent SSR errors
