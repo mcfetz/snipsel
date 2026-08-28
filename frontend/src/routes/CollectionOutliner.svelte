@@ -64,6 +64,8 @@
   import OutlinerHeader from '../lib/OutlinerHeader.svelte';
   import SelectionToolbox from '../lib/SelectionToolbox.svelte';
   import SnipselCard from '../lib/SnipselCard.svelte';
+  import OutlinerInlineEditor from '../lib/OutlinerInlineEditor.svelte';
+  import OutlinerListRow from '../lib/OutlinerListRow.svelte';
   import { longPress } from '../lib/gestures';
   import {
     computeHeaderColor,
@@ -1064,14 +1066,13 @@
     }
   }
 
-  async function uploadEditAttachment(e: Event) {
-    const input = e.currentTarget as HTMLInputElement;
-    const files = input.files;
+  async function uploadEditAttachment(target: Event | FileList) {
+    const files = target instanceof Event ? (target.currentTarget as HTMLInputElement).files : target;
     if (!files || files.length === 0) return;
 
     const snipselId = $editingSnipselId;
     if (!snipselId) {
-      input.value = '';
+      if (target instanceof Event) (target.currentTarget as HTMLInputElement).value = '';
       return;
     }
 
@@ -1084,7 +1085,7 @@
         title: 'Datei zu groß',
         message: `Die folgende(n) Datei(en) überschreiten das Limit von ${formatSize(maxBytes)}:\n${oversizedFiles.map(f => f.name).join(', ')}`
       };
-      input.value = '';
+      if (target instanceof Event) (target.currentTarget as HTMLInputElement).value = '';
       return;
     }
 
@@ -2450,96 +2451,26 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       in:fly={{ y: 10, duration: 200 }}
       out:fade={{ duration: 150 }}
     >
-      <div
-        bind:this={editContainerRef}
-        class="relative rounded-xl bg-slate-50 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
-        class:!fixed={editFullscreen}
-        class:inset-[5%]={editFullscreen}
-        class:!z-50={editFullscreen}
-        class:!flex={editFullscreen}
-        class:!flex-col={editFullscreen}
-        class:shadow-2xl={editFullscreen}
-        class:overflow-hidden={editFullscreen}
-        onfocusout={handleEditFocusOut}
-      >
-        <input
-          bind:this={editAttachmentsInputRef}
-          class="hidden"
-          type="file"
-          multiple
-          onchange={uploadEditAttachment}
-          disabled={editUploadingAttachments}
-        />
-        <FormattingToolbar 
-          textarea={textareaRef} 
-          onFormat={(content) => { editContent = content; handleEditInput(); }} 
-          accentColor={headerColor} 
-          isFullscreen={editFullscreen}
-          onToggleFullscreen={() => { editFullscreen = !editFullscreen; tick().then(autosizeTextarea); textareaRef?.focus(); }}
-          onIndent={() => { editIndent = Math.min(6, editIndent + 1); textareaRef?.focus(); }}
-          onOutdent={() => { editIndent = Math.max(0, editIndent - 1); textareaRef?.focus(); }}
-          onNewSnipsel={handleSaveAndNew}
-          onUploadAttachment={() => editAttachmentsInputRef?.click()}
-        />
-        <div class="px-2.5 py-3 rounded-b-lg overflow-y-auto" class:flex-1={editFullscreen} class:flex={editFullscreen} class:flex-col={editFullscreen}>
-          <textarea
-            bind:this={textareaRef}
-            class="w-full resize-none bg-transparent text-base outline-none dark:text-slate-100"
-            class:flex-1={editFullscreen}
-            rows="2"
-            bind:value={editContent}
-            oninput={handleEditInput}
-            onkeydown={handleKeydown}
-            onpaste={handlePaste}
-          ></textarea>
-          {#if uploadingAttachments || editUploadingAttachments}
-            <div class="absolute right-3 top-3 flex items-center gap-2 text-xs text-slate-400">
-              <div class="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500"></div>
-              Uploading...
-            </div>
-          {/if}
-          {#if getEditingSnipselCardView()}
-            {#if getDeezerLink(editContent)}
-              {@const dz = getDeezerLink(editContent)!}
-              <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={headerColor} />
-            {/if}
-            {#if getSpotifyLink(editContent)}
-              {@const sp = getSpotifyLink(editContent)!}
-              <SpotifyCard url={sp.url} accentColor={headerColor} />
-            {/if}
-            {#if getYouTubeLink(editContent)}
-              {@const yt = getYouTubeLink(editContent)!}
-              <YouTubeCard url={yt.url} accentColor={headerColor} />
-            {/if}
-            {#if getMapLink(editContent)}
-              {@const ml = getMapLink(editContent)!}
-              <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
-            {/if}
-            {#if getGenericLink(editContent)}
-              {@const gl = getGenericLink(editContent)!}
-              <HyperlinkCard url={gl.url} accentColor={headerColor} />
-            {/if}
-            {#if getCollectionLink(editContent, $editingSnipselId ? itemById.get($editingSnipselId)?.collection_refs : undefined)}
-              {@const cid = getCollectionLink(editContent, $editingSnipselId ? itemById.get($editingSnipselId)?.collection_refs : undefined)!}
-              <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
-            {/if}
-          {/if}
-          {#if showAutocomplete && suggestions.length > 0}
-            <div class="mt-2 rounded-xl border border-slate-200 bg-white/95 p-1 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95">
-              {#each suggestions as s, idx}
-                <button
-                  type="button"
-                  class="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors {idx === autocompleteSelectedIndex ? 'bg-indigo-50 text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200' : 'hover:bg-slate-50 dark:hover:bg-white/5'}"
-                  onmousedown={(e) => { e.preventDefault(); applySuggestion(s); }}
-                >
-                  <span class="text-base">{s.icon || (s.type === 'tag' ? '#' : s.type === 'mention' ? '@' : '📁')}</span>
-                  <span class="font-medium truncate">{s.label}</span>
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      </div>
+      <OutlinerInlineEditor
+        bind:editContent
+        bind:editIndent
+        bind:editFullscreen
+        {headerColor}
+        isUploading={uploadingAttachments || editUploadingAttachments}
+        showCardView={getEditingSnipselCardView()}
+        collectionRefs={item.collection_refs}
+        {suggestions}
+        {showAutocomplete}
+        {autocompleteSelectedIndex}
+        textareaFontSize="base"
+        onSaveAndNew={handleSaveAndNew}
+        onUploadAttachment={uploadEditAttachment}
+        onApplySuggestion={applySuggestion}
+        onInput={handleEditInput}
+        onKeydown={handleKeydown}
+        onPaste={handlePaste}
+        onFocusOut={handleEditFocusOut}
+      />
     </div>
   {:else}
     {@const rangeLongPress = longPress(
@@ -2926,472 +2857,47 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           }
         >
           {#if item.snipsel_id === $editingSnipselId}
-              <div
-                bind:this={editContainerRef}
-                class="relative rounded-lg bg-slate-50 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
-                class:!fixed={editFullscreen}
-                class:inset-[5%]={editFullscreen}
-                class:!z-50={editFullscreen}
-                class:!flex={editFullscreen}
-                class:!flex-col={editFullscreen}
-                class:shadow-2xl={editFullscreen}
-                class:overflow-hidden={editFullscreen}
-                onfocusout={handleEditFocusOut}
-              >
-                <input
-                  bind:this={editAttachmentsInputRef}
-                  class="hidden"
-                  type="file"
-                  multiple
-                  onchange={uploadEditAttachment}
-                  disabled={editUploadingAttachments}
-                />
-                <FormattingToolbar 
-                  textarea={textareaRef} 
-                  onFormat={(content) => { editContent = content; handleEditInput(); }} 
-                  accentColor={headerColor} 
-                  isFullscreen={editFullscreen}
-                  onToggleFullscreen={() => { editFullscreen = !editFullscreen; tick().then(autosizeTextarea); textareaRef?.focus(); }}
-                  onIndent={() => { editIndent = Math.min(6, editIndent + 1); textareaRef?.focus(); }}
-                  onOutdent={() => { editIndent = Math.max(0, editIndent - 1); textareaRef?.focus(); }}
-                  onNewSnipsel={handleSaveAndNew}
-                  onUploadAttachment={() => editAttachmentsInputRef?.click()}
-                />
-                <div class="px-2 py-3 rounded-b-lg overflow-y-auto" class:flex-1={editFullscreen} class:flex={editFullscreen} class:flex-col={editFullscreen}>
-                  <textarea
-                bind:this={textareaRef}
-                class="w-full resize-none bg-transparent text-lg outline-none dark:text-slate-100"
-                class:flex-1={editFullscreen}
-                rows="1"
-                bind:value={editContent}
-                oninput={handleEditInput}
-                onkeydown={handleKeydown}
-                onpaste={handlePaste}
-              ></textarea>
-              {#if uploadingAttachments || editUploadingAttachments}
-                <div class="absolute right-3 top-3 flex items-center gap-2 text-xs text-slate-400">
-                  <div class="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500"></div>
-                  Uploading...
-                </div>
-              {/if}
-              {#if getEditingSnipselCardView()}
-                {#if getDeezerLink(editContent)}
-                  {@const dz = getDeezerLink(editContent)!}
-                  <DeezerCard url={dz.url} type={dz.type} id={dz.id} accentColor={headerColor} />
-                {/if}
-                {#if getSpotifyLink(editContent)}
-                  {@const sp = getSpotifyLink(editContent)!}
-                  <SpotifyCard url={sp.url} accentColor={headerColor} />
-                {/if}
-                {#if getYouTubeLink(editContent)}
-                  {@const yt = getYouTubeLink(editContent)!}
-                  <YouTubeCard url={yt.url} accentColor={headerColor} />
-                {/if}
-                {#if getMapLink(editContent)}
-                  {@const ml = getMapLink(editContent)!}
-                  <MapCard lat={ml.lat} lng={ml.lng} url={ml.url} accentColor={headerColor} />
-                {/if}
-                {#if getGenericLink(editContent)}
-                  {@const gl = getGenericLink(editContent)!}
-                  <HyperlinkCard url={gl.url} accentColor={headerColor} />
-                {/if}
-                {#if getCollectionLink(editContent, $editingSnipselId ? itemById.get($editingSnipselId)?.collection_refs : undefined)}
-                  {@const cid = getCollectionLink(editContent, $editingSnipselId ? itemById.get($editingSnipselId)?.collection_refs : undefined)!}
-                  <CollectionLinkCard collectionId={cid} accentColor={headerColor} />
-                {/if}
-              {/if}
-              {#if showAutocomplete && suggestions.length > 0}
-                <div class="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
-                  {#each suggestions as suggestion, i (suggestion.id + suggestion.type)}
-                    <button
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors {i === autocompleteSelectedIndex ? 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5'}"
-                      type="button"
-                      onmousedown={(e) => {
-                        e.preventDefault();
-                        insertAutocomplete(suggestion);
-                      }}
-                    >
-                      {#if suggestion.icon}
-                        <span class="text-base">{suggestion.icon}</span>
-                      {:else if suggestion.type === 'tag'}
-                        <span class="text-xs text-slate-400 font-mono">#</span>
-                      {:else if suggestion.type === 'mention'}
-                        <span class="text-xs text-slate-400 font-mono">@</span>
-                      {/if}
-                      <span class="truncate font-medium">{suggestion.label}</span>
-                    </button>
-                  {/each}
-                </div>
-              {/if}
-                </div>
-              </div>
-            {:else}
-            {#if item.snipsel.type === 'task'}
-              {#if hasChildren(item, $sortedItems)}
-                <button
-                  type="button"
-                  class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {expandedSnipsels.has(item.snipsel_id) ? '' : '-rotate-90'}"
-                  style="left: calc(0.25rem + {item.indent * 1.25}rem)"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    toggleExpand(item.snipsel_id);
-                  }}
-                  aria-label={expandedSnipsels.has(item.snipsel_id) ? 'Collapse' : 'Expand'}
-                >
-                  <ChevronDown label="" size={14} className="text-slate-400 dark:text-slate-500" strokeWidth={2} />
-                </button>
-              {/if}
-
-                <button
-                  type="button"
-                  aria-label={item.snipsel.task_done ? 'Toggle task status' : 'Mark task done'}
-                  class="absolute top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    toggleTaskDone(item);
-                  }}
-                  style="left: calc(2.0rem + {item.indent * 1.25}rem); {item.snipsel.task_done > 0
-                    ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}; font-size: 10px`
-                    : ''}"
-                >
-                  {#if item.snipsel.task_done === 1}
-                    <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
-                  {:else if item.snipsel.task_done === 2}
-                    <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
-                  {/if}
-                </button>
-
-                {@const rangeLongPress = longPress(
-                  () => handleSelectLongPress(item.snipsel_id),
-                  () => handleSelectShortPress(item.snipsel_id)
-                )}
-                <button
-                  type="button"
-                  aria-label="Select snipsel"
-                  class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity select-none {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-                  onpointerdown={(e) => {
-                    handleSelectPointerDown(e, item.snipsel_id);
-                    rangeLongPress.onpointerdown(e);
-                  }}
-                  onpointerup={rangeLongPress.onpointerup}
-                  onpointercancel={rangeLongPress.onpointercancel}
-                  onpointerleave={rangeLongPress.onpointerleave}
-                  oncontextmenu={rangeLongPress.oncontextmenu}
-                >
-                  <div
-                    class="w-1.5 h-full transition-all duration-150 ease-out origin-right {selectedIds.has(item.snipsel_id) ? '' : 'scale-x-0 group-hover:scale-x-100'} hover:scale-x-150 active:scale-x-75"
-                    style={selectedIds.has(item.snipsel_id) ? `background-color: ${headerColor}` : 'background-color: #94a3b8'}
-                  ></div>
-                </button>
-            {:else}
-              {@const rangeLongPress = longPress(
-                () => handleSelectLongPress(item.snipsel_id),
-                () => handleSelectShortPress(item.snipsel_id)
-              )}
-              <button
-                type="button"
-                aria-label="Select snipsel"
-                class="absolute right-0 top-0 bottom-0 w-6 flex items-center justify-end transition-opacity select-none {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-                onpointerdown={(e) => {
-                  handleSelectPointerDown(e, item.snipsel_id);
-                  rangeLongPress.onpointerdown(e);
-                }}
-                onpointerup={rangeLongPress.onpointerup}
-                onpointercancel={rangeLongPress.onpointercancel}
-                onpointerleave={rangeLongPress.onpointerleave}
-                oncontextmenu={rangeLongPress.oncontextmenu}
-              >
-                <div
-                  class="w-1.5 h-full transition-all duration-150 ease-out origin-right hover:scale-x-150 active:scale-x-75"
-                  style={selectedIds.has(item.snipsel_id) ? `background-color: ${headerColor}` : 'background-color: #94a3b8'}
-                ></div>
-              </button>
-            {/if}
-
-            {#if item.snipsel.type !== 'task'}
-              {#if hasChildren(item, $sortedItems)}
-                <button
-                  type="button"
-                  class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {expandedSnipsels.has(item.snipsel_id) ? '' : '-rotate-90'}"
-                  style="left: calc(0.25rem + {item.indent * 1.25}rem)"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    toggleExpand(item.snipsel_id);
-                  }}
-                  aria-label={expandedSnipsels.has(item.snipsel_id) ? 'Collapse' : 'Expand'}
-                >
-                  <ChevronDown label="" size={14} className="text-slate-400" strokeWidth={2} />
-                </button>
-              {/if}
-            {/if}
-            <div
-              class="rounded py-3 {item.snipsel.type === 'task' ? 'pl-10 pr-2' : 'px-2'} {selectedIds.has(item.snipsel_id)
-                ? 'bg-slate-100 dark:bg-white/5'
-                : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'} {item.snipsel.task_done > 0 ? 'task-faded' : ''} {item.snipsel.task_done === 2 ? 'task-cancelled' : ''}"
-              role="button"
-              tabindex="0"
-              onclick={(e) => {
-                const colTarget = (e.target as HTMLElement).closest('[data-collection-id]');
-                if (colTarget) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const id = colTarget.getAttribute('data-collection-id');
-                  if (id) currentView.set({ type: 'collection', id });
-                  return;
-                }
-
-                const tagTarget = (e.target as HTMLElement).closest('[data-tag]');
-                if (tagTarget) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const tag = tagTarget.getAttribute('data-tag');
-                  if (tag) {
-                    searchQuery.set('#' + tag);
-                    currentView.set({ type: 'search' });
-                  }
-                  return;
-                }
-
-                const mentionTarget = (e.target as HTMLElement).closest('[data-mention]');
-                if (mentionTarget) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const mention = mentionTarget.getAttribute('data-mention');
-                  if (mention) {
-                    searchQuery.set('@' + mention);
-                    currentView.set({ type: 'search' });
-                  }
-                  return;
-                }
-
-                // Narrow click area: only activate edit mode if clicked in the middle 50%
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                if (x < rect.width * 0.25 || x > rect.width * 0.75) {
-                  return;
-                }
-
-                startEdit(item);
-              }}
-              onkeydown={(e) => e.key === 'Enter' && startEdit(item)}
-            >
-              {#if item.snipsel.content_markdown}
-                  {#if item.snipsel.card_view !== false}
-                    {@const embeds = parseSnipselEmbeds(item.snipsel.content_markdown, item.collection_refs)}
-                    {#if embeds.deezer}
-                      <DeezerCard type={embeds.deezer.type} id={embeds.deezer.id} url={embeds.deezer.url} accentColor={headerColor} />
-                    {/if}
-                    {#if embeds.spotify}
-                      <SpotifyCard url={embeds.spotify.url} accentColor={headerColor} />
-                    {/if}
-                    {#if embeds.youtube}
-                      <YouTubeCard url={embeds.youtube.url} accentColor={headerColor} />
-                    {/if}
-                    {#if embeds.map}
-                      <MapCard lat={embeds.map.lat} lng={embeds.map.lng} url={embeds.map.url} accentColor={headerColor} />
-                    {/if}
-                    {#if embeds.generic}
-                      <HyperlinkCard url={embeds.generic.url} accentColor={headerColor} />
-                    {/if}
-                    {#if embeds.collectionId}
-                      <CollectionLinkCard collectionId={embeds.collectionId} accentColor={headerColor} />
-                    {/if}
-                  {/if}
-
-                  <div class="flex items-start gap-2">
-                    <div
-                      class="prose prose-sm max-w-none text-lg prose-p:my-0 prose-headings:my-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg whitespace-pre-wrap dark:prose-invert flex-1 min-w-0 break-words"
-                      style="--accent-light: {toolboxBg}"
-                    >
-                      {@html renderWithWikiLinks(item.snipsel.card_view !== false ? parseSnipselEmbeds(item.snipsel.content_markdown, item.collection_refs).strippedText : item.snipsel.content_markdown, item.collection_refs)}
-                    </div>
-
-                    {#if item.snipsel.created_by_id !== $currentUser?.id}
-                      <div class="relative shrink-0 self-center ml-1">
-                        <button
-                          type="button"
-                          class="al-icon-wrapper flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10"
-                          onclick={(e) => { e.stopPropagation(); activeReactionPickerId = activeReactionPickerId === item.snipsel_id ? null : item.snipsel_id; }}
-                          aria-label="Add reaction"
-                        >
-                          <Plus label="" size={14} strokeWidth={2.5} />
-                        </button>
-
-                        {#if activeReactionPickerId === item.snipsel_id}
-                          <div class="absolute bottom-full right-0 z-50 mb-2 flex items-center gap-1 overflow-hidden rounded-full border border-slate-200 bg-white/95 p-1 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95">
-                            {#if showCustomEmojiInputId === item.snipsel_id}
-                              <input
-                                type="text"
-                                class="h-8 w-24 bg-transparent px-3 py-1 text-sm focus:outline-none dark:text-white"
-                                placeholder="Emoji..."
-                                bind:value={customEmojiInput}
-                                use:focusOnMount
-                                onkeydown={(e) => {
-                                  if (e.key === 'Enter' && customEmojiInput.trim()) {
-                                    toggleSnipselReaction(item.snipsel_id, customEmojiInput.trim());
-                                    showCustomEmojiInputId = null;
-                                    customEmojiInput = '';
-                                  } else if (e.key === 'Escape') {
-                                    showCustomEmojiInputId = null;
-                                  }
-                                }}
-                                onclick={(e) => e.stopPropagation()}
-                              />
-                            {:else}
-                              {#each REACTION_EMOJIS as emoji}
-                                <button
-                                  type="button"
-                                  class="flex h-8 w-8 items-center justify-center rounded-full text-base transition-all hover:scale-110 hover:bg-slate-100 dark:hover:bg-white/10"
-                                  onclick={(e) => { e.stopPropagation(); toggleSnipselReaction(item.snipsel_id, emoji); }}
-                                >
-                                  {emoji}
-                                </button>
-                              {/each}
-                              <button
-                                type="button"
-                                class="flex h-8 w-8 items-center justify-center rounded-full text-base font-medium text-slate-400 transition-all hover:scale-110 hover:bg-slate-100 dark:hover:bg-white/10"
-                                onclick={(e) => { e.stopPropagation(); showCustomEmojiInputId = item.snipsel_id; customEmojiInput = ''; }}
-                              >
-                                +
-                              </button>
-                            {/if}
-                          </div>
-                        {/if}
-                      </div>
-                    {/if}
-                  </div>
-
-                  {#if (item.snipsel.tags?.length ?? 0) > 0 || (item.snipsel.mentions?.length ?? 0) > 0}
-                    <div class="mt-2 flex flex-wrap gap-1.5">
-                      {#each item.snipsel.tags ?? [] as t (t)}
-                        <span 
-                          class="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-                          style="background-color: {toolboxBg}; color: {headerColor}; border: 1px solid rgba(0,0,0,0.05)"
-                        >
-                          #{t}
-                        </span>
-                      {/each}
-                      {#each item.snipsel.mentions ?? [] as m (m)}
-                        <span 
-                          class="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-                          style="background-color: {toolboxBg}; color: {headerColor}; border: 1px solid rgba(0,0,0,0.05)"
-                        >
-                          @{m}
-                        </span>
-                      {/each}
-                    </div>
-                  {/if}
-
-              {:else if !item.snipsel.attachments || !item.snipsel.attachments.length}
-                <span class="text-sm italic text-slate-400 dark:text-slate-500">Empty snipsel</span>
-              {/if}
-
-              {#if item.snipsel.reactions && item.snipsel.reactions.length > 0}
-              <div class="mt-2 flex flex-wrap items-center gap-2">
-                {#each item.snipsel.reactions as r (r.emoji)}
-                  <button
-                    type="button"
-                    class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors {r.me ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-400'}"
-                    onclick={(e) => { e.stopPropagation(); toggleSnipselReaction(item.snipsel_id, r.emoji); }}
-                  >
-                    <span>{r.emoji}</span>
-                    <span class="opacity-60">{r.count}</span>
-                  </button>
-                {/each}
-              </div>
-              {/if}
-
-              {#if item.snipsel.reminder_at}
-                {@const expired = isExpired(item.snipsel.reminder_at)}
-                <div class="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
-                  <span 
-                    class="flex items-center gap-1 rounded px-1.5 py-0.5 {expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : ''}"
-                    style={expired 
-                      ? undefined 
-                      : `background-color: ${toolboxBg}; color: ${headerColor}`}
-                  >
-                    <Bell label="" size={10} strokeWidth={2.5} />
-                    {new Date(item.snipsel.reminder_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                    <span class="opacity-60">· {daysFromNow(item.snipsel.reminder_at)}</span>
-                    {#if item.snipsel.reminder_rrule}
-                      <Repeat label="" size={10} className="ml-1" strokeWidth={2.5} />
-                    {/if}
-                  </span>
-                </div>
-              {/if}
-
-              {#if saveStatuses[item.snipsel_id]}
-                <div 
-                  class="absolute top-1/2 -translate-y-1/2 right-[1.0rem] h-2 w-2 rounded-full transition-opacity duration-500"
-                  style="background-color: {saveStatuses[item.snipsel_id] === 'success' ? '#22c55e' : '#ef4444'}"
-                  aria-hidden="true"
-                ></div>
-              {/if}
-
-
-
-              {#if item.snipsel.attachments.length > 0}
-                {#if item.snipsel.card_view !== false}
-                  {@const isImageAttachment = (a: Attachment) => Boolean(a.mime_type?.startsWith('image/') || (a.has_thumbnail && !a.mime_type?.startsWith('video/')))}
-                  {@const isVideoAttachment = (a: Attachment) => Boolean(a.mime_type?.startsWith('video/') || (a.has_thumbnail && a.filename.toLowerCase().match(/\.(mp4|mov|webm|avi|mkv)$/)))}
-                  {@const isMediaAttachment = (a: Attachment) => isImageAttachment(a) || isVideoAttachment(a)}
-                  {@const media = item.snipsel.attachments.filter(isMediaAttachment)}
-                  {@const others = item.snipsel.attachments.filter((a) => !isMediaAttachment(a))}
-
-                  {@const images = media.filter(isImageAttachment)}
-                  {#if media.length > 0}
-                    <div class="mt-3 grid grid-cols-3 gap-3">
-                      {#each media as a, mediaIdx}
-                        {@const imgIdx = images.findIndex(img => img.id === a.id)}
-                        <button
-                          type="button"
-                          class="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md dark:border-white/10 dark:bg-slate-900"
-                          aria-label={isVideoAttachment(a) ? `Play ${a.filename}` : `View ${a.filename}`}
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            if (isVideoAttachment(a)) {
-                              openVideoModal(a.id, a.filename);
-                            } else {
-                              openImageModal(images.map(img => ({ id: img.id, filename: img.filename })), imgIdx);
-                            }
-                          }}
-                        >
-                          <img
-                            class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                            src={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : api.attachments.downloadUrl(a.id)}
-                            alt={a.filename}
-                            loading="lazy"
-                          />
-                          {#if isVideoAttachment(a)}
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                              <CirclePlay label="" size={32} className="text-white drop-shadow-md" />
-                            </div>
-                          {:else}
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100"></div>
-                          {/if}
-                        </button>
-                      {/each}
-                    </div>
-                  {/if}
-
-                  {#if others.length > 0}
-                    <div class="mt-3 space-y-2">
-                      {#each others.slice(0, 3) as a}
-                        <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} accentColor={headerColor} />
-                      {/each}
-                      {#if others.length > 3}
-                        <div class="text-[11px] text-slate-400">+{others.length - 3} more files</div>
-                      {/if}
-                    </div>
-                  {/if}
-                {:else}
-                  <div class="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
-                    <Paperclip label="" size={12} strokeWidth={2} />
-                    <span>{item.snipsel.attachments.length}</span>
-                  </div>
-                {/if}
-              {/if}
-            </div>
+            <OutlinerInlineEditor
+              bind:editContent
+              bind:editIndent
+              bind:editFullscreen
+              {headerColor}
+              isUploading={uploadingAttachments || editUploadingAttachments}
+              showCardView={getEditingSnipselCardView()}
+              collectionRefs={item.collection_refs}
+              {suggestions}
+              {showAutocomplete}
+              {autocompleteSelectedIndex}
+              textareaFontSize="lg"
+              onSaveAndNew={handleSaveAndNew}
+              onUploadAttachment={uploadEditAttachment}
+              onApplySuggestion={insertAutocomplete}
+              onInput={handleEditInput}
+              onKeydown={handleKeydown}
+              onPaste={handlePaste}
+              onFocusOut={handleEditFocusOut}
+            />
+          {:else}
+            {@const rangeLongPress = longPress(
+              () => handleSelectLongPress(item.snipsel_id),
+              () => handleSelectShortPress(item.snipsel_id)
+            )}
+            <OutlinerListRow
+              {item}
+              {headerColor}
+              {toolboxBg}
+              isSelected={selectedIds.has(item.snipsel_id)}
+              isExpanded={expandedSnipsels.has(item.snipsel_id)}
+              hasChildren={hasChildren(item, $sortedItems)}
+              saveStatus={saveStatuses[item.snipsel_id]}
+              {rangeLongPress}
+              onStartEdit={startEdit}
+              onToggleTask={toggleTaskDone}
+              onToggleExpand={toggleExpand}
+              onToggleReaction={toggleSnipselReaction}
+              onOpenImageModal={openImageModal}
+              onOpenVideoModal={openVideoModal}
+            />
           {/if}
         </div>
       {/each}
