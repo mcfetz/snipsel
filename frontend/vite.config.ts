@@ -17,6 +17,7 @@ const commitHash = (() => {
 
 export default defineConfig({
   define: {
+    __APP_VERSION__: JSON.stringify('0.22.0'),
     __APP_COMMIT_HASH__: JSON.stringify(commitHash),
   },
   plugins: [

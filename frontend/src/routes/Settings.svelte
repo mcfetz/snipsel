@@ -145,9 +145,9 @@
 
     <!-- Footer -->
     <div class="py-4 text-center text-xs text-slate-400">
-      snipsel v{__APP_VERSION__ || '0.22.0'}
-      {#if __COMMIT_HASH__}
-        <span class="ml-1 opacity-75 font-mono">({__COMMIT_HASH__.slice(0, 7)})</span>
+      snipsel v{__APP_VERSION__}
+      {#if __APP_COMMIT_HASH__}
+        <span class="ml-1 opacity-75 font-mono">({__APP_COMMIT_HASH__.slice(0, 7)})</span>
       {/if}
     </div>
   </div>
