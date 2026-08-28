@@ -1,20 +1,15 @@
 <script lang="ts">
   import { fly, fade } from 'svelte/transition';
-  import Clock from '@animated-color-icons/lucide-svelte/Clock.svelte';
-  import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
-  import SettingsIcon from '@animated-color-icons/lucide-svelte/Settings.svelte';
-  import CalendarIcon from '@animated-color-icons/lucide-svelte/Calendar.svelte';
-  import SquareCheck from '@animated-color-icons/lucide-svelte/SquareCheck.svelte';
-  import PlusIcon from '@animated-color-icons/lucide-svelte/Plus.svelte';
-import List from '@animated-color-icons/lucide-svelte/List.svelte';
-import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
-import Sparkles from '@animated-color-icons/lucide-svelte/Sparkles.svelte';
-import { registerSW } from 'virtual:pwa-register';
+  import Sparkles from '@animated-color-icons/lucide-svelte/Sparkles.svelte';
+  import { registerSW } from 'virtual:pwa-register';
   import { untrack } from 'svelte';
   import { api } from './lib/api';
   import { currentUser } from './lib/session';
   import { initLiveUpdates, destroyLiveUpdates } from './lib/liveUpdates';
   import { longPress } from './lib/gestures';
+  import { setupKeyboardShortcuts } from './lib/keyboardShortcuts';
+  import NavigationHeader from './lib/NavigationHeader.svelte';
+  import BottomNavBar from './lib/BottomNavBar.svelte';
   import { collections, collectionAnchor, collectionItems, currentView, currentCollection, editingSnipselId, isLoading, pendingReference, searchError, searchQuery, searchResults, notificationsStore, searchType, searchScope, recentCollectionsStore, createSnipselOnLoad, getTodayDate, snipselsSelected, clearSelectionRequest, deleteSelectionRequest, moveSelectionRequest, indentSelectionRequest, aiAssistantRequest, toggleTypeRequest, toggleCardViewRequest, copySnipselsRequest, moveSnipselsRequest, infoSnipselsRequest, uploadAttachmentRequest, newSnipselInCurrentCollectionRequest } from './lib/stores';
   import {
     getCurrentUrl,
@@ -815,237 +810,40 @@ import HabitDetail from './routes/HabitDetail.svelte';
   $effect(() => {
     if (!$currentUser) return;
 
-    function onKeyDown(e: KeyboardEvent) {
-      // Ignore if in an input or editable element
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable ||
-        target.getAttribute('role') === 'textbox'
-      ) {
-        return;
-      }
-
-      const isMetaOrCtrl = e.metaKey || e.ctrlKey;
-
-      // Cmd/Ctrl + Shift + 1 -> Calendar
-      if (isMetaOrCtrl && e.shiftKey && e.key === '1') {
-        e.preventDefault();
-        currentView.set({ type: 'calendar' });
-      }
-      // Cmd/Ctrl + Shift + 2 -> Todos
-      else if (isMetaOrCtrl && e.shiftKey && e.key === '2') {
-        e.preventDefault();
-        currentView.set({ type: 'todos' });
-      }
-      // Cmd/Ctrl + Shift + 3 -> Collections
-      else if (isMetaOrCtrl && e.shiftKey && e.key === '3') {
-        e.preventDefault();
-        openCollections();
-      }
-      // Cmd/Ctrl + Shift + 4 -> Habits
-      else if (isMetaOrCtrl && e.shiftKey && e.key === '4') {
-        e.preventDefault();
-        currentView.set({ type: 'habits' });
-      }
-      // Cmd/Ctrl + Shift + N -> New snipsel in Today's collection
-      else if (isMetaOrCtrl && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
-        e.preventDefault();
-        onNewSnipsel();
-      }
-      // Cmd/Ctrl + Shift + Enter -> New snipsel in current collection
-      else if (isMetaOrCtrl && e.shiftKey && e.key === 'Enter') {
-        e.preventDefault();
-        newSnipselInCurrentCollectionRequest.update((n) => n + 1);
-      }
-      // Escape -> Deselect
-      else if (e.key === 'Escape') {
-        clearSelectionRequest.update((n) => n + 1);
-      }
-      // Delete key -> Delete selected snipsels
-      else if ($snipselsSelected > 0 && (e.key === 'Delete' || e.key === 'Backspace')) {
-        e.preventDefault();
-        deleteSelectionRequest.update((n) => n + 1);
-      }
-      // Cmd/Ctrl + Shift + S -> Focus search
-      else if (isMetaOrCtrl && e.shiftKey && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault();
-        const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
-        if (searchInput) {
-          searchInput.focus();
-        }
-      }
-      // Shortcuts for selected snipsels (only when snipsels are selected)
-      else if ($snipselsSelected > 0 && e.ctrlKey && e.shiftKey) {
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          moveSelectionRequest.set({ direction: 'up' });
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          moveSelectionRequest.set({ direction: 'down' });
-        } else if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          indentSelectionRequest.set({ direction: 'left' });
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          indentSelectionRequest.set({ direction: 'right' });
-        } else if (e.key === 'a' || e.key === 'A') {
-          e.preventDefault();
-          aiAssistantRequest.update((n) => n + 1);
-        } else if (e.key === 't' || e.key === 'T') {
-          e.preventDefault();
-          toggleTypeRequest.update((n) => n + 1);
-        } else if (e.key === 'v' || e.key === 'V') {
-          e.preventDefault();
-          toggleCardViewRequest.update((n) => n + 1);
-        } else if (e.key === 'c' || e.key === 'C') {
-          e.preventDefault();
-          copySnipselsRequest.update((n) => n + 1);
-        } else if (e.key === 'm' || e.key === 'M') {
-          e.preventDefault();
-          moveSnipselsRequest.update((n) => n + 1);
-        } else if (e.key === 'i' || e.key === 'I') {
-          e.preventDefault();
-          infoSnipselsRequest.update((n) => n + 1);
-        } else if (e.key === 'u' || e.key === 'U') {
-          e.preventDefault();
-          uploadAttachmentRequest.update((n) => n + 1);
-        }
-      }
-    }
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return setupKeyboardShortcuts({
+      onOpenCalendar: () => currentView.set({ type: 'calendar' }),
+      onOpenTodos: () => currentView.set({ type: 'todos' }),
+      onOpenCollections: openCollections,
+      onOpenHabits: () => currentView.set({ type: 'habits' }),
+      onNewSnipsel: onNewSnipsel,
+      onNewSnipselInCurrentCollection: () => newSnipselInCurrentCollectionRequest.update((n) => n + 1),
+      onClearSelection: () => clearSelectionRequest.update((n) => n + 1),
+      onDeleteSelection: () => deleteSelectionRequest.update((n) => n + 1),
+      hasSelectedSnipsels: () => $snipselsSelected > 0,
+      onMoveSelection: (direction) => moveSelectionRequest.set({ direction }),
+      onIndentSelection: (direction) => indentSelectionRequest.set({ direction }),
+      onAiAssistant: () => aiAssistantRequest.update((n) => n + 1),
+      onToggleType: () => toggleTypeRequest.update((n) => n + 1),
+      onToggleCardView: () => toggleCardViewRequest.update((n) => n + 1),
+      onCopySnipsels: () => copySnipselsRequest.update((n) => n + 1),
+      onMoveSnipsels: () => moveSnipselsRequest.update((n) => n + 1),
+      onInfoSnipsels: () => infoSnipselsRequest.update((n) => n + 1),
+      onUploadAttachment: () => uploadAttachmentRequest.update((n) => n + 1),
+    });
   });
 </script>
 
 <div class="app-container min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100" class:is-editing={$editingSnipselId !== null}>
   {#if $currentUser}
-    <!-- Progressive blur layer behind header -->
-    <div class="fixed top-0 left-0 right-0 z-[15] pointer-events-none" style="height: 120px;">
-      <div class="absolute inset-0 backdrop-blur-lg" style="mask-image: linear-gradient(to bottom, black 0%, black 40%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 0%, black 40%, transparent 100%);"></div>
-    </div>
-    <header class="sticky top-4 z-20 mx-auto max-w-3xl px-4 pointer-events-none transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId}>
-      <div class="pointer-events-auto flex items-center gap-3 rounded-full border border-slate-200 bg-white/80 px-3 py-2 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5">
-        <button
-          class="flex items-center gap-2 pl-2 pr-1 font-bold text-lg text-slate-800 transition-colors dark:text-slate-200 group"
-          style="--logo-hover: {getNavPlusColor()}"
-          type="button"
-          onclick={openToday}
-          onmouseenter={(e) => (e.currentTarget as HTMLButtonElement).style.color = getNavPlusColor()}
-          onmouseleave={(e) => (e.currentTarget as HTMLButtonElement).style.color = ''}
-        >
-          <img src="/logo.svg" alt="snipsel logo" class="h-6 w-6 dark:brightness-110 dark:invert transition-transform duration-200 group-hover:scale-110" />
-          <span class="hidden sm:inline transition-transform duration-200 origin-left group-hover:scale-105">snipsel</span>
-        </button>
-        <input
-          class="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-100/50 px-4 py-2 text-base transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-white/5 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:bg-slate-800"
-          style={`--tw-ring-color: ${getAccent()}33; --accent: ${getAccent()}`}
-          onfocus={(e) => {
-            e.currentTarget.style.borderColor = getAccent();
-            if ($currentUser && $currentView.type !== 'search') {
-              currentView.set({ type: 'search' });
-            }
-          }}
-          onblur={(e) => (e.currentTarget.style.borderColor = '')}
-          placeholder="Search"
-          type="search"
-          bind:value={$searchQuery}
-          onkeydown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              runSearch();
-            }
-          }}
-        />
-        <div bind:this={recentContainerRef} class="relative" onmouseleave={() => showRecentPopup = false}>
-          <button
-            class="al-icon-wrapper grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {showRecentPopup
-              ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white text-white'
-              : 'text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-            type="button"
-            onmouseenter={() => {
-              if (!showRecentPopup) {
-                toggleRecentPopup();
-              }
-            }}
-            aria-label="Recent collections"
-            title="Recent"
-          >
-            <Clock label="" size={20} />
-          </button>
-
-          {#if showRecentPopup}
-            <div class="absolute right-0 top-full z-50 w-64 pt-2" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
-              <div class="overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
-                <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Recently visited</div>
-                <div class="max-h-80 overflow-y-auto py-1">
-                  {#if $recentCollectionsStore.length === 0}
-                    <div class="px-4 py-3 text-sm text-slate-500 italic text-left dark:text-slate-400">No recent history</div>
-                  {:else}
-                    {#each $recentCollectionsStore as rc (rc.id)}
-                      <button
-                        class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
-                        type="button"
-                        onclick={(e) => {
-                          e.stopPropagation();
-                          showRecentPopup = false;
-                          currentView.set({ type: 'collection', id: rc.id });
-                        }}
-                      >
-                        <span class="text-xl shrink-0">{rc.icon}</span>
-                        <span class="truncate font-medium text-slate-800 dark:text-slate-200">{rc.title}</span>
-                      </button>
-                    {/each}
-                  {/if}
-                  {#if $recentCollectionsStore.length > 0}
-                    <div class="border-t border-slate-100 mt-1 p-1 dark:border-white/5">
-                      <button
-                        class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors"
-                        type="button"
-                        onclick={(e) => { e.stopPropagation(); clearRecent(); }}
-                      >
-                        Clear history
-                      </button>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            </div>
-          {/if}
-        </div>
-
-        <button
-          class="al-icon-wrapper relative grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {$currentView.type === 'notifications'
-            ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-            : 'text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-          type="button"
-          onclick={() => currentView.set({ type: 'notifications' })}
-          aria-label="Notifications"
-          title="Notifications"
-        >
-          {#if $notificationsStore.filter(n => !n.is_read).length > 0}
-            <span class="al-icon-wrapper absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-xs font-bold shadow-sm ring-2 ring-white dark:ring-slate-900"
-                  style="background-color: {getNavPlusColor()}; color: {getNavPlusIconColor()}"
-            >
-              {$notificationsStore.filter(n => !n.is_read).length}
-            </span>
-          {/if}
-          <Bell label="" size={20} />
-        </button>
-        <button
-          class="al-icon-wrapper grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors {$currentView.type === 'settings'
-            ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-            : 'text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-          onclick={() => currentView.set({ type: 'settings' })}
-          aria-label="Settings"
-          title="Settings"
-        >
-          <SettingsIcon label="" size={20} />
-        </button>
-      </div>
-    </header>
+    <NavigationHeader
+      accent={getAccent()}
+      navPlusColor={getNavPlusColor()}
+      navPlusIconColor={getNavPlusIconColor()}
+      isEditing={$editingSnipselId !== null}
+      onOpenToday={openToday}
+      onRunSearch={runSearch}
+      onClearRecent={clearRecent}
+    />
   {/if}
 
   <main class="mx-auto max-w-3xl px-4 pt-12 pb-24">
@@ -1109,79 +907,14 @@ import HabitDetail from './routes/HabitDetail.svelte';
 
   {#if $currentUser}
     {#if $snipselsSelected === 0}
-      <!-- Progressive blur layer behind navbar -->
-      <div class="fixed bottom-0 left-0 right-0 z-[5] pointer-events-none" style="height: 120px;" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
-        <div class="absolute inset-0 backdrop-blur-lg" style="mask-image: linear-gradient(to top, black 0%, black 40%, transparent 100%); -webkit-mask-image: linear-gradient(to top, black 0%, black 40%, transparent 100%);"></div>
-      </div>
-      <!-- Navbar -->
-      <nav class="pointer-events-none fixed bottom-0 left-0 right-0 z-10 transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
-        <div class="mx-auto max-w-3xl px-4 pt-2" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);">
-          <div class="pointer-events-auto mx-auto flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white/85 px-3 py-2 text-slate-700 shadow-lg ring-1 ring-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/85 dark:text-slate-200 dark:ring-white/10">
-            <button
-              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'calendar'
-                ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-                : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-              type="button"
-              onclick={() => currentView.set({ type: 'calendar' })}
-              aria-label="Calendar"
-              title="Calendar"
-            >
-              <CalendarIcon label="" size={24} />
-            </button>
-
-            <button
-              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'todos'
-                ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-                : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-              type="button"
-              onclick={() => currentView.set({ type: 'todos' })}
-              aria-label="Todos"
-              title="Todos"
-            >
-              <SquareCheck label="" size={24} />
-            </button>
-
-            <button
-              class="al-icon-wrapper relative grid h-12 w-12 place-items-center rounded-full transition-all duration-200 select-none {plusPressState === 'long' ? 'scale-115 ring-4 ring-indigo-300 dark:ring-indigo-400/50 shadow-2xl' : plusPressState === 'holding' ? 'scale-90 opacity-90' : 'hover:-translate-y-0.5 hover:shadow-lg'}"
-              style={`background-color: ${getNavPlusColor()}; color: ${getNavPlusIconColor()}; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none;`}
-              type="button"
-              onpointerdown={lpNewSnipsel.onpointerdown}
-              onpointerup={lpNewSnipsel.onpointerup}
-              onpointercancel={lpNewSnipsel.onpointercancel}
-              oncontextmenu={lpNewSnipsel.oncontextmenu}
-              onclick={lpNewSnipsel.onclick}
-              aria-label="New snipsel (today) - long press to paste clipboard"
-              title="New snipsel (today) - long press to paste clipboard"
-            >
-              <PlusIcon label="" size={24} strokeWidth={2.5} />
-            </button>
-
-            <button
-              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'collections'
-                ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-                : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-              type="button"
-              onclick={openCollections}
-              aria-label="Collections"
-              title="Collections"
-            >
-              <List label="" size={24} />
-            </button>
-
-            <button
-              class="al-icon-wrapper grid h-12 w-12 place-items-center rounded-full transition-colors {$currentView.type === 'habits'
-                ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-slate-100'
-                : 'hover:bg-black/5 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
-              type="button"
-              onclick={() => currentView.set({ type: 'habits' })}
-              aria-label="Habits"
-              title="Habits"
-            >
-              <Flame label="" size={24} />
-            </button>
-          </div>
-        </div>
-      </nav>
+      <BottomNavBar
+        navPlusColor={getNavPlusColor()}
+        navPlusIconColor={getNavPlusIconColor()}
+        {plusPressState}
+        {lpNewSnipsel}
+        isEditing={$editingSnipselId !== null}
+        onOpenCollections={openCollections}
+      />
     {/if}
     <!-- Hidden input for mobile keyboard focus -->
     <input
