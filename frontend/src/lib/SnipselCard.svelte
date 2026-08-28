@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { scale } from 'svelte/transition';
+  import { scale, fly, fade } from 'svelte/transition';
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import DeezerCard from './DeezerCard.svelte';
@@ -76,6 +76,8 @@
   class:opacity-40={isEditingOther}
   class:pointer-events-none={isEditingOther}
   style={`background-color: ${cardTileBg}; border-color: ${cardTileBorder}; --tw-ring-color: ${headerColor};`}
+  in:fly={{ y: 10, duration: 200 }}
+  out:fade={{ duration: 150 }}
 >
   <!-- Selection Bar on Right -->
   <button

@@ -2471,21 +2471,14 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
 
 
 {#snippet snipselCard(item: CollectionItem)}
-  <div
-    id={`snipsel-${item.snipsel_id}`}
-    class="group relative overflow-hidden rounded-2xl border p-3 shadow-sm transition-all hover:shadow-md flex flex-col gap-2 {anchorHighlightId === item.snipsel_id ? 'ring-2' : ''} {selectedIds.has(item.snipsel_id) ? 'ring-2 !border-transparent' : ''} {item.snipsel.task_done > 0 ? 'task-faded' : ''} {item.snipsel.task_done === 2 ? 'task-cancelled' : ''}"
-    class:blur-sm={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
-    class:opacity-40={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
-    class:pointer-events-none={$editingSnipselId && $editingSnipselId !== item.snipsel_id}
-    style={
-      anchorHighlightId === item.snipsel_id || selectedIds.has(item.snipsel_id)
-        ? `--tw-ring-color: ${headerColor}; background-color: ${cardTileBg}; border-color: ${cardTileBorder};`
-        : `background-color: ${cardTileBg}; border-color: ${cardTileBorder};`
-    }
-    in:fly={{ y: 10, duration: 200 }}
-    out:fade={{ duration: 150 }}
-  >
-    {#if item.snipsel_id === $editingSnipselId}
+  {#if item.snipsel_id === $editingSnipselId}
+    <div
+      id={`snipsel-${item.snipsel_id}`}
+      class="group relative overflow-hidden rounded-2xl border p-3 shadow-sm transition-all hover:shadow-md flex flex-col gap-2"
+      style={`background-color: ${cardTileBg}; border-color: ${cardTileBorder};`}
+      in:fly={{ y: 10, duration: 200 }}
+      out:fade={{ duration: 150 }}
+    >
       <div
         bind:this={editContainerRef}
         class="relative rounded-xl bg-slate-50 ring-1 ring-indigo-200 shadow-sm dark:bg-slate-800 dark:ring-indigo-500/50"
@@ -2576,29 +2569,29 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
           {/if}
         </div>
       </div>
-    {:else}
-      {@const rangeLongPress = longPress(
-        () => handleSelectLongPress(item.snipsel_id),
-        () => handleSelectShortPress(item.snipsel_id)
-      )}
-      <SnipselCard
-        {item}
-        {headerColor}
-        {toolboxBg}
-        {cardTileBg}
-        {cardTileBorder}
-        isSelected={selectedIds.has(item.snipsel_id)}
-        isAnchorHighlighted={anchorHighlightId === item.snipsel_id}
-        isEditingOther={Boolean($editingSnipselId && $editingSnipselId !== item.snipsel_id)}
-        {rangeLongPress}
-        onStartEdit={startEdit}
-        onToggleTask={toggleTaskDone}
-        onToggleReaction={toggleSnipselReaction}
-        onOpenImageModal={openImageModal}
-        onOpenVideoModal={openVideoModal}
-      />
-    {/if}
-  </div>
+    </div>
+  {:else}
+    {@const rangeLongPress = longPress(
+      () => handleSelectLongPress(item.snipsel_id),
+      () => handleSelectShortPress(item.snipsel_id)
+    )}
+    <SnipselCard
+      {item}
+      {headerColor}
+      {toolboxBg}
+      {cardTileBg}
+      {cardTileBorder}
+      isSelected={selectedIds.has(item.snipsel_id)}
+      isAnchorHighlighted={anchorHighlightId === item.snipsel_id}
+      isEditingOther={Boolean($editingSnipselId && $editingSnipselId !== item.snipsel_id)}
+      {rangeLongPress}
+      onStartEdit={startEdit}
+      onToggleTask={toggleTaskDone}
+      onToggleReaction={toggleSnipselReaction}
+      onOpenImageModal={openImageModal}
+      onOpenVideoModal={openVideoModal}
+    />
+  {/if}
 {/snippet}
 
 <div class="space-y-3 swipe-container {swipeAnimation ? `swipe-${swipeAnimation}` : ''} {swipeEnterAnimation ? `swipe-enter-${swipeEnterAnimation}` : ''}"
