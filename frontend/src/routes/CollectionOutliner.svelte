@@ -41,8 +41,8 @@
   import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
   import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
 
-  import mermaid from 'mermaid';
   import { api, type Attachment, type CollectionItem, type SearchSnipselHit, type Habit } from '../lib/api';
+  import { renderMermaidDiagrams } from '../lib/mermaid';
   import ImageModal from '../lib/ImageModal.svelte';
   import CollectionSelectModal from '../lib/CollectionSelectModal.svelte';
   import DeleteConfirmModal from '../lib/DeleteConfirmModal.svelte';
@@ -194,36 +194,7 @@
     if (!hasMermaid) return;
 
     mermaidTimer = setTimeout(() => {
-      tick().then(async () => {
-        const containers = document.querySelectorAll('.mermaid-unprocessed');
-        if (containers.length === 0) return;
-
-        const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'default';
-        mermaid.initialize({ startOnLoad: false, theme: currentTheme });
-
-        for (const el of Array.from(containers)) {
-          try {
-            let content = el.getAttribute('data-mermaid');
-            if (content) {
-              el.className = 'mermaid my-4';
-              content = content
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'");
-
-              const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-              const { svg } = await mermaid.render(id, content);
-              el.innerHTML = svg;
-            }
-          } catch (err) {
-            console.error("Mermaid error", err);
-            el.className = 'mermaid-error my-4';
-            el.innerHTML = `<pre style="color:#ef4444;font-size:12px;background:rgba(239,68,68,0.1);padding:10px;border-radius:4px;overflow-x:auto;">Mermaid syntax error:\n${err}</pre>`;
-          }
-        }
-      });
+      tick().then(() => renderMermaidDiagrams());
     }, 300);
   });
 

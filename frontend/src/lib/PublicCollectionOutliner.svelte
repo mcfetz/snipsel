@@ -1,5 +1,4 @@
 <script lang="ts">
-  import mermaid from 'mermaid';
   import { tick } from 'svelte';
   import { api, type Attachment, type CollectionItem } from './api';
   import ImageModal from './ImageModal.svelte';
@@ -26,6 +25,7 @@
     stripMediaLinks,
   } from './embeds';
   import { renderMarkdown as renderMarkdownExt } from './markdown';
+  import { renderMermaidDiagrams } from './mermaid';
 
   let { token, collection, items, canWrite = false, onReload } = $props<{
     token: string;
@@ -50,39 +50,7 @@
     const _items = sortedItems;
     if (!_items || !_items.some(i => i?.snipsel?.content_markdown?.includes('mermaid'))) return;
 
-    tick().then(async () => {
-      // Check if we are in browser to prevent SSR errors
-      if (typeof document === 'undefined') return;
-      const containers = document.querySelectorAll('.mermaid-unprocessed');
-      if (containers.length === 0) return;
-
-      const isDark = document.documentElement.classList.contains('dark');
-      mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' });
-
-      for (const el of Array.from(containers)) {
-        try {
-          let content = el.getAttribute('data-mermaid');
-          if (content) {
-            el.className = 'mermaid my-4'; 
-            
-            content = content
-              .replace(/&amp;/g, '&')
-              .replace(/&lt;/g, '<')
-              .replace(/&gt;/g, '>')
-              .replace(/&quot;/g, '"')
-              .replace(/&#39;/g, "'");
-
-            const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-            const { svg } = await mermaid.render(id, content);
-            el.innerHTML = svg;
-          }
-        } catch (err) {
-          console.error("Mermaid error", err);
-          el.className = 'mermaid-error my-4';
-          el.innerHTML = `<pre style="color:#ef4444;font-size:12px;background:rgba(239,68,68,0.1);padding:10px;border-radius:4px;overflow-x:auto;">Mermaid syntax error:\n${err}</pre>`;
-        }
-      }
-    });
+    tick().then(() => renderMermaidDiagrams());
   });
 
   let expandedSnipsels = $state<Set<string>>(new Set());
