@@ -52,19 +52,8 @@ import HabitDetail from './routes/HabitDetail.svelte';
   let pendingPasscodeCollectionId = $state<string | null>(null);
 
   let lastCollectionId: string | null = $state(null);
-
-  let recentContainerRef: HTMLDivElement | undefined = $state();
-  let showRecentPopup = $state(false);
   let focusProxyNavRef: HTMLInputElement | undefined = $state();
-  async function toggleRecentPopup() {
-    if (!showRecentPopup) {
-      try {
-        const res = await api.collections.listRecent();
-        recentCollectionsStore.set(res.collections);
-      } catch { /* ignore */ }
-    }
-    showRecentPopup = !showRecentPopup;
-  }
+
   async function clearRecent() {
     if (!confirm('Clear recently visited history?')) return;
     try {
@@ -72,17 +61,6 @@ import HabitDetail from './routes/HabitDetail.svelte';
       recentCollectionsStore.set([]);
     } catch { /* ignore */ }
   }
-
-  $effect(() => {
-    if (!showRecentPopup) return;
-    const onClick = (e: MouseEvent) => {
-      if (recentContainerRef && !recentContainerRef.contains(e.target as Node)) {
-        showRecentPopup = false;
-      }
-    };
-    window.addEventListener('mousedown', onClick);
-    return () => window.removeEventListener('mousedown', onClick);
-  });
 
   async function pruneEmptySnipsels(collectionId: string) {
     try {

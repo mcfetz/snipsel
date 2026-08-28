@@ -3,6 +3,7 @@
   import Clock from '@animated-color-icons/lucide-svelte/Clock.svelte';
   import Bell from '@animated-color-icons/lucide-svelte/Bell.svelte';
   import SettingsIcon from '@animated-color-icons/lucide-svelte/Settings.svelte';
+  import { api } from './api';
   import { currentView, searchQuery, notificationsStore, recentCollectionsStore } from './stores';
   import { currentUser } from './session';
 
@@ -32,6 +33,35 @@
   let unreadNotificationsCount = $derived(
     $notificationsStore.filter((n) => !n.is_read).length
   );
+
+  async function openRecentPopup() {
+    try {
+      const res = await api.collections.listRecent();
+      recentCollectionsStore.set(res.collections);
+    } catch {
+      // ignore
+    }
+    showRecentPopup = true;
+  }
+
+  async function toggleRecentPopup() {
+    if (!showRecentPopup) {
+      await openRecentPopup();
+    } else {
+      showRecentPopup = false;
+    }
+  }
+
+  $effect(() => {
+    if (!showRecentPopup) return;
+    const onClick = (e: MouseEvent) => {
+      if (recentContainerRef && !recentContainerRef.contains(e.target as Node)) {
+        showRecentPopup = false;
+      }
+    };
+    window.addEventListener('mousedown', onClick);
+    return () => window.removeEventListener('mousedown', onClick);
+  });
 </script>
 
 <!-- Progressive blur layer behind header -->
@@ -97,7 +127,15 @@
           ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
           : 'text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100'}"
         type="button"
-        onmouseenter={() => (showRecentPopup = true)}
+        onmouseenter={() => {
+          if (!showRecentPopup) {
+            openRecentPopup();
+          }
+        }}
+        onclick={(e) => {
+          e.stopPropagation();
+          toggleRecentPopup();
+        }}
         aria-label="Recent collections"
         title="Recent"
       >
