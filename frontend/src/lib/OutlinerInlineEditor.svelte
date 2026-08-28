@@ -30,6 +30,8 @@
     headerColor: string;
     isUploading: boolean;
     showCardView: boolean;
+    textarea: HTMLTextAreaElement | null;
+    container: HTMLDivElement | null;
     collectionRefs?: Array<{ title: string; collection_id: string }>;
     suggestions: AutocompleteSuggestion[];
     showAutocomplete: boolean;
@@ -52,6 +54,8 @@
     headerColor,
     isUploading,
     showCardView,
+    textarea = $bindable(null),
+    container = $bindable(null),
     collectionRefs,
     suggestions,
     showAutocomplete,
@@ -67,17 +71,16 @@
     onFocusOut,
   }: Props = $props();
 
-  let textareaRef: HTMLTextAreaElement | null = $state(null);
   let editAttachmentsInputRef: HTMLInputElement | null = $state(null);
 
   export function focusTextarea() {
-    textareaRef?.focus();
+    textarea?.focus();
   }
 
   export function autosize() {
-    if (!textareaRef) return;
-    textareaRef.style.height = 'auto';
-    textareaRef.style.height = `${textareaRef.scrollHeight}px`;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
   }
 
   function handleFileInput(e: Event) {
@@ -96,6 +99,7 @@
 </script>
 
 <div
+  bind:this={container}
   class="relative rounded-xl bg-slate-50 shadow-sm ring-1 ring-indigo-200 dark:bg-slate-800 dark:ring-indigo-500/50"
   class:!fixed={editFullscreen}
   class:inset-[5%]={editFullscreen}
@@ -116,7 +120,7 @@
   />
 
   <FormattingToolbar
-    textarea={textareaRef}
+    textarea={textarea}
     onFormat={(content) => {
       editContent = content;
       if (onFormat) onFormat(content);
@@ -128,16 +132,16 @@
       editFullscreen = !editFullscreen;
       tick().then(() => {
         autosize();
-        textareaRef?.focus();
+        textarea?.focus();
       });
     }}
     onIndent={() => {
       editIndent = Math.min(6, editIndent + 1);
-      textareaRef?.focus();
+      textarea?.focus();
     }}
     onOutdent={() => {
       editIndent = Math.max(0, editIndent - 1);
-      textareaRef?.focus();
+      textarea?.focus();
     }}
     onNewSnipsel={onSaveAndNew}
     onUploadAttachment={() => editAttachmentsInputRef?.click()}
@@ -150,7 +154,7 @@
     class:flex-col={editFullscreen}
   >
     <textarea
-      bind:this={textareaRef}
+      bind:this={textarea}
       class="w-full resize-none bg-transparent outline-none dark:text-slate-100 {textareaFontSize === 'base' ? 'text-base' : 'text-lg'}"
       class:flex-1={editFullscreen}
       rows="2"

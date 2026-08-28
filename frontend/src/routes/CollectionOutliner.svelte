@@ -143,8 +143,8 @@
   }
   let { collectionId }: Props = $props();
 
-  let textareaRef: HTMLTextAreaElement | undefined = $state();
-  let editContainerRef: HTMLDivElement | undefined = $state();
+  let textareaRef: HTMLTextAreaElement | null = $state(null);
+  let editContainerRef: HTMLDivElement | null = $state(null);
   let focusProxyRef: HTMLInputElement | undefined = $state();
   let editContent = $state('');
   let editIndent = $state(0);
@@ -235,7 +235,6 @@
   let attachmentsInputRef: HTMLInputElement | undefined = $state();
   let uploadingAttachments = $state(false);
 
-  let editAttachmentsInputRef: HTMLInputElement | undefined = $state();
   let editUploadingAttachments = $state(false);
 
   let templates = $state<Array<{ id: string; title: string; icon: string }>>([]);
@@ -2364,6 +2363,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         bind:editContent
         bind:editIndent
         bind:editFullscreen
+        bind:textarea={textareaRef}
+        bind:container={editContainerRef}
         {headerColor}
         isUploading={uploadingAttachments || editUploadingAttachments}
         showCardView={getEditingSnipselCardView()}
@@ -2374,7 +2375,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         textareaFontSize="base"
         onSaveAndNew={handleSaveAndNew}
         onUploadAttachment={uploadEditAttachment}
-        onApplySuggestion={applySuggestion}
+        onApplySuggestion={insertAutocomplete}
         onInput={handleEditInput}
         onKeydown={handleKeydown}
         onPaste={handlePaste}
@@ -2770,6 +2771,8 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
               bind:editContent
               bind:editIndent
               bind:editFullscreen
+              bind:textarea={textareaRef}
+              bind:container={editContainerRef}
               {headerColor}
               isUploading={uploadingAttachments || editUploadingAttachments}
               showCardView={getEditingSnipselCardView()}
