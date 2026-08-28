@@ -26,6 +26,11 @@
   } from './embeds';
   import { renderMarkdown as renderMarkdownExt } from './markdown';
   import { renderMermaidDiagrams } from './mermaid';
+  import {
+    computeVisibleItems,
+    computeCollapsibleParentIds,
+    computeTaskProgress,
+  } from './tree';
 
   let { token, collection, items, canWrite = false, onReload } = $props<{
     token: string;
@@ -155,15 +160,7 @@
     }
   }
 
-  let collapsibleParentIds = $derived.by(() => {
-    const ids = new Set<string>();
-    for (let i = 0; i < sortedItems.length - 1; i++) {
-      if (sortedItems[i + 1].indent > sortedItems[i].indent) {
-        ids.add(sortedItems[i].snipsel_id);
-      }
-    }
-    return ids;
-  });
+  let collapsibleParentIds = $derived(computeCollapsibleParentIds(sortedItems));
 
   function toggleExpand(id: string) {
     const next = new Set(expandedSnipsels);
@@ -194,30 +191,11 @@
   }
 
   function taskProgress() {
-    const tasks = sortedItems.filter((i) => i.snipsel.type === 'task');
-    const total = tasks.length;
-    const done = tasks.filter((i) => Boolean(i.snipsel.task_done)).length;
-    return { total, done, ratio: total > 0 ? done / total : 0 };
+    return computeTaskProgress(sortedItems);
   }
 
   function visibleItems(items: CollectionItem[]): CollectionItem[] {
-    const result: CollectionItem[] = [];
-    let skipUntilIndent: number | null = null;
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (skipUntilIndent !== null) {
-        if (item.indent > skipUntilIndent) continue;
-        else skipUntilIndent = null;
-      }
-      result.push(item);
-      const nextItem = items[i + 1];
-      const itemsHasChildren = nextItem && nextItem.indent > item.indent;
-      if (itemsHasChildren && !expandedSnipsels.has(item.snipsel_id)) {
-        skipUntilIndent = item.indent;
-      }
-    }
-    return result;
+    return computeVisibleItems(items, expandedSnipsels, false);
   }
 </script>
 

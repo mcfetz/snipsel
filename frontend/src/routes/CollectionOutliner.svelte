@@ -66,6 +66,15 @@
   import SnipselCard from '../lib/SnipselCard.svelte';
   import OutlinerInlineEditor from '../lib/OutlinerInlineEditor.svelte';
   import OutlinerListRow from '../lib/OutlinerListRow.svelte';
+  import {
+    hasChildren,
+    getChildIds,
+    isDoneTask,
+    computeVisibleItems,
+    computeCollapsibleParentIds,
+    computeHiddenDoneCount,
+    computeTaskProgress,
+  } from '../lib/tree';
   import { longPress } from '../lib/gestures';
   import {
     computeHeaderColor,
@@ -540,17 +549,7 @@
   }
 
   let expandedSnipsels = $state<Set<string>>(new Set());
-
-  let collapsibleParentIds = $derived.by(() => {
-    const ids = new Set<string>();
-    const items = $sortedItems;
-    for (let i = 0; i < items.length - 1; i++) {
-      if (items[i + 1].indent > items[i].indent) {
-        ids.add(items[i].snipsel_id);
-      }
-    }
-    return ids;
-  });
+  let collapsibleParentIds = $derived(computeCollapsibleParentIds($sortedItems));
 
   let allExpanded = $derived.by(() => {
     if (collapsibleParentIds.size === 0) return false;
@@ -575,27 +574,11 @@
     }
   }
 
-  function hasChildren(item: CollectionItem, allItems: CollectionItem[]): boolean {
-    const idx = allItems.findIndex((i) => i.snipsel_id === item.snipsel_id);
-    if (idx < 0 || idx === allItems.length - 1) return false;
-    // Children are any following items with higher indentation
-    return allItems[idx + 1].indent > item.indent;
-  }
-
-  let showEmojiPicker = $state(false);
-  const commonEmojis = [
-    '🗒', '📅', '✅', '📌', '💡', '🏷', '📁', '🏠', '🚀', '🎨', 
-    '🛠', '⚙️', '🔒', '🔑', '🌍', '📊', '📈', '💬', '👥', '👤', 
-    '⭐', '❤️', '🔥', '⚡', '🌈', '☀', '🌙', '☁', '🍎', '🍔', 
-    '🍕', '🍺', '☕', '⚽', '🎮', '🎵', '📷', '✈️', '🚗', '💡'
-  ];
-
   async function updateIcon(icon: string) {
     if (!$currentCollection || !canWrite()) return;
     try {
       const res = await api.collections.update($currentCollection.id, { icon });
       currentCollection.set(res.collection);
-      showEmojiPicker = false;
     } catch (err) {
       console.error('Failed to update icon:', err);
     }
@@ -821,24 +804,6 @@
 
   function closeTypeMenu() {
     showTypeMenu = false;
-  }
-
-  function getChildIds(parentId: string, allItems: CollectionItem[]): string[] {
-    const idx = allItems.findIndex((i) => i.snipsel_id === parentId);
-    if (idx < 0 || idx === allItems.length - 1) return [];
-
-    const parentIndent = allItems[idx].indent;
-    const childIds: string[] = [];
-
-    for (let i = idx + 1; i < allItems.length; i++) {
-      if (allItems[i].indent > parentIndent) {
-        childIds.push(allItems[i].snipsel_id);
-      } else {
-        break;
-      }
-    }
-
-    return childIds;
   }
 
   function toggleSelection(id: string, shiftKey: boolean = false) {
@@ -2272,59 +2237,10 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     return Boolean(a.mime_type?.startsWith('image/') || a.has_thumbnail);
   }
 
-  function isDoneTask(item: CollectionItem): boolean {
-    return item.snipsel.type === 'task' && item.snipsel.task_done > 0;
-  }
-
-  function visibleItems(items: CollectionItem[]): CollectionItem[] {
-    let filtered = items;
-    if (hideDoneTasks) {
-      filtered = filtered.filter((i) => !isDoneTask(i));
-    }
-
-    const result: CollectionItem[] = [];
-    let skipUntilIndent: number | null = null;
-
-    for (let i = 0; i < filtered.length; i++) {
-      const item = filtered[i];
-      if (skipUntilIndent !== null) {
-        if (item.indent > skipUntilIndent) {
-          continue;
-        } else {
-          skipUntilIndent = null;
-        }
-      }
-
-      result.push(item);
-
-      const nextItem = filtered[i + 1];
-      const itemsHasChildren = nextItem && nextItem.indent > item.indent;
-
-      if (itemsHasChildren && !expandedSnipsels.has(item.snipsel_id)) {
-        skipUntilIndent = item.indent;
-      }
-    }
-    return result;
-  }
-
-  // Derived visible items — avoids recalculating on every template reference
-  let displayedItems = $derived(visibleItems($sortedItems));
-
-  function hiddenDoneCount(items: CollectionItem[]): number {
-    if (!hideDoneTasks) return 0;
-    return items.filter((i) => isDoneTask(i)).length;
-  }
-
-  // Derived hidden done count
-  let hiddenDone = $derived(hiddenDoneCount($sortedItems));
-
-  // Derived task progress — avoids recalculating on every template reference
-  let taskProg = $derived.by(() => {
-    const tasks = $sortedItems.filter((i) => i.snipsel.type === 'task');
-    const total = tasks.length;
-    const done = tasks.filter((i) => i.snipsel.task_done > 0).length;
-    return { total, done, ratio: total > 0 ? done / total : 0 };
-  });
+  // Derived visible items, hidden done count, and task progress
+  let displayedItems = $derived(computeVisibleItems($sortedItems, expandedSnipsels, hideDoneTasks));
+  let hiddenDone = $derived(computeHiddenDoneCount($sortedItems, hideDoneTasks));
+  let taskProg = $derived(computeTaskProgress($sortedItems));
 
   async function loadAllData(targetId: string, col: Collection | null) {
     await Promise.all([
@@ -2399,13 +2315,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       }, 10000);
     }, 0);
   });
-
-  function taskProgress() {
-    const tasks = $sortedItems.filter((i) => i.snipsel.type === 'task');
-    const total = tasks.length;
-    const done = tasks.filter((i) => i.snipsel.task_done > 0).length;
-    return { total, done, ratio: total > 0 ? done / total : 0 };
-  }
 
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2537,7 +2446,7 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
       {navVisible}
       {swipeNavigating}
       canWrite={canWrite()}
-      taskProgress={taskProgress()}
+      taskProgress={taskProg}
       {hideDoneTasks}
       {throwbackLists}
       collapsibleCount={collapsibleParentIds.size}
