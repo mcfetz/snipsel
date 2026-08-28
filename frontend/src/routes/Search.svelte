@@ -7,69 +7,18 @@
   import DeezerCard from '../lib/DeezerCard.svelte';
   import SpotifyCard from '../lib/SpotifyCard.svelte';
   import YouTubeCard from '../lib/YouTubeCard.svelte';
+  import { computeHeaderColor, computeCardTileBg } from '../lib/colors';
+  import { getDeezerLink, getSpotifyLink, getYouTubeLink, stripMediaLinks } from '../lib/embeds';
 
-  const DEFAULT_ACCENT = '#4f46e5';
-  type Rgb = { r: number; g: number; b: number };
-
-  function clampByte(n: number): number {
-    return Math.max(0, Math.min(255, Math.round(n)));
-  }
-
-  function hexToRgb(hex: string): Rgb | null {
-    const h = hex.trim();
-    const m = /^#([0-9a-fA-F]{6})$/.exec(h);
-    if (!m) return null;
-    const v = m[1];
-    return {
-      r: parseInt(v.slice(0, 2), 16),
-      g: parseInt(v.slice(2, 4), 16),
-      b: parseInt(v.slice(4, 6), 16),
-    };
-  }
-
-  function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
-    const tt = Math.max(0, Math.min(1, t));
-    return {
-      r: clampByte(a.r + (b.r - a.r) * tt),
-      g: clampByte(a.g + (b.g - a.g) * tt),
-      b: clampByte(a.b + (b.b - a.b) * tt),
-    };
-  }
-
-  function rgba(c: Rgb, alpha: number): string {
-    const a = Math.max(0, Math.min(1, alpha));
-    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
-  }
+  let accent = $derived(computeHeaderColor($currentUser?.default_collection_header_color));
 
   function getAccent(): string {
-    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
-    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
-  }
-
-  const DEFAULT_HEADER_COLOR = '#4f46e5';
-  const TOOLBOX_BASE_COLOR = '#ffffff';
-
-  function getHeaderColor(): string {
-    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_HEADER_COLOR;
-    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_HEADER_COLOR;
-  }
-
-  function getToolboxBg(): string {
-    const isDark = document.documentElement.classList.contains('dark');
-    const baseColor = isDark ? '#1e293b' : TOOLBOX_BASE_COLOR;
-    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
-    const header = hexToRgb(getHeaderColor());
-    const mixed = header ? mixRgb(base, header, 0.14) : base;
-    return rgba(mixed, 0.96);
+    return accent;
   }
 
   function getAccentTint(): string {
-    const isDark = document.documentElement.classList.contains('dark');
-    const baseColor = isDark ? '#1e293b' : '#ffffff';
-    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
-    const accent = hexToRgb(getAccent());
-    const mixed = accent ? mixRgb(base, accent, 0.14) : base;
-    return rgba(mixed, 0.96);
+    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    return computeCardTileBg(accent, isDark);
   }
 
   function openSnipsel(s: SearchSnipselHit) {
@@ -89,45 +38,6 @@
       hour: '2-digit',
       minute: '2-digit',
     });
-  }
-
-  function getDeezerLink(text: string | null) {
-    if (!text) return null;
-    const stdMatch = text.match(/https?:\/\/(?:www\.)?deezer\.com\/(track|album|artist)\/(\d+)/);
-    if (stdMatch) return { url: stdMatch[0] };
-    const shortMatch = text.match(/https?:\/\/link\.deezer\.com\/s\/[A-Za-z0-9]+/);
-    if (shortMatch) return { url: shortMatch[0] };
-    return null;
-  }
-
-  function getSpotifyLink(text: string | null) {
-    if (!text) return null;
-    const match = text.match(/https?:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/[a-zA-Z0-9]+/);
-    if (match) return { url: match[0] };
-    const shortMatch = text.match(/https?:\/\/spotify\.link\/[a-zA-Z0-9]+/);
-    if (shortMatch) return { url: shortMatch[0] };
-    return null;
-  }
-
-  function getYouTubeLink(text: string | null) {
-    if (!text) return null;
-    const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[^\s\)]*)/);
-    if (match) {
-      return { id: match[1], url: match[0] };
-    }
-    return null;
-  }
-
-  function stripMediaLinks(text: string | null): string {
-    if (!text) return '';
-    let result = text;
-    const dz = getDeezerLink(text);
-    if (dz) result = result.replace(dz.url, '');
-    const sp = getSpotifyLink(text);
-    if (sp) result = result.replace(sp.url, '');
-    const yt = getYouTubeLink(text);
-    if (yt) result = result.replace(yt.url, '');
-    return result.trim();
   }
 
   const filters = [

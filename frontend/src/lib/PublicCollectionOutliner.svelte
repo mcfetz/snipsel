@@ -1,5 +1,4 @@
 <script lang="ts">
-  import MarkdownIt from 'markdown-it';
   import mermaid from 'mermaid';
   import { tick } from 'svelte';
   import { api, type Attachment, type CollectionItem } from './api';
@@ -14,6 +13,19 @@
   import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
   import Trash2 from '@animated-color-icons/lucide-svelte/Trash2.svelte';
+  import {
+    computeHeaderColor,
+    computeToolboxBg,
+  } from './colors';
+  import {
+    getDeezerLink,
+    getSpotifyLink,
+    getYouTubeLink,
+    getMapLink,
+    getGenericLink,
+    stripMediaLinks,
+  } from './embeds';
+  import { renderMarkdown as renderMarkdownExt } from './markdown';
 
   let { token, collection, items, canWrite = false, onReload } = $props<{
     token: string;
@@ -32,23 +44,6 @@
     canWrite?: boolean;
     onReload?: () => void;
   }>();
-
-  const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
-
-  const defaultRender = md.renderer.rules.fence || function (tokens, idx, options, env, self) {
-    return self.renderToken(tokens, idx, options);
-  };
-
-  md.renderer.rules.fence = function (tokens, idx, options, env, self) {
-    const token = tokens[idx];
-    const info = token.info ? token.info.trim() : '';
-
-    if (info.toLowerCase().startsWith('mermaid')) {
-      return `<div class="mermaid-unprocessed" data-mermaid="${md.utils.escapeHtml(token.content)}"></div>\n`;
-    }
-
-    return defaultRender(tokens, idx, options, env, self);
-  };
 
   $effect(() => {
     // Process mermaid diagrams when data changes
@@ -210,45 +205,16 @@
   }
 
   function getHeaderColor(): string {
-    return collection.header_color || '#4f46e5';
+    return computeHeaderColor(collection.header_color);
   }
 
   function getToolboxBg(): string {
     const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-    return isDark ? 'rgba(30, 41, 59, 0.96)' : 'rgba(255, 255, 255, 0.96)';
+    return computeToolboxBg(getHeaderColor(), isDark);
   }
 
-  const publicMdCache = new Map<string, string>();
-  const MAX_PUBLIC_MD_CACHE = 300;
-
   function renderMarkdown(text: string | null): string {
-    if (!text) return '';
-    const tokenBg = getToolboxBg();
-    const tokenFg = getHeaderColor();
-    const cacheKey = `${tokenBg}|${tokenFg}|${text}`;
-    const cached = publicMdCache.get(cacheKey);
-    if (cached !== undefined) return cached;
-
-    const preprocessed = text.trim().replace(/^[ \t]*$/gm, '\u00a0');
-    const html = md.render(preprocessed).trim();
-    const result = html
-      .replace(
-        /(^|[^\p{L}\p{N}_])(#[A-Za-z\p{L}][\p{L}\p{N}_-]*|@[A-Za-z\p{L}][\p{L}\p{N}_-]*)/gu,
-        (m, p1, token) =>
-          `${p1}<mark class="snip-token" style="background-color:${tokenBg}; color:${tokenFg}; border-radius: 9999px; padding: 0.125rem 0.5rem; font-size: 10px; font-weight: 500; text-transform: uppercase;">${token}</mark>`
-      )
-      .replace(/==([^=]+)==/g, `<mark style="background-color:${tokenBg}; border-radius: 0.25rem; padding: 0 0.125rem">$1</mark>`)
-      .replace(/<a /g, `<a style="color:${tokenFg}; text-decoration:underline" target="_blank" rel="noopener noreferrer" `)
-      .replace(/<blockquote>/g, `<blockquote style="border-left: 3px solid ${tokenFg}; background-color:${tokenBg}; margin: 0.25rem 0; padding: 0.25rem 0.75rem; border-radius: 0 0.25rem 0.25rem 0; opacity: 0.9;">`)
-      .replace(/>\s+</g, '><')
-      .replace(/<br>\n/g, '<br>');
-
-    if (publicMdCache.size >= MAX_PUBLIC_MD_CACHE) {
-      const first = publicMdCache.keys().next().value;
-      if (first) publicMdCache.delete(first);
-    }
-    publicMdCache.set(cacheKey, result);
-    return result;
+    return renderMarkdownExt(text, getToolboxBg(), getHeaderColor());
   }
 
   function isImageAttachment(a: any) {
@@ -285,103 +251,6 @@
     }
     return result;
   }
-
-  function getDeezerLink(text: string | null) {
-    if (!text) return null;
-    const stdMatch = text.match(/https?:\/\/(?:www\.)?deezer\.com\/(track|album|artist)\/(\d+)/);
-    if (stdMatch) return { type: stdMatch[1] as 'track' | 'album' | 'artist', id: stdMatch[2], url: stdMatch[0] };
-    const shortMatch = text.match(/https?:\/\/link\.deezer\.com\/s\/[A-Za-z0-9]+/);
-    if (shortMatch) return { type: null, id: null, url: shortMatch[0] };
-    return null;
-  }
-
-  function getSpotifyLink(text: string | null) {
-    if (!text) return null;
-    const match = text.match(/https?:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/[a-zA-Z0-9]+/);
-    if (match) return { url: match[0] };
-    const shortMatch = text.match(/https?:\/\/spotify\.link\/[a-zA-Z0-9]+/);
-    if (shortMatch) return { url: shortMatch[0] };
-    return null;
-  }
-
-  function getYouTubeLink(text: string | null) {
-    if (!text) return null;
-    const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[^\s\)]*)/);
-    if (match) return { id: match[1], url: match[0] };
-    return null;
-  }
-
-  function getMapLink(text: string | null) {
-    if (!text) return null;
-    // Short links that need server-side resolution (no coords in URL)
-    const googleShortMatch = text.match(/https?:\/\/maps\.app\.goo\.gl\/[A-Za-z0-9]+/);
-    const appleShortMatch = text.match(/https?:\/\/maps\.apple(?:\.com)?\/p\/[^\s]*/);
-    if (googleShortMatch || appleShortMatch) {
-      const match = googleShortMatch || appleShortMatch;
-      return { url: match![0] };
-    }
-    // Google Maps patterns (full URL)
-    const googleAtMatch = text.match(/https?:\/\/(?:www\.)?google\.com\/maps\/[^\s]*@(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const googleQMatch = text.match(/https?:\/\/(?:www\.)?google\.com\/maps\?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const mapsGoogleQMatch = text.match(/https?:\/\/maps\.google\.[a-z]+\/?\?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    // Apple Maps patterns (full URL)
-    const appleLlMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const appleQMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const appleCenterMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]center=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const appleCoordMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]coordinate=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    
-    if (googleAtMatch) {
-      return { lat: parseFloat(googleAtMatch[1]), lng: parseFloat(googleAtMatch[2]), url: googleAtMatch[0] };
-    }
-    if (googleQMatch) {
-      return { lat: parseFloat(googleQMatch[1]), lng: parseFloat(googleQMatch[2]), url: googleQMatch[0] };
-    }
-    if (mapsGoogleQMatch) {
-      return { lat: parseFloat(mapsGoogleQMatch[1]), lng: parseFloat(mapsGoogleQMatch[2]), url: mapsGoogleQMatch[0] };
-    }
-    if (appleLlMatch) {
-      return { lat: parseFloat(appleLlMatch[1]), lng: parseFloat(appleLlMatch[2]), url: appleLlMatch[0] };
-    }
-    if (appleQMatch) {
-      return { lat: parseFloat(appleQMatch[1]), lng: parseFloat(appleQMatch[2]), url: appleQMatch[0] };
-    }
-    if (appleCenterMatch) {
-      return { lat: parseFloat(appleCenterMatch[1]), lng: parseFloat(appleCenterMatch[2]), url: appleCenterMatch[0] };
-    }
-    if (appleCoordMatch) {
-      return { lat: parseFloat(appleCoordMatch[1]), lng: parseFloat(appleCoordMatch[2]), url: appleCoordMatch[0] };
-    }
-    return null;
-  }
-
-  function getGenericLink(text: string | null) {
-    if (!text) return null;
-    if (getDeezerLink(text)) return null;
-    if (getSpotifyLink(text)) return null;
-    if (getYouTubeLink(text)) return null;
-    if (getMapLink(text)) return null;
-    const trimmed = text.trim();
-    const urlMatch = trimmed.match(/^(https?:\/\/\S+)$/);
-    if (urlMatch) return { url: urlMatch[1] };
-    return null;
-  }
-
-  function stripMediaLinks(text: string | null): string {
-    if (!text) return '';
-    let result = text;
-    const dz = getDeezerLink(text);
-    if (dz) result = result.replace(dz.url, '');
-    const sp = getSpotifyLink(text);
-    if (sp) result = result.replace(sp.url, '');
-    const yt = getYouTubeLink(text);
-    if (yt) result = result.replace(yt.url, '');
-    const ml = getMapLink(text);
-    if (ml) result = result.replace(ml.url, '');
-    const gl = getGenericLink(text);
-    if (gl) result = result.replace(gl.url, '');
-    return result.trim();
-  }
-
 </script>
 
 <div class="max-w-3xl mx-auto px-4 py-8 space-y-6">

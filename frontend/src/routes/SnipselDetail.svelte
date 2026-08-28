@@ -15,6 +15,19 @@
   import SpotifyCard from '../lib/SpotifyCard.svelte';
   import YouTubeCard from '../lib/YouTubeCard.svelte';
   import VideoModal from '../lib/VideoModal.svelte';
+  import {
+    computeHeaderColor,
+    computeCardTileBg,
+    computeToolboxBg,
+    isLightColor,
+    getContrastColor,
+  } from '../lib/colors';
+  import {
+    getDeezerLink,
+    getSpotifyLink,
+    getYouTubeLink,
+    stripMediaLinks,
+  } from '../lib/embeds';
 
   interface Props {
     snipselId: string;
@@ -56,73 +69,17 @@
     return local.toISOString().slice(0, 16);
   }
 
-
-
-  const DEFAULT_ACCENT = '#4f46e5';
-  type Rgb = { r: number; g: number; b: number };
-
-  function clampByte(n: number): number {
-    return Math.max(0, Math.min(255, Math.round(n)));
-  }
-
-  function hexToRgb(hex: string): Rgb | null {
-    const h = hex.trim();
-    const m = /^#([0-9a-fA-F]{6})$/.exec(h);
-    if (!m) return null;
-    const v = m[1];
-    return {
-      r: parseInt(v.slice(0, 2), 16),
-      g: parseInt(v.slice(2, 4), 16),
-      b: parseInt(v.slice(4, 6), 16),
-    };
-  }
-
-  function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
-    const tt = Math.max(0, Math.min(1, t));
-    return {
-      r: clampByte(a.r + (b.r - a.r) * tt),
-      g: clampByte(a.g + (b.g - a.g) * tt),
-      b: clampByte(a.b + (b.b - a.b) * tt),
-    };
-  }
-
-  function rgba(c: Rgb, alpha: number): string {
-    const a = Math.max(0, Math.min(1, alpha));
-    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
-  }
-
   function getAccent(): string {
-    const raw = ($currentUser?.default_collection_header_color || '').trim() || DEFAULT_ACCENT;
-    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_ACCENT;
+    return computeHeaderColor($currentUser?.default_collection_header_color);
   }
 
   function getHeaderColor(): string {
-    const collectionColor = ($currentCollection?.header_color || '').trim();
-    if (collectionColor && /^#[0-9a-fA-F]{6}$/.test(collectionColor)) {
-      return collectionColor;
-    }
-    return getAccent();
+    return computeHeaderColor($currentCollection?.header_color, $currentUser?.default_collection_header_color);
   }
 
   function getAccentTint(): string {
     const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-    const base = isDark ? { r: 30, g: 41, b: 59 } : { r: 255, g: 255, b: 255 }; // slate-800 or white
-    const accent = hexToRgb(getAccent());
-    const mixed = accent ? mixRgb(base, accent, 0.14) : base;
-    return rgba(mixed, 0.96);
-  }
-
-  function isLightColor(color: string): boolean {
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 128;
-  }
-
-  function getContrastColor(bgColor: string): string {
-    return isLightColor(bgColor) ? '#1e293b' : 'white';
+    return computeCardTileBg(getAccent(), isDark);
   }
 
   let modalImages = $state<Array<{ id: string; filename: string }>>([]);
@@ -310,50 +267,6 @@
       }
     );
   }
-
-  function getDeezerLink(text: string | null) {
-    if (!text) return null;
-    const stdMatch = text.match(/https?:\/\/(?:www\.)?deezer\.com\/(track|album|artist)\/(\d+)/);
-    if (stdMatch) {
-      return { type: stdMatch[1] as 'track' | 'album' | 'artist', id: stdMatch[2], url: stdMatch[0] };
-    }
-    const shortMatch = text.match(/https?:\/\/link\.deezer\.com\/s\/[A-Za-z0-9]+/);
-    if (shortMatch) {
-      return { type: null, id: null, url: shortMatch[0] };
-    }
-    return null;
-  }
-
-  function getSpotifyLink(text: string | null) {
-    if (!text) return null;
-    const match = text.match(/https?:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/[a-zA-Z0-9]+/);
-    if (match) return { url: match[0] };
-    const shortMatch = text.match(/https?:\/\/spotify\.link\/[a-zA-Z0-9]+/);
-    if (shortMatch) return { url: shortMatch[0] };
-    return null;
-  }
-
-  function getYouTubeLink(text: string | null) {
-    if (!text) return null;
-    const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[^\s\)]*)/);
-    if (match) {
-      return { id: match[1], url: match[0] };
-    }
-    return null;
-  }
-
-  function stripMediaLinks(text: string | null): string {
-    if (!text) return '';
-    let result = text;
-    const dz = getDeezerLink(text);
-    if (dz) result = result.replace(dz.url, '');
-    const sp = getSpotifyLink(text);
-    if (sp) result = result.replace(sp.url, '');
-    const yt = getYouTubeLink(text);
-    if (yt) result = result.replace(yt.url, '');
-    return result.trim();
-  }
-
 
 	let favoriteByCollectionId = $state<Record<string, boolean>>({});
 
