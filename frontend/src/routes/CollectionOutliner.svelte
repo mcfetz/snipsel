@@ -59,6 +59,11 @@
   import AttachmentCard from '../lib/AttachmentCard.svelte';
   import FormattingToolbar from '../lib/FormattingToolbar.svelte';
   import CollectionLinkCard from '../lib/CollectionLinkCard.svelte';
+  import DicedMomentCard from '../lib/DicedMomentCard.svelte';
+  import DailyHabitsBar from '../lib/DailyHabitsBar.svelte';
+  import OutlinerHeader from '../lib/OutlinerHeader.svelte';
+  import SelectionToolbox from '../lib/SelectionToolbox.svelte';
+  import SnipselCard from '../lib/SnipselCard.svelte';
   import { longPress } from '../lib/gestures';
   import {
     computeHeaderColor,
@@ -349,7 +354,6 @@
   let throwbackLists = $state<Array<{ id: string; year: number; title: string; icon: string }>>([]);
   let dicedSnipsel = $state<import('../lib/api').Snipsel | null>(null);
   let dicedLoading = $state(false);
-  let showDicedBanModal = $state(false);
 
   // Memory cache for daily collection extras (habits, throwback, diced moments)
   // so switching days or swiping renders them immediately in 0ms without layout jump.
@@ -2577,266 +2581,22 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
         () => handleSelectLongPress(item.snipsel_id),
         () => handleSelectShortPress(item.snipsel_id)
       )}
-      <button
-        type="button"
-        aria-label="Select snipsel"
-        class="absolute right-0 top-0 bottom-0 w-7 z-20 flex items-center justify-end transition-opacity select-none {selectedIds.has(item.snipsel_id) ? '' : 'opacity-0 group-hover:opacity-100'}"
-        onpointerdown={(e) => {
-          e.stopPropagation();
-          handleSelectPointerDown(e, item.snipsel_id);
-          rangeLongPress.onpointerdown(e);
-        }}
-        onpointerup={(e) => {
-          e.stopPropagation();
-          rangeLongPress.onpointerup(e);
-        }}
-        onpointercancel={(e) => {
-          e.stopPropagation();
-          rangeLongPress.onpointercancel();
-        }}
-        onpointerleave={rangeLongPress.onpointerleave}
-        oncontextmenu={(e) => {
-          e.stopPropagation();
-          rangeLongPress.oncontextmenu(e);
-        }}
-        onclick={(e) => {
-          e.stopPropagation();
-          rangeLongPress.onclick(e);
-        }}
-      >
-        <div
-          class="w-1.5 h-full transition-all duration-150 ease-out origin-right {selectedIds.has(item.snipsel_id) ? '' : 'scale-x-0 group-hover:scale-x-100'} hover:scale-x-150 active:scale-x-75"
-          style={selectedIds.has(item.snipsel_id) ? `background-color: ${headerColor}` : 'background-color: #94a3b8'}
-        ></div>
-      </button>
-
-      {@const isImageAttachment = (a: Attachment) => Boolean(a.mime_type?.startsWith('image/') || (a.has_thumbnail && !a.mime_type?.startsWith('video/')))}
-      {@const isVideoAttachment = (a: Attachment) => Boolean(a.mime_type?.startsWith('video/') || (a.has_thumbnail && a.filename.toLowerCase().match(/\.(mp4|mov|webm|avi|mkv)$/)))}
-      {@const isMediaAttachment = (a: Attachment) => isImageAttachment(a) || isVideoAttachment(a)}
-      {@const media = item.snipsel.attachments ? item.snipsel.attachments.filter(isMediaAttachment) : []}
-      {@const others = item.snipsel.attachments ? item.snipsel.attachments.filter((a) => !isMediaAttachment(a)) : []}
-      {@const images = media.filter(isImageAttachment)}
-
-      <!-- Media Banner on top of Card -->
-      {#if media.length > 0 && item.snipsel.card_view !== false}
-        <div class="overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 -mx-1 -mt-1">
-          {#if media.length === 1}
-            {@const a = media[0]}
-            <button
-              type="button"
-              class="relative block w-full overflow-hidden"
-              onclick={(e) => {
-                e.stopPropagation();
-                if (isVideoAttachment(a)) openVideoModal(a.id, a.filename);
-                else openImageModal(images.map(img => ({ id: img.id, filename: img.filename })), 0);
-              }}
-            >
-              <img
-                class="max-h-60 w-full object-cover transition-transform duration-300 hover:scale-105"
-                src={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : api.attachments.downloadUrl(a.id)}
-                alt={a.filename}
-                loading="lazy"
-              />
-              {#if isVideoAttachment(a)}
-                <div class="absolute inset-0 flex items-center justify-center bg-black/25">
-                  <CirclePlay label="" size={32} className="text-white drop-shadow-md" />
-                </div>
-              {/if}
-            </button>
-          {:else}
-            <div class="grid grid-cols-2 gap-1">
-              {#each media.slice(0, 4) as a, mediaIdx}
-                {@const imgIdx = images.findIndex(img => img.id === a.id)}
-                <button
-                  type="button"
-                  class="relative aspect-square w-full overflow-hidden"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    if (isVideoAttachment(a)) openVideoModal(a.id, a.filename);
-                    else openImageModal(images.map(img => ({ id: img.id, filename: img.filename })), imgIdx);
-                  }}
-                >
-                  <img
-                    class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-                    src={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : api.attachments.downloadUrl(a.id)}
-                    alt={a.filename}
-                    loading="lazy"
-                  />
-                  {#if isVideoAttachment(a)}
-                    <div class="absolute inset-0 flex items-center justify-center bg-black/25">
-                      <CirclePlay label="" size={24} className="text-white drop-shadow-md" />
-                    </div>
-                  {/if}
-                  {#if mediaIdx === 3 && media.length > 4}
-                    <div class="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-bold text-white">
-                      +{media.length - 4}
-                    </div>
-                  {/if}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Embed Cards -->
-      {#if item.snipsel.content_markdown && item.snipsel.card_view !== false}
-        {@const embeds = parseSnipselEmbeds(item.snipsel.content_markdown, item.collection_refs)}
-        {#if embeds.deezer}
-          <DeezerCard type={embeds.deezer.type} id={embeds.deezer.id} url={embeds.deezer.url} accentColor={headerColor} />
-        {/if}
-        {#if embeds.spotify}
-          <SpotifyCard url={embeds.spotify.url} accentColor={headerColor} />
-        {/if}
-        {#if embeds.youtube}
-          <YouTubeCard url={embeds.youtube.url} accentColor={headerColor} />
-        {/if}
-        {#if embeds.map}
-          <MapCard lat={embeds.map.lat} lng={embeds.map.lng} url={embeds.map.url} accentColor={headerColor} />
-        {/if}
-        {#if embeds.generic}
-          <HyperlinkCard url={embeds.generic.url} accentColor={headerColor} />
-        {/if}
-        {#if embeds.collectionId}
-          <CollectionLinkCard collectionId={embeds.collectionId} accentColor={headerColor} />
-        {/if}
-      {/if}
-
-      <!-- Main Card Body (Task checkbox + Content) -->
-      <div
-        class="flex items-start gap-2 cursor-pointer pr-3"
-        role="button"
-        tabindex="0"
-        onclick={(e) => {
-          const colTarget = (e.target as HTMLElement).closest('[data-collection-id]');
-          if (colTarget) {
-            e.preventDefault();
-            e.stopPropagation();
-            const id = colTarget.getAttribute('data-collection-id');
-            if (id) currentView.set({ type: 'collection', id });
-            return;
-          }
-          const tagTarget = (e.target as HTMLElement).closest('[data-tag]');
-          if (tagTarget) {
-            e.preventDefault();
-            e.stopPropagation();
-            const tag = tagTarget.getAttribute('data-tag');
-            if (tag) {
-              searchQuery.set('#' + tag);
-              currentView.set({ type: 'search' });
-            }
-            return;
-          }
-          const mentionTarget = (e.target as HTMLElement).closest('[data-mention]');
-          if (mentionTarget) {
-            e.preventDefault();
-            e.stopPropagation();
-            const mention = mentionTarget.getAttribute('data-mention');
-            if (mention) {
-              searchQuery.set('@' + mention);
-              currentView.set({ type: 'search' });
-            }
-            return;
-          }
-          startEdit(item);
-        }}
-        onkeydown={(e) => {
-          if (e.target === e.currentTarget && e.key === 'Enter') startEdit(item);
-        }}
-      >
-        {#if item.snipsel.type === 'task'}
-          <button
-            class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-slate-300 bg-white transition-all duration-150 hover:scale-110 active:scale-95 dark:border-white/20 dark:bg-slate-800"
-            type="button"
-            aria-label={item.snipsel.task_done ? 'Toggle task status' : 'Mark task done'}
-            title={item.snipsel.task_done === 1 ? 'Done' : item.snipsel.task_done === 2 ? 'Cancelled' : 'Open'}
-            onclick={(e) => {
-              e.stopPropagation();
-              toggleTaskDone(item);
-            }}
-            style={item.snipsel.task_done > 0
-              ? `border-color: ${headerColor}; background-color: ${toolboxBg}; color: ${headerColor}; font-size: 10px`
-              : ''}
-          >
-            {#if item.snipsel.task_done === 1}
-              <span in:scale={{ start: 0.5, duration: 150 }}>✓</span>
-            {:else if item.snipsel.task_done === 2}
-              <span in:scale={{ start: 0.5, duration: 150 }}>✕</span>
-            {/if}
-          </button>
-        {/if}
-
-        <div class="min-w-0 flex-1">
-          {#if item.snipsel.content_markdown}
-            <div
-              class="prose prose-sm max-w-none text-sm prose-p:my-0 prose-headings:my-1.5 prose-h1:text-lg prose-h2:text-base prose-h3:text-sm whitespace-pre-wrap dark:prose-invert break-words"
-              style="--accent-light: {toolboxBg}"
-            >
-              {@html renderWithWikiLinks(item.snipsel.card_view !== false ? parseSnipselEmbeds(item.snipsel.content_markdown, item.collection_refs).strippedText : item.snipsel.content_markdown, item.collection_refs)}
-            </div>
-          {:else if !item.snipsel.attachments || !item.snipsel.attachments.length}
-            <span class="text-xs italic text-slate-400 dark:text-slate-500">Empty snipsel</span>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Non-media files -->
-      {#if others.length > 0}
-        <div class="space-y-1.5">
-          {#each others.slice(0, 2) as a}
-            <AttachmentCard attachment={a} downloadUrl={api.attachments.downloadUrl(a.id)} thumbnailUrl={a.has_thumbnail ? api.attachments.thumbnailUrl(a.id) : undefined} accentColor={headerColor} />
-          {/each}
-          {#if others.length > 2}
-            <div class="text-[10px] text-slate-400">+{others.length - 2} more files</div>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Footer: Tags, Mentions, Reminders, Reactions -->
-      {#if (item.snipsel.tags?.length ?? 0) > 0 || (item.snipsel.mentions?.length ?? 0) > 0 || item.snipsel.reminder_at || (item.snipsel.reactions && item.snipsel.reactions.length > 0)}
-        <div class="mt-auto flex flex-wrap items-center gap-1.5 pt-1.5 pr-3 border-t border-slate-100 dark:border-white/5">
-          {#each item.snipsel.tags ?? [] as t (t)}
-            <span 
-              class="rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider"
-              style="background-color: {toolboxBg}; color: ${headerColor}; border: 1px solid rgba(0,0,0,0.05)"
-            >
-              #{t}
-            </span>
-          {/each}
-          {#each item.snipsel.mentions ?? [] as m (m)}
-            <span 
-              class="rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider"
-              style="background-color: {toolboxBg}; color: ${headerColor}; border: 1px solid rgba(0,0,0,0.05)"
-            >
-              @{m}
-            </span>
-          {/each}
-          {#if item.snipsel.reminder_at}
-            {@const expired = isExpired(item.snipsel.reminder_at)}
-            <span 
-              class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] {expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : ''}"
-              style={expired 
-                ? undefined 
-                : `background-color: ${toolboxBg}; color: ${headerColor}`}
-            >
-              <Bell label="" size={9} strokeWidth={2.5} />
-              {new Date(item.snipsel.reminder_at).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}
-            </span>
-          {/if}
-          {#if item.snipsel.reactions && item.snipsel.reactions.length > 0}
-            {#each item.snipsel.reactions as r (r.emoji)}
-              <button
-                type="button"
-                class="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-colors {r.me ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-400'}"
-                onclick={(e) => { e.stopPropagation(); toggleSnipselReaction(item.snipsel_id, r.emoji); }}
-              >
-                <span>{r.emoji}</span>
-                <span class="opacity-60">{r.count}</span>
-              </button>
-            {/each}
-          {/if}
-        </div>
-      {/if}
+      <SnipselCard
+        {item}
+        {headerColor}
+        {toolboxBg}
+        {cardTileBg}
+        {cardTileBorder}
+        isSelected={selectedIds.has(item.snipsel_id)}
+        isAnchorHighlighted={anchorHighlightId === item.snipsel_id}
+        isEditingOther={Boolean($editingSnipselId && $editingSnipselId !== item.snipsel_id)}
+        {rangeLongPress}
+        onStartEdit={startEdit}
+        onToggleTask={toggleTaskDone}
+        onToggleReaction={toggleSnipselReaction}
+        onOpenImageModal={openImageModal}
+        onOpenVideoModal={openVideoModal}
+      />
     {/if}
   </div>
 {/snippet}
@@ -2875,392 +2635,46 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   />
 
   <div class="relative transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-slate-900">
-      <div
-        class="relative h-28 w-full rounded-t-[calc(0.75rem-1px)] overflow-hidden dark:brightness-75"
-        style="background: {$currentCollection?.header_image_url ? headerColor : getHeaderGradient()}"
-      >
-        {#if $currentCollection?.header_image_url}
-          <div
-            class="absolute inset-0 bg-cover"
-            style="background-image: url('{$currentCollection.header_image_url}{ $currentCollection.header_image_url.startsWith('/api/attachments/') ? '/thumbnail' : '' }'); background-position: {$currentCollection.header_image_x_position || '50%'} {$currentCollection.header_image_position || '50%'}; transform: scale({$currentCollection.header_image_zoom || 1.0}) translate({(50 - (parseFloat($currentCollection.header_image_x_position || '50') || 50)) * (1 - 1 / ($currentCollection.header_image_zoom || 1.0))}%, {(50 - (parseFloat($currentCollection.header_image_position || '50') || 50)) * (1 - 1 / ($currentCollection.header_image_zoom || 1.0))}%)"
-          ></div>
-        {/if}
+    <OutlinerHeader
+      collection={$currentCollection}
+      {headerColor}
+      {dayLabel}
+      {navVisible}
+      {swipeNavigating}
+      canWrite={canWrite()}
+      taskProgress={taskProgress()}
+      {hideDoneTasks}
+      {throwbackLists}
+      collapsibleCount={collapsibleParentIds.size}
+      {allExpanded}
+      onNavigateDay={navigateDayCollection}
+      onUpdateIcon={updateIcon}
+      onToggleHideDoneTasks={toggleHideDoneTasks}
+      onToggleAllExpanded={toggleAllExpanded}
+    />
 
-        {#if $currentCollection?.list_for_day}
-          <button
-            type="button"
-            class="day-nav day-nav-prev"
-            class:nav-active={navVisible}
-            title="go to previous day"
-            onclick={() => navigateDayCollection(-1)}
-            disabled={swipeNavigating}
-            aria-label="go to previous day"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-          </button>
+    {#if $currentCollection?.list_for_day}
+      <DicedMomentCard
+        {dicedLoading}
+        bind:dicedSnipsel
+        currentCollectionId={$currentCollection?.id}
+        onAnchorHighlight={(id) => {
+          anchorHighlightId = id;
+          setTimeout(() => { if (anchorHighlightId === id) anchorHighlightId = null; }, 5000);
+        }}
+      />
+    {/if}
 
-          <button
-            type="button"
-            class="day-nav day-nav-next"
-            class:nav-active={navVisible}
-            title="go to next day"
-            onclick={() => navigateDayCollection(1)}
-            disabled={swipeNavigating}
-            aria-label="go to next day"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m9 18 6-6-6-6"/>
-            </svg>
-          </button>
-        {/if}
-      </div>
-
-      <div class="relative px-4 py-3">
-        <div class="absolute left-4 top-0 -translate-y-1/2 z-10">
-          <button
-            class="grid h-16 w-16 place-items-center rounded-xl border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-colors disabled:hover:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-slate-900 dark:hover:bg-white/5 dark:disabled:hover:bg-slate-900"
-            type="button"
-            onclick={() => canWrite() && (showEmojiPicker = !showEmojiPicker)}
-            disabled={!canWrite()}
-            aria-label="Change collection icon"
-          >
-            <span class="text-4xl leading-none">{$currentCollection?.icon}</span>
-          </button>
-
-          {#if showEmojiPicker}
-            <div 
-              class="absolute left-0 top-full mt-2 z-50 w-64 p-2 rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10"
-              onfocusout={(e) => {
-                const related = e.relatedTarget as Node | null;
-                if (related instanceof HTMLElement && e.currentTarget.contains(related)) return;
-                showEmojiPicker = false;
-              }}
-            >
-              <div class="grid grid-cols-8 gap-1 overflow-y-auto max-h-48 p-1 text-center">
-                {#each commonEmojis as emoji}
-                  <button
-                    class="grid h-7 w-7 place-items-center rounded hover:bg-slate-100 transition-colors text-lg dark:hover:bg-white/10"
-                    type="button"
-                    onclick={() => updateIcon(emoji)}
-                  >
-                    {emoji}
-                  </button>
-                {/each}
-              </div>
-              <div class="mt-2 border-t border-slate-100 pt-2 px-1 dark:border-white/5">
-                <input
-                  type="text"
-                  placeholder="Custom emoji..."
-                  maxlength="4"
-                  class="w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100"
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter') {
-                      const val = (e.currentTarget as HTMLInputElement).value.trim();
-                      if (val) updateIcon(val);
-                    } else if (e.key === 'Escape') {
-                      showEmojiPicker = false;
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          {/if}
-        </div>
-
-        {#if taskProg.total > 0}
-          <button
-            class="absolute left-[5.5rem] right-4 top-0 -translate-y-1/2 rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80"
-            type="button"
-            aria-label="Toggle done tasks"
-            title={hideDoneTasks ? 'Show done tasks' : 'Hide done tasks'}
-            onclick={toggleHideDoneTasks}
-            in:fly={{ y: -10, duration: 200 }}
-            out:fly={{ y: -10, duration: 150 }}
-          >
-            <div class="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
-              <div
-                class="h-full rounded-full transition-all duration-300 ease-out"
-                style={`width: ${Math.round(taskProg.ratio * 100)}%; background-color: ${headerColor}`}
-              ></div>
-            </div>
-          </button>
-        {/if}
-
-        <div class="flex items-center gap-2 pl-20">
-          <button
-            class="text-lg font-semibold hover:underline dark:text-slate-100"
-            type="button"
-            onclick={() => $currentCollection && currentView.set({ type: 'collection_settings', id: $currentCollection.id })}
-          >
-            {$currentCollection?.title}{#if dayLabel}{' · '}{dayLabel}{/if}
-          </button>
-
-          {#if throwbackLists.length > 0}
-            <div bind:this={throwbackPopupRef} class="relative" onmouseleave={() => showThrowbackPopup = false}>
-              <button
-                class="al-icon-wrapper relative grid h-9 w-9 place-items-center rounded-full transition-colors {showThrowbackPopup
-                  ? 'bg-black/10 text-slate-900 dark:bg-white/10 dark:text-white'
-                  : 'text-slate-400 hover:bg-black/5 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-slate-300'}"
-                type="button"
-                onmouseenter={() => showThrowbackPopup = true}
-                aria-label="Throwback"
-                title="Throwback"
-              >
-                <RotateCcw label="" size={20} />
-
-                {#if throwbackLists.length > 0}
-                  <span class="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-slate-400 px-[3px] text-[9px] font-bold text-white shadow-sm dark:bg-slate-500">
-                    {throwbackLists.length}
-                  </span>
-                {/if}
-              </button>
-
-              {#if showThrowbackPopup}
-                <div class="absolute left-0 top-full z-50 w-56 pt-2" in:fly={{ y: -10, duration: 150 }} out:fade={{ duration: 100 }}>
-                  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md pointer-events-auto dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
-                    <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/50 border-b border-slate-100 text-left dark:bg-slate-950/50 dark:border-white/5 dark:text-slate-400">Throwback</div>
-                    <div class="max-h-80 overflow-y-auto py-1">
-                      {#each throwbackLists as tb (tb.id)}
-                        <button
-                          class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors dark:hover:bg-white/5"
-                          type="button"
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            showThrowbackPopup = false;
-                            currentView.set({ type: 'collection', id: tb.id });
-                          }}
-                        >
-                          <span class="text-xl shrink-0">{tb.icon}</span>
-                          <span class="truncate font-medium text-slate-800 dark:text-slate-200">{tb.year}</span>
-                        </button>
-                      {/each}
-                    </div>
-                  </div>
-                </div>
-              {/if}
-            </div>
-          {/if}
-        </div>
-
-      </div>
-    </div>
-    {#if $currentCollection}
-      <div class="mt-1 flex items-center justify-between px-1 text-[10px] text-slate-400">
-        <div class="flex items-center" style="padding-left: 0.75rem">
-          {#if collapsibleParentIds.size > 0}
-            <button
-              type="button"
-              class="al-icon-wrapper grid h-6 w-6 place-items-center text-slate-400 hover:text-slate-600 transition-all focus:outline-none"
-              onclick={toggleAllExpanded}
-              title={allExpanded ? 'Collapse All' : 'Expand All'}
-            >
-              {#if allExpanded}
-                <ChevronsUp label="" size={14} strokeWidth={2} />
-              {:else}
-                <ChevronsDown label="" size={14} strokeWidth={2} />
-              {/if}
-            </button>
-          {/if}
-        </div>
-        <div class="flex items-center gap-1.5 ml-auto">
-          <span>Last modified: {formatModifiedAt($currentCollection.modified_at)}</span>
-          {#if $currentCollection.modified_by_username && $currentCollection.modified_by_id !== $currentUser?.id}
-            <span>by {$currentCollection.modified_by_username}</span>
-          {/if}
-        </div>
-      </div>
-      {#if $currentCollection?.list_for_day}
-        {#if dicedLoading}
-          <div class="mt-2 animate-pulse rounded-xl border border-slate-200/50 bg-white/30 dark:border-white/5 dark:bg-white/5 px-4 py-3" in:fade={{ duration: 150 }}>
-            <div class="flex items-center gap-2 mb-2 text-slate-400 opacity-60">
-              <Dices label="" size={14} strokeWidth={2.5} />
-              <span class="text-[10px] font-bold uppercase tracking-wider">Diced Moment</span>
-            </div>
-            <div class="space-y-1.5 py-1">
-              <div class="h-3 w-3/4 rounded bg-slate-200/60 dark:bg-slate-800/60"></div>
-              <div class="h-3 w-1/2 rounded bg-slate-200/60 dark:bg-slate-800/60"></div>
-            </div>
-          </div>
-        {:else if dicedSnipsel}
-          <div class="mt-2 group relative overflow-hidden rounded-xl border border-slate-200/60 bg-white/40 dark:border-white/10 dark:bg-white/5 backdrop-blur-sm px-4 py-3 transition-all hover:bg-white/60 dark:hover:bg-white/10" in:fade={{ duration: 400 }}>
-            <div class="flex items-center justify-between gap-2 mb-2 relative z-20">
-              <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                 <Dices label="" size={14} strokeWidth={2.5} className="opacity-80" />
-                 <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Diced Moment</span>
-                 {#if dicedSnipsel.attachments && dicedSnipsel.attachments.length > 0}
-                   <Paperclip label="" size={12} strokeWidth={2.5} className="text-slate-400 ml-0.5" />
-                 {/if}
-              </div>
-              <div class="flex items-center gap-2">
-                <button 
-                    type="button"
-                    class="group/roll flex items-center justify-center p-2 rounded-full bg-slate-100 dark:bg-white/10 active:scale-95 hover:scale-110 hover:bg-slate-200 dark:hover:bg-white/20 transition-all duration-300"
-                    onclick={(e) => {
-                       e.stopPropagation();
-                       api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
-                    }}
-                    title="Roll again"
-                >
-                   <RotateCcw label="" size={14} strokeWidth={2.5} className="text-slate-500 dark:text-slate-400 group-hover/roll:rotate-[-180deg] transition-transform duration-500" />
-                </button>
-                <button 
-                    type="button"
-                    class="group/ban flex items-center justify-center p-2 rounded-full bg-red-50 dark:bg-red-950/20 active:scale-95 hover:scale-110 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all duration-300"
-                    onclick={async (e) => {
-                       e.stopPropagation();
-                       showDicedBanModal = true;
-                    }}
-                    title="Never show again"
-                >
-                   <Ban label="" size={14} strokeWidth={2.5} className="text-red-500 dark:text-red-400 group-hover/ban:scale-125 transition-transform duration-300" />
-                </button>
-              </div>
-            </div>
-            <div class="text-sm text-slate-800 dark:text-slate-200 line-clamp-3 italic relative z-10 pointer-events-none">
-              {dicedSnipsel.content_markdown}
-            </div>
-            <button 
-               type="button"
-               class="absolute inset-0 z-0"
-               onclick={() => {
-                  if (dicedSnipsel && dicedSnipsel.collection_refs && dicedSnipsel.collection_refs.length > 0) {
-                     const colId = dicedSnipsel.collection_refs[0].collection_id;
-                     collectionAnchor.set({ collectionId: colId, snipselId: dicedSnipsel.id });
-                     if ($currentCollection?.id === colId) {
-                        // Already in this collection, trigger effect manually or it might not fire if same key
-                        const el = document.getElementById(`snipsel-${dicedSnipsel.id}`);
-                        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        anchorHighlightId = dicedSnipsel.id;
-                        setTimeout(() => { if (anchorHighlightId === dicedSnipsel.id) anchorHighlightId = null; }, 5000);
-                     } else {
-                        currentView.set({ type: 'collection', id: colId });
-                     }
-                  } else if (dicedSnipsel) {
-                     currentView.set({ type: 'snipsel', id: dicedSnipsel.id });
-                  }
-               }}
-            ></button>
-           </div>
-         {/if}
-       {/if}
-
-       {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day)}
-         {#if !habitsLoaded}
-           <div class="mt-2 animate-pulse" in:fade={{ duration: 150 }}>
-             <div class="mb-1.5 flex items-center gap-2 text-slate-400 opacity-60">
-               <Flame label="" size={14} strokeWidth={2.5} />
-               <span class="text-[10px] font-bold uppercase tracking-wider">Habits</span>
-             </div>
-             <div class="flex items-center gap-2 overflow-hidden py-0.5">
-               <div class="h-8 w-24 rounded-full bg-slate-200/60 dark:bg-slate-800/60"></div>
-               <div class="h-8 w-28 rounded-full bg-slate-200/60 dark:bg-slate-800/60"></div>
-               <div class="h-8 w-20 rounded-full bg-slate-200/60 dark:bg-slate-800/60"></div>
-             </div>
-           </div>
-         {:else if dailyHabits.length > 0}
-           {@const openDailyHabits = dailyHabits.filter(h => !h.today_completed)}
-           {@const completedDailyHabits = dailyHabits.filter(h => h.today_completed)}
-           <div class="mt-2">
-             <div class="mb-1.5 flex items-center gap-2 text-slate-500 dark:text-slate-400">
-               <Flame label="" size={14} strokeWidth={2.5} className="opacity-80" />
-               <span class="text-[10px] font-bold uppercase tracking-wider opacity-60">Habits</span>
-             </div>
-              <div class="flex items-center gap-1">
-                {#if habitsCanScrollLeft}
-                 <button
-                   type="button"
-                   class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-slate-200/80 bg-white/80 text-slate-500 shadow-sm backdrop-blur-md hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400"
-                   aria-label="Scroll habits left"
-                   onclick={() => habitsScrollRef?.scrollBy({ left: -200, behavior: 'smooth' })}
-                 >
-                   <ChevronLeft label="" size={16} strokeWidth={2.5} />
-                 </button>
-               {/if}
-               <div
-                 bind:this={habitsScrollRef}
-                 class="flex flex-1 gap-2 overflow-x-auto scrollbar-hidden"
-                 style="touch-action: pan-x; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;"
-                 onscroll={() => {
-                   const el = habitsScrollRef;
-                   if (!el) return;
-                   habitsCanScrollLeft = el.scrollLeft > 0;
-                   habitsCanScrollRight = el.scrollLeft < el.scrollWidth - el.clientWidth - 1;
-                 }}
-                 ontouchstart={(e) => e.stopPropagation()}
-                 ontouchmove={(e) => e.stopPropagation()}
-                 ontouchend={(e) => e.stopPropagation()}
-                 >
-               {#each openDailyHabits as habit (habit.id)}
-               <button
-                 class="group flex shrink-0 items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:scale-[1.03] active:scale-[0.97] dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/5"
-                 type="button"
-                 onclick={(e) => { e.stopPropagation(); toggleHabitComplete(habit); }}
-                 in:fly={{ y: -10, duration: 200 }}
-                 out:fade={{ duration: 150 }}
-               >
-                 <span class="text-2xl leading-none">{habit.icon}</span>
-                 <span class="max-w-[8rem] truncate text-sm font-medium text-slate-800 dark:text-slate-200">{habit.name}</span>
-                 {#if habit.current_streak > 0}
-                   <span
-                     class="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
-                     style={`background-color: ${headerColor}20; color: ${headerColor}`}
-                   >
-                     {habit.current_streak}d
-                   </span>
-                 {/if}
-                 <span
-                   class="ml-0.5 opacity-0 transition-opacity group-hover:opacity-100"
-                   onclick={(e) => { e.stopPropagation(); currentView.set({ type: 'habit_detail', id: habit.id }); }}
-                   role="button"
-                   tabindex="0"
-                   title="View details"
-                 ><ChevronRight label="" size={12} strokeWidth={2.5} className="text-slate-400 dark:text-slate-500" /></span>
-               </button>
-             {/each}
-
-             {#each completedDailyHabits as habit (habit.id)}
-               <button
-                 class="group relative flex shrink-0 items-center rounded-full border border-slate-200/60 bg-white/50 px-2.5 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md transition-all duration-200 hover:shadow-md hover:opacity-80 active:scale-[0.97] dark:border-white/5 dark:bg-slate-900/50 dark:ring-white/5"
-                 type="button"
-                 onclick={(e) => { e.stopPropagation(); toggleHabitComplete(habit); }}
-                 in:fly={{ y: 10, duration: 200 }}
-                 out:fade={{ duration: 150 }}
-               >
-                 <span class="text-xl leading-none opacity-50">{habit.icon}</span>
-                  <span
-                    class="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold shadow-sm"
-                    style={`background-color: ${headerColor}; color: ${isLightColor(headerColor) ? '#1e293b' : 'white'}`}
-                    in:scale={{ start: 0.5, duration: 150 }}
-                  >✓</span>
-                 <span
-                   class="ml-0.5 opacity-0 transition-opacity group-hover:opacity-100"
-                   onclick={(e) => { e.stopPropagation(); currentView.set({ type: 'habit_detail', id: habit.id }); }}
-                   role="button"
-                   tabindex="0"
-                   title="View details"
-                 ><ChevronRight label="" size={12} strokeWidth={2.5} className="text-slate-400 dark:text-slate-500" /></span>
-               </button>
-              {/each}
-               </div>
-               {#if habitsCanScrollRight}
-                 <button
-                   type="button"
-                   class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-slate-200/80 bg-white/80 text-slate-500 shadow-sm backdrop-blur-md hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400"
-                   aria-label="Scroll habits right"
-                   onclick={() => habitsScrollRef?.scrollBy({ left: 200, behavior: 'smooth' })}
-                 >
-                   <ChevronRight label="" size={16} strokeWidth={2.5} />
-                 </button>
-               {/if}
-             </div>
-         </div>
-         {/if}
-       {/if}
-     {/if}
-   </div>
+    {#if $currentCollection?.list_for_day && !isFutureDate($currentCollection.list_for_day)}
+      <DailyHabitsBar
+        bind:habits={dailyHabits}
+        {habitsLoaded}
+        {headerColor}
+        day={$currentCollection?.list_for_day}
+        onToggleHabit={toggleHabitComplete}
+      />
+    {/if}
+  </div>
 
   <div class="transition-all duration-500" class:blur-sm={$editingSnipselId} class:opacity-40={$editingSnipselId} class:pointer-events-none={$editingSnipselId}>
     {#if $currentCollection}
@@ -4220,308 +3634,34 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   {/if}
 </div>
 
-{#if selectedIds.size > 0}
-  <!-- Progressive blur layer behind toolbox -->
-  <div class="fixed bottom-0 left-0 right-0 z-10 pointer-events-none" style="height: 120px;" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
-    <div class="absolute inset-0 backdrop-blur-lg" style="mask-image: linear-gradient(to top, black 0%, black 40%, transparent 100%); -webkit-mask-image: linear-gradient(to top, black 0%, black 40%, transparent 100%);"></div>
-  </div>
-  <!-- Toolbox -->
-  <div class="fixed bottom-0 left-0 right-0 z-20 px-4 pb-4" style="padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);" in:fly={{ y: 100, duration: 250 }} out:fly={{ y: 100, duration: 200 }}>
-    <div
-      class="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-3 text-slate-900 shadow-lg ring-1 ring-black/5 backdrop-blur-xl dark:text-slate-100 dark:ring-white/10"
-      style={`background-color: ${toolboxBg}`}
-    >
-      <div class="flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-black/10 dark:bg-white/10">
-        <span class="text-sm font-bold transition-transform duration-150 {selectionPulse ? 'scale-125' : ''}" style="color: {headerColor}">{selectedIds.size}</span>
-      </div>
-
-       <input
-         bind:this={attachmentsInputRef}
-         class="hidden"
-         type="file"
-         multiple
-         onchange={uploadAttachmentsSelected}
-         disabled={uploadingAttachments}
-       />
-
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 select-none dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Move up"
-        title="Move up"
-        onclick={lpMoveTop.onclick}
-        onpointerdown={lpMoveTop.onpointerdown}
-        onpointerup={lpMoveTop.onpointerup}
-        onpointercancel={lpMoveTop.onpointercancel}
-        onpointerleave={lpMoveTop.onpointerleave}
-        oncontextmenu={lpMoveTop.oncontextmenu}
-        disabled={!canWrite()}
-      >
-          <ChevronUp label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 select-none dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Move down"
-        title="Move down"
-        onclick={lpMoveBottom.onclick}
-        onpointerdown={lpMoveBottom.onpointerdown}
-        onpointerup={lpMoveBottom.onpointerup}
-        onpointercancel={lpMoveBottom.onpointercancel}
-        onpointerleave={lpMoveBottom.onpointerleave}
-        oncontextmenu={lpMoveBottom.oncontextmenu}
-        disabled={!canWrite()}
-      >
-          <ChevronDown label="" size={20} strokeWidth={2} />
-      </button>
-
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 select-none dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Outdent"
-        title="Outdent"
-        onclick={lpOutdentToZero.onclick}
-        onpointerdown={lpOutdentToZero.onpointerdown}
-        onpointerup={lpOutdentToZero.onpointerup}
-        onpointercancel={lpOutdentToZero.onpointercancel}
-        onpointerleave={lpOutdentToZero.onpointerleave}
-        oncontextmenu={lpOutdentToZero.oncontextmenu}
-        disabled={!canWrite()}
-      >
-          <Outdent label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Indent"
-        title="Indent"
-        onclick={() => adjustIndentSelected(1)}
-        disabled={!canWrite()}
-      >
-          <Indent label="" size={20} strokeWidth={2} />
-      </button>
-
-      <div class="relative">
-        <button
-          class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-          type="button"
-          aria-label="Change type"
-          title="Change type"
-          onclick={() => (showTypeMenu = !showTypeMenu)}
-          disabled={!canWrite()}
-        >
-          <Type label="" size={20} strokeWidth={2} />
-        </button>
-        {#if showTypeMenu}
-          <div class="absolute bottom-12 right-0 z-50 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95 dark:ring-white/10">
-<div class="border-b border-slate-100 bg-slate-50/50 px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:border-white/5 dark:bg-slate-950/50 dark:text-slate-400">Change type</div>
-             <div class="py-1">
-               <button class="al-icon-wrapper flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('text')}>
-                 <FileText label="" size={16} strokeWidth={2} />
-                 Note
-               </button>
-               <button class="al-icon-wrapper flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/5" type="button" onclick={() => setTypeSelected('task')}>
-                 <SquareCheck label="" size={16} strokeWidth={2} />
-                 Task
-               </button>
-</div>
-             <div class="border-t border-slate-100 px-3 py-2 dark:border-white/5">
-               <label class="flex items-center justify-between cursor-pointer">
-                 <span class="text-sm text-slate-600 dark:text-slate-400">Card view</span>
-                 <button
-                   type="button"
-                   class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {getSelectedCardView() ? '' : 'bg-slate-200 dark:bg-slate-700'}"
-                   style={getSelectedCardView() ? `background-color: ${headerColor}` : ''}
-                   onclick={toggleCardViewSelected}
-                   role="switch"
-                   aria-checked={getSelectedCardView()}
-                   aria-label="Toggle card view"
-                 >
-                   <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {getSelectedCardView() ? 'translate-x-5' : 'translate-x-0'}"></span>
-                 </button>
-               </label>
-             </div>
-            <div class="border-t border-slate-100 p-1 dark:border-white/5">
-              <button
-                class="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-white/5"
-                type="button"
-                onclick={closeTypeMenu}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        {/if}
-      </div>
-
-
-
-      {#if $currentUser?.ai_llm_url && selectedIds.size > 0}
-        <button
-          class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-          type="button"
-          aria-label="AI Assistant"
-          title="AI Assistant"
-          onclick={() => openAiModal()}
-          disabled={!canWrite()}
-        >
-          <Sparkles label="" size={20} />
-        </button>
-      {/if}
-
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Insert template"
-        title="Insert template"
-        onclick={() => (showTemplateMenu = !showTemplateMenu)}
-        disabled={!canWrite()}
-      >
-          <LayoutTemplate label="" size={20} strokeWidth={2} />
-      </button>
-      {#if showTemplateMenu}
-        <div class="absolute bottom-12 right-0 w-64 max-h-80 overflow-y-auto rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-white/10 dark:bg-slate-900 dark:text-slate-100">
-          <div class="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50 border-b border-slate-100 dark:bg-slate-950 dark:border-white/5">Templates</div>
-          {#if templates.length === 0}
-            <div class="px-3 py-4 text-sm text-slate-500 italic dark:text-slate-400">No templates found</div>
-          {:else}
-            {#each templates as t (t.id)}
-              <button
-                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-white/5"
-                type="button"
-                onclick={() => insertTemplateSelected(t.id)}
-              >
-                <span class="text-xl">{t.icon}</span>
-                <span class="truncate font-medium">{t.title}</span>
-              </button>
-            {/each}
-          {/if}
-          <button
-            class="w-full border-t px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/5"
-            type="button"
-            onclick={closeTemplateMenu}
-          >
-            Cancel
-          </button>
-        </div>
-      {/if}
-
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Upload files"
-        title="Upload files"
-        onclick={() => attachmentsInputRef?.click()}
-        disabled={uploadingAttachments || !canWrite()}
-      >
-          <Paperclip label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Share"
-        title="Copy content to clipboard"
-        onclick={shareSelectedSnipsels}
-      >
-        {#if shareSuccess}
-          <div in:scale={{ duration: 150 }}>
-            <Check label="" size={20} strokeWidth={3} className="text-green-600 dark:text-green-400" />
-          </div>
-        {:else}
-          <Share label="" size={20} strokeWidth={2} />
-        {/if}
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Copy"
-        title="Copy"
-        onclick={() => openCollectionModal('copy')}
-        disabled={!canWrite()}
-      >
-          <Copy label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Move"
-        title="Move"
-        onclick={() => openCollectionModal('move')}
-        disabled={!canWrite()}
-      >
-          <ArrowRightLeft label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg transition-all duration-300 ease-out hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 disabled:opacity-40 disabled:scale-95"
-        type="button"
-        aria-label="Create collection"
-        title="Create collection from snipsel"
-        onclick={createCollectionFromSnipsel}
-        disabled={selectedIds.size !== 1 || !canWrite()}
-      >
-          <CornerDownRight label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 select-none dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Insert snipsel"
-        title="Click: Below last, Long: Above first"
-        onclick={lpInsert.onclick}
-        onpointerdown={lpInsert.onpointerdown}
-        onpointerup={lpInsert.onpointerup}
-        onpointercancel={lpInsert.onpointercancel}
-        onpointerleave={lpInsert.onpointerleave}
-        oncontextmenu={lpInsert.oncontextmenu}
-        disabled={!canWrite()}
-      >
-          <ListPlus label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
-        type="button"
-        aria-label="Add to collection"
-        title="Add to collection"
-        onclick={() => openCollectionModal('link')}
-        disabled={!canWrite()}
-      >
-          <Plus label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-black/5 text-lg transition-all duration-300 ease-out hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 disabled:opacity-40 disabled:scale-95"
-        type="button"
-        aria-label="Info"
-        title="Info"
-        onclick={openDetailSelected}
-        disabled={selectedIds.size !== 1}
-      >
-          <Info label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md bg-red-600/90 text-lg text-white hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-600"
-        type="button"
-        aria-label="Delete"
-        title="Delete"
-        onclick={deleteSelected}
-        disabled={!canWrite()}
-      >
-        <Trash2 label="" size={20} strokeWidth={2} />
-      </button>
-      <button
-        class="al-icon-wrapper grid h-11 w-11 place-items-center rounded-md text-lg text-slate-600 hover:bg-black/5 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
-        type="button"
-        aria-label="Clear selection"
-        title="Clear selection"
-        onclick={() => {
-          clearSelection();
-          closeTypeMenu();
-          closeTemplateMenu();
-        }}
->
-          <X label="" size={20} strokeWidth={2} />
-      </button>
-    </div>
-  </div>
-{/if}
+<SelectionToolbox
+  selectedCount={selectedIds.size}
+  {selectionPulse}
+  {headerColor}
+  {toolboxBg}
+  canWrite={canWrite()}
+  {uploadingAttachments}
+  aiEnabled={Boolean($currentUser?.ai_llm_url && selectedIds.size > 0)}
+  {templates}
+  isCardViewActive={getSelectedCardView()}
+  {shareSuccess}
+  {lpMoveTop}
+  {lpMoveBottom}
+  {lpOutdentToZero}
+  {lpInsert}
+  onAdjustIndent={(delta) => adjustIndentSelected(delta)}
+  onSetType={setTypeSelected}
+  onToggleCardView={toggleCardViewSelected}
+  onOpenAiModal={openAiModal}
+  onInsertTemplate={insertTemplateSelected}
+  onUploadAttachments={uploadAttachmentsSelected}
+  onShareSelected={shareSelectedSnipsels}
+  onOpenCollectionModal={openCollectionModal}
+  onCreateCollectionFromSnipsel={createCollectionFromSnipsel}
+  onOpenDetailSelected={openDetailSelected}
+  onDeleteSelected={deleteSelected}
+  onClearSelection={clearSelection}
+/>
 
 {#if showScrollTop && selectedIds.size === 0}
   <div class="fixed bottom-32 left-0 right-0 z-10 flex justify-center pointer-events-none" in:fly={{ y: 20, duration: 200 }} out:fade={{ duration: 150 }}>
@@ -4600,25 +3740,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   />
 {/if}
 
-{#if showDicedBanModal && dicedSnipsel}
-  <ConfirmModal
-    title="Never show again"
-    message={`"${dicedSnipsel.content_markdown.substring(0, 100)}..."\n\nAre you sure you want to exclude this snipsel from Diced Moments forever?`}
-    confirmLabel="Never show again"
-    icon={Ban}
-    iconClass="bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-    confirmClass="bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
-    onConfirm={async () => {
-       if (dicedSnipsel) {
-          await api.snipsels.banDicedMoment(dicedSnipsel.id);
-          api.collections.dicedMoment().then(res => dicedSnipsel = res.snipsel);
-       }
-       showDicedBanModal = false;
-    }}
-    onCancel={() => (showDicedBanModal = false)}
-  />
-{/if}
-
 <style>
   :global(.scrollbar-hidden) {
     scrollbar-width: none;
@@ -4626,114 +3747,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
   }
   :global(.scrollbar-hidden::-webkit-scrollbar) {
     display: none;
-  }
-
-  .day-nav {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
-    z-index: 10;
-  }
-
-  .day-nav:hover,
-  .day-nav.nav-active {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.15);
-  }
-
-  .day-nav:active,
-  .day-nav.nav-active:active {
-    background: rgba(255, 255, 255, 0.25);
-  }
-
-  .day-nav-prev {
-    left: 0;
-    border-radius: 0.75rem 0 0 0;
-  }
-
-  .day-nav-next {
-    right: 0;
-    border-radius: 0 0.75rem 0 0;
-  }
-
-  .day-nav svg {
-    color: white;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    transition: transform 0.2s ease, filter 0.3s ease;
-  }
-
-  .day-nav:hover svg,
-  .day-nav.nav-active svg {
-    transform: scale(1.2);
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
-  }
-
-  .day-nav:active svg,
-  .day-nav.nav-active:active svg {
-    transform: scale(0.95);
-  }
-
-  @keyframes glow-pulse {
-    0%, 100% {
-      box-shadow: 0 0 5px rgba(255, 255, 255, 0.3), 0 0 10px rgba(255, 255, 255, 0.2);
-    }
-    50% {
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), 0 0 30px rgba(255, 255, 255, 0.3);
-    }
-  }
-
-  .day-nav:hover,
-  .day-nav.nav-active {
-    animation: glow-pulse 2s ease-in-out infinite;
-  }
-
-  .day-nav:disabled {
-    cursor: not-allowed;
-    opacity: 0.3;
-  }
-
-  .day-nav:disabled:hover,
-  .day-nav:disabled.nav-active {
-    animation: none;
-    background: transparent;
-    opacity: 0.3;
-  }
-
-  @media (hover: none) {
-    .day-nav {
-      opacity: 0.4;
-    }
-    .day-nav:hover,
-    .day-nav:active,
-    .day-nav:focus {
-      opacity: 0.4;
-      background: transparent;
-      animation: none;
-    }
-    .day-nav.nav-active,
-    .day-nav.nav-active:hover,
-    .day-nav.nav-active:active,
-    .day-nav.nav-active:focus {
-      opacity: 1;
-      background: rgba(255, 255, 255, 0.15);
-      animation: glow-pulse 2s ease-in-out infinite;
-    }
-    .day-nav.nav-active svg,
-    .day-nav.nav-active:hover svg,
-    .day-nav.nav-active:active svg,
-    .day-nav.nav-active:focus svg {
-      transform: scale(1.2);
-      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
-    }
   }
 
   .swipe-container {
