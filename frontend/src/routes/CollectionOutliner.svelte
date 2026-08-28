@@ -41,7 +41,6 @@
   import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
   import Flame from '@animated-color-icons/lucide-svelte/Flame.svelte';
 
-  import MarkdownIt from 'markdown-it';
   import mermaid from 'mermaid';
   import { api, type Attachment, type CollectionItem, type SearchSnipselHit, type Habit } from '../lib/api';
   import ImageModal from '../lib/ImageModal.svelte';
@@ -61,6 +60,35 @@
   import FormattingToolbar from '../lib/FormattingToolbar.svelte';
   import CollectionLinkCard from '../lib/CollectionLinkCard.svelte';
   import { longPress } from '../lib/gestures';
+  import {
+    computeHeaderColor,
+    computeHeaderGradient,
+    computeToolboxBg,
+    computeCardTileBg,
+    computeCardTileBorder,
+    isLightColor,
+  } from '../lib/colors';
+  import {
+    offsetDate,
+    isFutureDate,
+    formatModifiedAt,
+    daysFromNow,
+    isExpired,
+    getDailyCollectionDayLabel,
+  } from '../lib/dates';
+  import {
+    parseSnipselEmbeds,
+    getDeezerLink,
+    getSpotifyLink,
+    getYouTubeLink,
+    getMapLink,
+    getGenericLink,
+    getCollectionLink,
+  } from '../lib/embeds';
+  import {
+    renderMarkdown as renderMarkdownExt,
+    renderWithWikiLinks as renderWithWikiLinksExt,
+  } from '../lib/markdown';
 
   import {
     collectionItems,
@@ -98,23 +126,6 @@
     collectionId?: string;
   }
   let { collectionId }: Props = $props();
-
-  const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
-
-  const defaultRender = md.renderer.rules.fence || function (tokens, idx, options, env, self) {
-    return self.renderToken(tokens, idx, options);
-  };
-
-  md.renderer.rules.fence = function (tokens, idx, options, env, self) {
-    const token = tokens[idx];
-    const info = token.info ? token.info.trim() : '';
-
-    if (info.toLowerCase().startsWith('mermaid')) {
-      return `<div class="mermaid-unprocessed" data-mermaid="${md.utils.escapeHtml(token.content)}"></div>\n`;
-    }
-
-    return defaultRender(tokens, idx, options, env, self);
-  };
 
   let textareaRef: HTMLTextAreaElement | undefined = $state();
   let editContainerRef: HTMLDivElement | undefined = $state();
@@ -433,22 +444,6 @@
       dailyHabits = original;
       if (day) habitsCache.set(day, original);
     }
-  }
-
-  function offsetDate(dateStr: string, days: number): string {
-    const d = new Date(dateStr + 'T12:00:00'); // noon to avoid DST issues
-    d.setDate(d.getDate() + days);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
-  function isFutureDate(dateStr: string): boolean {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.getTime() > today.getTime();
   }
 
   async function navigateDayCollection(direction: -1 | 1) {
@@ -799,145 +794,35 @@
     node.focus();
   }
 
-  const DEFAULT_HEADER_COLOR = '#4f46e5';
-  const TOOLBOX_BASE_COLOR = '#ffffff';
-
-  function getHeaderColor(): string {
-    const raw =
-      ($currentCollection?.header_color || '').trim() ||
-      ($currentUser?.default_collection_header_color || '').trim() ||
-      DEFAULT_HEADER_COLOR;
-
-    return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : DEFAULT_HEADER_COLOR;
-  }
-
-  function isLightColor(color: string): boolean {
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 128;
-  }
-
-  function isExpired(dateStr: string): boolean {
-    return new Date(dateStr).getTime() < Date.now();
-  }
-
-  function daysFromNow(dateStr: string): string {
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diffDays = Math.round((new Date(dateStr).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000);
-    
-    if (diffDays === 0) {
-      const diffMs = d.getTime() - now.getTime();
-      if (diffMs > 0) {
-        const hours = Math.floor(diffMs / 3600000);
-        const minutes = Math.floor((diffMs % 3600000) / 60000);
-        if (hours > 0) {
-          return `fällig in ${hours}h ${minutes}m`;
-        }
-        return `fällig in ${minutes}m`;
-      }
-      return 'heute fällig';
-    }
-    if (diffDays > 0) return `in ${diffDays}d`;
-    return `${-diffDays}d ago`;
-  }
-
-  type Rgb = { r: number; g: number; b: number };
-
-  function clampByte(n: number): number {
-    return Math.max(0, Math.min(255, Math.round(n)));
-  }
-
-  function hexToRgb(hex: string): Rgb | null {
-    const h = hex.trim();
-    const m = /^#([0-9a-fA-F]{6})$/.exec(h);
-    if (!m) return null;
-    const v = m[1];
-    const r = parseInt(v.slice(0, 2), 16);
-    const g = parseInt(v.slice(2, 4), 16);
-    const b = parseInt(v.slice(4, 6), 16);
-    return { r, g, b };
-  }
-
-  function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
-    const tt = Math.max(0, Math.min(1, t));
-    return {
-      r: clampByte(a.r + (b.r - a.r) * tt),
-      g: clampByte(a.g + (b.g - a.g) * tt),
-      b: clampByte(a.b + (b.b - a.b) * tt),
-    };
-  }
-
-  function rgba(c: Rgb, alpha: number): string {
-    const a = Math.max(0, Math.min(1, alpha));
-    return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
-  }
-
-  function getToolboxBg(): string {
-    const isDark = document.documentElement.classList.contains('dark');
-    const baseColor = isDark ? '#1e293b' : TOOLBOX_BASE_COLOR;
-    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
-    const header = hexToRgb(getHeaderColor());
-    const mixed = header ? mixRgb(base, header, 0.14) : base;
-    return rgba(mixed, 0.8);
-  }
-
-  // Cached color values — avoids DOM reads and color math on every renderMarkdown call
-  let headerColor = $derived(getHeaderColor());
+  // Cached color and date derived values
+  let headerColor = $derived(
+    computeHeaderColor($currentCollection?.header_color, $currentUser?.default_collection_header_color)
+  );
   let isCardsView = $derived($currentCollection?.view_mode === 'cards');
-
-  let dayLabel = $derived.by(() => {
-    const day = $currentCollection?.list_for_day;
-    if (!day) return null;
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
-    if (day === todayStr) return 'today';
-    if (day === yesterdayStr) return 'yesterday';
-    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const date = new Date(day + 'T12:00:00');
-    return weekdays[date.getDay()];
-  });
+  let dayLabel = $derived(getDailyCollectionDayLabel($currentCollection?.list_for_day));
 
   let toolboxBg = $derived.by(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    const baseColor = isDark ? '#1e293b' : TOOLBOX_BASE_COLOR;
-    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
-    const header = hexToRgb(headerColor);
-    const mixed = header ? mixRgb(base, header, 0.14) : base;
-    return rgba(mixed, 0.8);
+    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    return computeToolboxBg(headerColor, isDark);
   });
 
   let cardTileBg = $derived.by(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    const baseColor = isDark ? '#1e293b' : '#ffffff';
-    const base = hexToRgb(baseColor) ?? { r: 255, g: 255, b: 255 };
-    const header = hexToRgb(headerColor);
-    const mixed = header ? mixRgb(base, header, isDark ? 0.22 : 0.14) : base;
-    return rgba(mixed, 0.96);
+    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    return computeCardTileBg(headerColor, isDark);
   });
 
-  let cardTileBorder = $derived.by(() => {
-    const header = hexToRgb(headerColor);
-    if (!header) return 'rgba(0, 0, 0, 0.08)';
-    return rgba(header, 0.28);
-  });
+  let cardTileBorder = $derived(computeCardTileBorder(headerColor));
+
+  function getHeaderGradient(): string {
+    return computeHeaderGradient(headerColor);
+  }
+
+  function getHeaderColor(): string {
+    return headerColor;
+  }
 
   // Item lookup map — O(1) lookups instead of repeated O(n) .find() calls
   let itemById = $derived(new Map($sortedItems.map(i => [i.snipsel_id, i])));
-
-  function getHeaderGradient(): string {
-    const hc = getHeaderColor();
-    const base = hexToRgb(hc);
-    if (!base) return hc;
-    const lighter = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.45);
-    const mid = mixRgb(base, { r: 255, g: 255, b: 255 }, 0.2);
-    return `linear-gradient(135deg, ${hc} 0%, ${rgba(mid, 1)} 50%, ${rgba(lighter, 1)} 100%)`;
-  }
 
   function openImageModal(images: Array<{ id: string; filename: string }>, index: number) {
     modalImages = images;
@@ -2407,92 +2292,6 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     collectionItems.set(list.map((i, index) => ({ ...i, position: index + 1 })));
   }
 
-  // High-performance LRU cache for rendered markdown and wiki links — prevents
-  // re-parsing identical markdown on every keystroke, scroll, or reactive pulse.
-  const mdCache = new Map<string, string>();
-  const MAX_MD_CACHE = 500;
-
-  function renderMarkdownCore(text: string, tokenBg: string, tokenFg: string): string {
-    const preprocessed = text.trim().replace(/^[ \t]*$/gm, '\u00a0');
-    const html = md.render(preprocessed).trim();
-    return html
-      .replace(
-        /(^|[^\p{L}\p{N}_])(#[A-Za-z\p{L}][\p{L}\p{N}_-]*|@[A-Za-z\p{L}][\p{L}\p{N}_-]*)/gu,
-        (m, p1, token) => {
-          const isTag = token.startsWith('#');
-          const value = token.slice(1);
-          const attr = isTag ? `data-tag="${value}"` : `data-mention="${value}"`;
-          return `${p1}<mark class="snip-token cursor-pointer" ${attr} style="background-color:${tokenBg}; color:${tokenFg}">${token}</mark>`;
-        }
-      )
-      .replace(/==([^=]+)==/g, `<mark style="background-color:${tokenBg}; border-radius: 0.25rem; padding: 0 0.125rem">$1</mark>`)
-      .replace(/<a /g, `<a style="color:${tokenFg}; text-decoration:underline" target="_blank" rel="noopener noreferrer" `)
-      .replace(/<blockquote>/g, `<blockquote style="border-left: 3px solid ${tokenFg}; background-color:${tokenBg}; margin: 0.25rem 0; padding: 0.25rem 0.75rem; border-radius: 0 0.25rem 0.25rem 0; opacity: 0.9;">`)
-      .replace(/>\s+</g, '><')
-      .replace(/<br>\n/g, '<br>');
-  }
-
-  function renderMarkdown(text: string | null): string {
-    if (!text) return '';
-    const tokenBg = toolboxBg;
-    const tokenFg = headerColor;
-    const key = `${tokenBg}|${tokenFg}|__raw__|${text}`;
-    const cached = mdCache.get(key);
-    if (cached !== undefined) return cached;
-
-    const html = renderMarkdownCore(text, tokenBg, tokenFg);
-    if (mdCache.size >= MAX_MD_CACHE) {
-      const first = mdCache.keys().next().value;
-      if (first) mdCache.delete(first);
-    }
-    mdCache.set(key, html);
-    return html;
-  }
-
-  function renderWithWikiLinks(content: string, refs: Array<{title: string; collection_id: string}> | undefined): string {
-    if (!content) return '';
-    const tokenBg = toolboxBg;
-    const tokenFg = headerColor;
-    const refsKey = refs && refs.length > 0 ? refs.map(r => `${r.title}:${r.collection_id}`).join(',') : '';
-    const key = `${tokenBg}|${tokenFg}|${refsKey}|${content}`;
-
-    const cached = mdCache.get(key);
-    if (cached !== undefined) return cached;
-
-    let html = renderMarkdownCore(content, tokenBg, tokenFg);
-    if (refs && refs.length > 0) {
-      const refMap = new Map<string, string>();
-      for (const r of refs) {
-        refMap.set(r.title.toLowerCase(), r.collection_id);
-      }
-      html = html.replace(/\[\[([^\]]+)\]\]/g, (_match, title: string) => {
-        const unescapedTitle = title
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'");
-
-        const collectionId = refMap.get(unescapedTitle.toLowerCase());
-        if (collectionId) {
-          return `<a class="snip-token cursor-pointer" style="background-color:${tokenBg}; color:${tokenFg}" data-collection-id="${collectionId}">[[${title}]]</a>`;
-        }
-        return `<span class="text-slate-400 text-xs">[[${title}]]</span>`;
-      });
-    } else {
-      html = html.replace(/\[\[([^\]]+)\]\]/g, (_match, title: string) => {
-        return `<span class="text-slate-400 text-xs">[[${title}]]</span>`;
-      });
-    }
-
-    if (mdCache.size >= MAX_MD_CACHE) {
-      const first = mdCache.keys().next().value;
-      if (first) mdCache.delete(first);
-    }
-    mdCache.set(key, html);
-    return html;
-  }
-
   function isImageAttachment(a: Attachment): boolean {
     return Boolean(a.mime_type?.startsWith('image/') || a.has_thumbnail);
   }
@@ -2654,194 +2453,15 @@ function startEdit(item: CollectionItem, scrollToBottom: boolean = false) {
     return () => window.removeEventListener('scroll', onScroll);
   });
 
-  function formatModifiedAt(iso: string) {
-    const d = new Date(iso);
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const yesterdayStart = todayStart - 86400000;
-    const itemDate = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-
-    const timeStr = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-
-    if (itemDate === todayStart) {
-      return timeStr;
-    }
-    if (itemDate === yesterdayStart) {
-      return `Yesterday, ${timeStr}`;
-    }
-    return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-  }
-  function getDeezerLink(text: string | null) {
-    if (!text) return null;
-    // Standard link
-    const stdMatch = text.match(/https?:\/\/(?:www\.)?deezer\.com\/(track|album|artist)\/(\d+)/);
-    if (stdMatch) {
-      return { type: stdMatch[1] as 'track' | 'album' | 'artist', id: stdMatch[2], url: stdMatch[0] };
-    }
-    // Short link
-    const shortMatch = text.match(/https?:\/\/link\.deezer\.com\/s\/[A-Za-z0-9]+/);
-    if (shortMatch) {
-      return { type: null, id: null, url: shortMatch[0] };
-    }
-    return null;
+  function renderMarkdown(text: string | null): string {
+    return renderMarkdownExt(text, toolboxBg, headerColor);
   }
 
-  function getSpotifyLink(text: string | null) {
-    if (!text) return null;
-    const match = text.match(/https?:\/\/open\.spotify\.com\/(track|album|artist|playlist|episode|show)\/[a-zA-Z0-9]+/);
-    if (match) {
-      return { url: match[0] };
-    }
-    const shortMatch = text.match(/https?:\/\/spotify\.link\/[a-zA-Z0-9]+/);
-    if (shortMatch) {
-      return { url: shortMatch[0] };
-    }
-    return null;
-  }
-
-  function getYouTubeLink(text: string | null) {
-    if (!text) return null;
-    const match = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[^\s\)]*)/);
-    if (match) {
-      return { id: match[1], url: match[0] };
-    }
-    return null;
-  }
-
-  function getMapLink(text: string | null) {
-    if (!text) return null;
-    // Short links that need server-side resolution (no coords in URL)
-    const googleShortMatch = text.match(/https?:\/\/maps\.app\.goo\.gl\/[A-Za-z0-9]+/);
-    const appleShortMatch = text.match(/https?:\/\/maps\.apple(?:\.com)?\/p\/[^\s]*/);
-    if (googleShortMatch || appleShortMatch) {
-      const match = googleShortMatch || appleShortMatch;
-      return { url: match![0] };
-    }
-    // Google Maps patterns (full URL)
-    const googleAtMatch = text.match(/https?:\/\/(?:www\.)?google\.com\/maps\/[^\s]*@(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const googleQMatch = text.match(/https?:\/\/(?:www\.)?google\.com\/maps\?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const mapsGoogleQMatch = text.match(/https?:\/\/maps\.google\.[a-z]+\/?\?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    // Apple Maps patterns (full URL)
-    const appleLlMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const appleQMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const appleCenterMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]center=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    const appleCoordMatch = text.match(/https?:\/\/(?:www\.)?maps\.apple\.com\/?[^\s]*[?&]coordinate=(-?\d+\.\d+),(-?\d+\.\d+)[^\s]*/);
-    
-    if (googleAtMatch) {
-      return { lat: parseFloat(googleAtMatch[1]), lng: parseFloat(googleAtMatch[2]), url: googleAtMatch[0] };
-    }
-    if (googleQMatch) {
-      return { lat: parseFloat(googleQMatch[1]), lng: parseFloat(googleQMatch[2]), url: googleQMatch[0] };
-    }
-    if (mapsGoogleQMatch) {
-      return { lat: parseFloat(mapsGoogleQMatch[1]), lng: parseFloat(mapsGoogleQMatch[2]), url: mapsGoogleQMatch[0] };
-    }
-    if (appleLlMatch) {
-      return { lat: parseFloat(appleLlMatch[1]), lng: parseFloat(appleLlMatch[2]), url: appleLlMatch[0] };
-    }
-    if (appleQMatch) {
-      return { lat: parseFloat(appleQMatch[1]), lng: parseFloat(appleQMatch[2]), url: appleQMatch[0] };
-    }
-    if (appleCenterMatch) {
-      return { lat: parseFloat(appleCenterMatch[1]), lng: parseFloat(appleCenterMatch[2]), url: appleCenterMatch[0] };
-    }
-    if (appleCoordMatch) {
-      return { lat: parseFloat(appleCoordMatch[1]), lng: parseFloat(appleCoordMatch[2]), url: appleCoordMatch[0] };
-    }
-    return null;
-  }
-
-  type ParsedEmbeds = {
-    deezer: { type: 'track' | 'album' | 'artist' | null; id: string | null; url: string } | null;
-    spotify: { url: string } | null;
-    youtube: { id: string; url: string } | null;
-    map: { lat?: number; lng?: number; url: string } | null;
-    generic: { url: string } | null;
-    collectionId: string | null;
-    strippedText: string;
-  };
-
-  const embedCache = new Map<string, ParsedEmbeds>();
-  const MAX_EMBED_CACHE = 400;
-
-  function parseSnipselEmbeds(text: string | null, refs?: Array<{title: string; collection_id: string}>): ParsedEmbeds {
-    if (!text) {
-      return { deezer: null, spotify: null, youtube: null, map: null, generic: null, collectionId: null, strippedText: '' };
-    }
-    const refsKey = refs && refs.length > 0 ? refs.map(r => `${r.title}:${r.collection_id}`).join(',') : '';
-    const cacheKey = `${refsKey}|${text}`;
-    const cached = embedCache.get(cacheKey);
-    if (cached) return cached;
-
-    const dz = getDeezerLink(text);
-    const sp = getSpotifyLink(text);
-    const yt = getYouTubeLink(text);
-    const ml = getMapLink(text);
-    let gl: { url: string } | null = null;
-    if (!dz && !sp && !yt && !ml) {
-      const trimmed = text.trim();
-      const urlMatch = trimmed.match(/^(https?:\/\/\S+)$/);
-      if (urlMatch) {
-        gl = { url: urlMatch[1] };
-      }
-    }
-    const cid = getCollectionLink(text, refs);
-
-    let stripped = text;
-    if (dz) stripped = stripped.replace(dz.url, '');
-    if (sp) stripped = stripped.replace(sp.url, '');
-    if (yt) stripped = stripped.replace(yt.url, '');
-    if (ml) stripped = stripped.replace(ml.url, '');
-    if (gl) stripped = stripped.replace(gl.url, '');
-    if (cid) {
-      stripped = '';
-    } else {
-      stripped = stripped.trim();
-    }
-
-    const result: ParsedEmbeds = { deezer: dz, spotify: sp, youtube: yt, map: ml, generic: gl, collectionId: cid, strippedText: stripped };
-    if (embedCache.size >= MAX_EMBED_CACHE) {
-      const first = embedCache.keys().next().value;
-      if (first) embedCache.delete(first);
-    }
-    embedCache.set(cacheKey, result);
-    return result;
-  }
-
-  function getGenericLink(text: string | null) {
-    if (!text) return null;
-    if (getDeezerLink(text)) return null;
-    if (getSpotifyLink(text)) return null;
-    if (getYouTubeLink(text)) return null;
-    if (getMapLink(text)) return null;
-    const trimmed = text.trim();
-    const urlMatch = trimmed.match(/^(https?:\/\/\S+)$/);
-    if (urlMatch) {
-      return { url: urlMatch[1] };
-    }
-    return null;
-  }
-
-  function stripMediaLinks(text: string | null, refs?: Array<{title: string; collection_id: string}>): string {
-    if (!text) return '';
-    return parseSnipselEmbeds(text, refs).strippedText;
-  }
-
-  function getCollectionLink(text: string | null, refs: Array<{title: string; collection_id: string}> | undefined): string | null {
-    if (!text || !refs) return null;
-    const trimmed = text.trim();
-    const match = trimmed.match(/^\[\[([^\]]+)\]\]$/);
-    if (!match) return null;
-    
-    const title = match[1]
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
-        
-    const ref = refs.find(r => r.title.toLowerCase() === title.toLowerCase());
-    return ref ? ref.collection_id : null;
+  function renderWithWikiLinks(
+    content: string,
+    refs?: Array<{ title: string; collection_id: string }>
+  ): string {
+    return renderWithWikiLinksExt(content, refs, toolboxBg, headerColor);
   }
 </script>
 
