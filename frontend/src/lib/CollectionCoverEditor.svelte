@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Upload from '@animated-color-icons/lucide-svelte/Upload.svelte';
+  import ImagePlus from '@animated-color-icons/lucide-svelte/ImagePlus.svelte';
   import UnsplashSearchModal from './UnsplashSearchModal.svelte';
 
   interface Props {
@@ -43,20 +45,24 @@
             placeholder="https://..."
           />
           <label
-            class="cursor-pointer rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+            class="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
             style={`color: ${accent}`}
+            title="Upload image"
+            aria-label="Upload image"
           >
-            Upload
+            <Upload label="" size={18} />
             <input type="file" accept="image/*" class="hidden" onchange={onFileSelected} disabled={saving} />
           </label>
           <button
-            class="rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
+            class="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-800 dark:hover:bg-white/5"
             style={`color: ${accent}`}
             type="button"
             onclick={() => (showUnsplashModal = true)}
             disabled={saving}
+            title="Search Unsplash"
+            aria-label="Search Unsplash"
           >
-            Unsplash
+            <ImagePlus label="" size={18} />
           </button>
         </div>
 
