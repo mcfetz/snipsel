@@ -729,8 +729,8 @@ function goBack() {
       <!-- Actions -->
       <div class="flex flex-col gap-2 pt-4">
         <button 
-          class="w-full relative overflow-hidden rounded-full border border-slate-200 bg-white px-4 py-3 text-base font-semibold shadow-sm ring-1 ring-black/5 transition-all hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-slate-900 dark:ring-white/10 dark:hover:bg-slate-800 flex items-center justify-center gap-2" 
-          style={`color: ${getAccent()}`}
+          class="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50"
+          style={`background-color: ${getAccent()}`}
           type="button" 
           onclick={save} 
           disabled={saving || showSavedFeedback}
