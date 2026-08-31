@@ -13,5 +13,5 @@ webauthn==2.7.1
 Authlib==1.7.2
 requests==2.34.2
 Flask-Caching==2.5.0
-joserfc>=1.6.8
+joserfc>=1.7.4
 cryptography>=50.0.1

@@ -15,7 +15,7 @@ dependencies = [
   "Flask-Caching>=2.5.0",
   "Pillow>=12.3.0",
   "pillow-heif>=1.3.0",
-  "joserfc>=1.6.8",
+  "joserfc>=1.7.4",
   "cryptography>=50.0.1",
 ]
 
