@@ -9,7 +9,7 @@ python-dateutil==2.9.0.post0
 pywebpush==2.3.0
 pyotp==2.10.0
 qrcode==8.2
-webauthn==2.7.1
+webauthn==3.0.0
 Authlib==1.7.2
 requests==2.34.2
 Flask-Caching==2.5.0
