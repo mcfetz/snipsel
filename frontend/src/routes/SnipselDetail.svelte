@@ -104,7 +104,10 @@
 	async function load() {
 		loading = true;
 		try {
-			const res = (await fetch(`/api/snipsels/${snipselId}`, { credentials: 'include' }).then((r) => r.json())) as SnipselDetailResponse;
+			const res = (await fetch(`/api/snipsels/${snipselId}`, {
+        credentials: 'include',
+        signal: AbortSignal.timeout(8000),
+      }).then((r) => r.json())) as SnipselDetailResponse;
 			snipsel = res.snipsel;
 			snipsel = { ...res.snipsel, tags: res.tags ?? [], mentions: res.mentions ?? [] };
 			hasWriteAccess = res.has_write_access !== false;
