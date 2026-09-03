@@ -6,6 +6,7 @@
   import Dices from '@animated-color-icons/lucide-svelte/Dices.svelte';
   import Ban from '@animated-color-icons/lucide-svelte/Ban.svelte';
   import CirclePlay from '@animated-color-icons/lucide-svelte/CirclePlay.svelte';
+  import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
   import { api, type Attachment, type Snipsel, type SnipselDetailResponse } from '../lib/api';
   import ImageModal from '../lib/ImageModal.svelte';
   import { collectionAnchor, currentView, isLoading, searchError, searchQuery, searchResults, currentCollection } from '../lib/stores';
