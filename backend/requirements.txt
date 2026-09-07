@@ -10,7 +10,7 @@ pywebpush==2.4.0
 pyotp==2.10.0
 qrcode==8.2
 webauthn==3.0.0
-Authlib==1.7.2
+Authlib==1.8.0
 requests==2.34.2
 Flask-Caching==2.5.0
 joserfc>=1.7.4
