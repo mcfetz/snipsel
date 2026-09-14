@@ -3,6 +3,9 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 ARG VITE_COMMIT_HASH=""
 ENV VITE_COMMIT_HASH=$VITE_COMMIT_HASH
+ENV npm_config_fetch_retries=5 \
+    npm_config_fetch_retry_mintimeout=5000 \
+    npm_config_fetch_retry_maxtimeout=60000
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend ./
