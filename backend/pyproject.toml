@@ -10,12 +10,12 @@ dependencies = [
   "python-dotenv>=1.2.3",
   "SQLAlchemy>=2.0.52",
   "python-dateutil>=2.9.0.post0",
-  "Authlib>=1.6.12",
+  "Authlib>=1.8.0",
   "requests>=2.33.0",
-  "Flask-Caching>=2.5.0",
+  "Flask-Caching>=2.5.1",
   "Pillow>=12.3.0",
-  "pillow-heif>=1.3.0",
-  "joserfc>=1.7.4",
+  "pillow-heif>=1.7.0",
+  "joserfc>=1.7.5",
   "cryptography>=50.0.1",
 ]
 
