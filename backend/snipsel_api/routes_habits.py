@@ -427,6 +427,20 @@ def habit_stats():
 
         first_completion = all_completions[-1] if all_completions else None
         last_completion = all_completions[0] if all_completions else None
+
+        # Weekday the habit is completed most often (ISO weekday: 1=Mon..7=Sun).
+        # Iterating Mon -> Sun with a strict comparison makes Monday win ties.
+        weekday_counts: dict[int, int] = {}
+        for d in all_completions:
+            weekday_counts[d.isoweekday()] = weekday_counts.get(d.isoweekday(), 0) + 1
+        top_weekday: Optional[int] = None
+        top_weekday_count = 0
+        for iso_weekday in range(1, 8):
+            count = weekday_counts.get(iso_weekday, 0)
+            if count > top_weekday_count:
+                top_weekday = iso_weekday
+                top_weekday_count = count
+
         avg_interval_days = (
             round(
                 sum(
@@ -455,6 +469,8 @@ def habit_stats():
                 "first_completion": first_completion.isoformat() if first_completion else None,
                 "last_completion": last_completion.isoformat() if last_completion else None,
                 "avg_interval_days": avg_interval_days,
+                "top_weekday": top_weekday,
+                "top_weekday_count": top_weekday_count,
                 "completions": completion_dates,
             }
         )

@@ -254,6 +254,8 @@ export type HabitStats = {
   first_completion: string | null;
   last_completion: string | null;
   avg_interval_days: number | null;
+  top_weekday: number | null;
+  top_weekday_count: number;
   completions: string[];
 };
 

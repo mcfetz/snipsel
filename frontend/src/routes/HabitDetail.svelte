@@ -111,6 +111,20 @@
     });
   }
 
+  /** ISO weekday (1=Mon..7=Sun) to weekday name. */
+  function formatWeekday(isoWeekday: number | null): string {
+    if (!isoWeekday) return '—';
+    return [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ][isoWeekday - 1];
+  }
+
   function getHeatmapWeeks(): Array<Array<{ date: string; completed: boolean; dayLabel: string }>> {
     if (!stats) return [];
 
@@ -291,6 +305,13 @@
             {stats.avg_interval_days === null ? '—' : `${stats.avg_interval_days}d`}
           </div>
           <div class="text-xs text-slate-500 dark:text-slate-400">Avg Interval</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
+          <div class="text-lg font-bold leading-6 text-indigo-600 dark:text-indigo-400">{formatWeekday(stats.top_weekday)}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">Favourite Day</div>
+          <div class="text-[10px] text-slate-400 dark:text-slate-500">
+            {stats.top_weekday_count} of {stats.total_completions} entries
+          </div>
         </div>
       </div>
 
