@@ -4,7 +4,7 @@ Flask-Migrate==4.1.0
 Flask-Cors==6.0.5
 python-dotenv==1.2.3
 Pillow==12.3.0
-pillow-heif==1.7.0
+pillow-heif==1.8.0
 python-dateutil==2.9.0.post0
 pywebpush==2.5.0
 pyotp==2.10.0
