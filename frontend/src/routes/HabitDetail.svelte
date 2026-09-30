@@ -6,6 +6,7 @@
   import Trash from '@animated-color-icons/lucide-svelte/Trash.svelte';
   import { api, type Habit, type HabitStats } from '../lib/api';
   import { currentView, isLoading } from '../lib/stores';
+  import { toLocalIsoDay } from '../lib/dates';
 
   let { habitId }: { habitId: string } = $props();
 
@@ -16,12 +17,27 @@
   let editIcon = $state('');
   let editReminderTime = $state('');
 
+  /** Start day of the heatmap grid: 180 days back, rounded down to a Monday. */
+  function heatmapStart(): Date {
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() - 180);
+    const startDayOfWeek = startDate.getDay();
+    const daysToSubtract = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+    startDate.setDate(startDate.getDate() - daysToSubtract);
+    return startDate;
+  }
+
   async function fetchData() {
     isLoading.set(true);
     try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const [habitRes, statsRes] = await Promise.all([
         api.habits.get(habitId),
-        api.habits.stats(),
+        // Request the full heatmap range; the backend would otherwise default to
+        // a 30 day window and the 180 day grid would render empty.
+        api.habits.stats(toLocalIsoDay(heatmapStart()), toLocalIsoDay(today)),
       ]);
       habit = habitRes.habit;
       const found = statsRes.habits.find(h => h.id === habitId);
@@ -101,13 +117,7 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 180);
-
-    // Round to previous Monday
-    const startDayOfWeek = startDate.getDay();
-    const daysToSubtract = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
-    startDate.setDate(startDate.getDate() - daysToSubtract);
+    const startDate = heatmapStart();
 
     const completionSet = new Set(stats.completions);
     const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -118,7 +128,7 @@
     for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
       const dayOfWeek = d.getDay();
       const index = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      const dateStr = d.toISOString().slice(0, 10);
+      const dateStr = toLocalIsoDay(d);
       currentWeek[index] = {
         date: dateStr,
         completed: completionSet.has(dateStr),
@@ -261,10 +271,12 @@
         <div class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
           <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{Math.round(stats.completion_rate * 100)}%</div>
           <div class="text-xs text-slate-500 dark:text-slate-400">Completion Rate</div>
+          <div class="text-[10px] text-slate-400 dark:text-slate-500">last 180 days</div>
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
-          <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{stats.completed_days}</div>
+          <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{stats.total_completions}</div>
           <div class="text-xs text-slate-500 dark:text-slate-400">Total Done</div>
+          <div class="text-[10px] text-slate-400 dark:text-slate-500">all time</div>
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
           <div class="text-lg font-bold leading-6 text-indigo-600 dark:text-indigo-400">{formatDate(stats.first_completion)}</div>

@@ -247,6 +247,7 @@ export type HabitStats = {
   color: string | null;
   total_days: number;
   completed_days: number;
+  total_completions: number;
   completion_rate: number;
   current_streak: number;
   longest_streak: number;

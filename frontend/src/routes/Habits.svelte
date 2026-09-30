@@ -51,6 +51,9 @@
 
   const sorted = $derived.by(() => {
     let list = [...habits];
+    // The API's include_archived flag returns active *and* archived habits, so the
+    // active/inactive tab split has to happen here.
+    list = showArchived ? list.filter(h => h.is_archived) : list.filter(h => !h.is_archived);
     if (titleFilter.trim()) {
       const q = titleFilter.toLowerCase();
       list = list.filter(h => h.name.toLowerCase().includes(q));
@@ -323,7 +326,7 @@
     </div>
   </div>
 
-  {#if habits.length === 0}
+  {#if sorted.length === 0}
     <div class="py-8 text-center text-sm text-slate-500" in:fade={{ duration: 200 }}>
       No {showArchived ? 'inactive' : 'active'} habits found.
     </div>

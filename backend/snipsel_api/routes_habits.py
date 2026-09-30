@@ -448,6 +448,7 @@ def habit_stats():
                 "color": habit.color,
                 "total_days": total_days,
                 "completed_days": completed_days,
+                "total_completions": len(all_completions),
                 "completion_rate": round(completion_rate, 2),
                 "current_streak": current_streak,
                 "longest_streak": longest_streak,
