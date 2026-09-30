@@ -425,6 +425,21 @@ def habit_stats():
         if all_completions and (today - all_completions[0]).days <= 1:
             current_streak = streak
 
+        first_completion = all_completions[-1] if all_completions else None
+        last_completion = all_completions[0] if all_completions else None
+        avg_interval_days = (
+            round(
+                sum(
+                    (all_completions[i - 1] - all_completions[i]).days
+                    for i in range(1, len(all_completions))
+                )
+                / (len(all_completions) - 1),
+                1,
+            )
+            if len(all_completions) >= 2
+            else None
+        )
+
         result.append(
             {
                 "id": habit.id,
@@ -436,6 +451,9 @@ def habit_stats():
                 "completion_rate": round(completion_rate, 2),
                 "current_streak": current_streak,
                 "longest_streak": longest_streak,
+                "first_completion": first_completion.isoformat() if first_completion else None,
+                "last_completion": last_completion.isoformat() if last_completion else None,
+                "avg_interval_days": avg_interval_days,
                 "completions": completion_dates,
             }
         )

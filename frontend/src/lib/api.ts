@@ -250,6 +250,9 @@ export type HabitStats = {
   completion_rate: number;
   current_streak: number;
   longest_streak: number;
+  first_completion: string | null;
+  last_completion: string | null;
+  avg_interval_days: number | null;
   completions: string[];
 };
 

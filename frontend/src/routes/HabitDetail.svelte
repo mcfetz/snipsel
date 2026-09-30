@@ -86,6 +86,15 @@
     currentView.set({ type: 'habits' });
   }
 
+  function formatDate(dateStr: string | null): string {
+    if (!dateStr) return '—';
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
   function getHeatmapWeeks(): Array<Array<{ date: string; completed: boolean; dayLabel: string }>> {
     if (!stats) return [];
 
@@ -256,6 +265,20 @@
         <div class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
           <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{stats.completed_days}</div>
           <div class="text-xs text-slate-500 dark:text-slate-400">Total Done</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
+          <div class="text-lg font-bold leading-6 text-indigo-600 dark:text-indigo-400">{formatDate(stats.first_completion)}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">First Entry</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
+          <div class="text-lg font-bold leading-6 text-indigo-600 dark:text-indigo-400">{formatDate(stats.last_completion)}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">Last Entry</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
+          <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+            {stats.avg_interval_days === null ? '—' : `${stats.avg_interval_days}d`}
+          </div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">Avg Interval</div>
         </div>
       </div>
 
