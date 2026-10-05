@@ -16,7 +16,7 @@ dependencies = [
   "Pillow>=12.3.0",
   "pillow-heif>=1.8.0",
   "joserfc>=1.7.5",
-  "cryptography>=50.0.1",
+  "cryptography>=50.0.2",
 ]
 
 [tool.setuptools]
