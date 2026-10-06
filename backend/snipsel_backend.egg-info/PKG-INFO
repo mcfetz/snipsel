@@ -16,3 +16,7 @@ Requires-Dist: Pillow>=12.3.0
 Requires-Dist: pillow-heif>=1.8.0
 Requires-Dist: joserfc>=1.7.5
 Requires-Dist: cryptography>=50.0.2
+Requires-Dist: pywebpush>=2.5.0
+Requires-Dist: pyotp>=2.10.0
+Requires-Dist: qrcode>=8.2
+Requires-Dist: webauthn>=3.0.1

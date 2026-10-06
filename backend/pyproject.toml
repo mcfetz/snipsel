@@ -17,6 +17,10 @@ dependencies = [
   "pillow-heif>=1.8.0",
   "joserfc>=1.7.5",
   "cryptography>=50.0.2",
+  "pywebpush>=2.5.0",
+  "pyotp>=2.10.0",
+  "qrcode>=8.2",
+  "webauthn>=3.0.1",
 ]
 
 [tool.setuptools]
