@@ -62,8 +62,9 @@
     savingPasscode = true;
     passcodeError = '';
     try {
-      const res = await api.auth.setPasscode(passcode, passcodeConfirmPassword);
-      currentUser.set(res.user);
+      await api.passcode.set({ passcode, password_confirm: passcodeConfirmPassword });
+      const me = await api.me();
+      currentUser.set(me.user);
       showPasscodeSaved = true;
       setTimeout(() => {
         showPasscodeSaved = false;
@@ -98,8 +99,9 @@
     otpBusy = true;
     otpSetupError = '';
     try {
-      const res = await api.twoFactor.enable(otpCodeInput, otpSetupConfirmPassword);
-      currentUser.set(res.user);
+      await api.twoFactor.enable({ code: otpCodeInput, password_confirm: otpSetupConfirmPassword });
+      const me = await api.me();
+      currentUser.set(me.user);
       isOtpSetupActive = false;
       otpCodeInput = '';
       otpSetupConfirmPassword = '';
@@ -115,8 +117,9 @@
     otpBusy = true;
     securityError = '';
     try {
-      const res = await api.twoFactor.disable(password);
-      currentUser.set(res.user);
+      await api.twoFactor.disable(password);
+      const me = await api.me();
+      currentUser.set(me.user);
       isOtpDisableActive = false;
       otpDisableConfirmPassword = '';
     } catch (err: any) {
@@ -128,7 +131,7 @@
 
   async function loadPasskeys() {
     try {
-      const res = await api.auth.passkeys.list();
+      const res = await api.passkeys.list();
       passkeys = res.passkeys;
     } catch (err) {
       console.error('Failed to load passkeys:', err);
@@ -140,9 +143,9 @@
     passkeyBusy = true;
     passkeyError = '';
     try {
-      const options = await api.auth.passkeys.registerOptions();
+      const options = await api.passkeys.registerBegin();
       const registrationResponse = await startRegistration({ optionsJSON: options });
-      await api.auth.passkeys.registerVerify(newPasskeyName.trim(), registrationResponse);
+      await api.passkeys.registerComplete(registrationResponse, newPasskeyName.trim());
       isPasskeyAddActive = false;
       newPasskeyName = '';
       await loadPasskeys();
@@ -156,7 +159,7 @@
   async function removePasskey(id: string) {
     if (!confirm('Are you sure you want to remove this passkey?')) return;
     try {
-      await api.auth.passkeys.delete(id);
+      await api.passkeys.delete(id);
       await loadPasskeys();
     } catch (err) {
       console.error('Failed to remove passkey:', err);
@@ -178,7 +181,7 @@
     apiKeyError = '';
     try {
       const res = await api.apiKeys.create(newApiKeyName.trim());
-      newApiKeyValue = res.key;
+      newApiKeyValue = res.api_key.key;
       await loadApiKeys();
     } catch (err: any) {
       apiKeyError = err?.message || 'Failed to create API key.';
@@ -190,7 +193,7 @@
   async function revokeApiKey(id: string) {
     if (!confirm('Are you sure you want to revoke this API key? Applications using it will lose access immediately.')) return;
     try {
-      await api.apiKeys.revoke(id);
+      await api.apiKeys.delete(id);
       await loadApiKeys();
     } catch (err) {
       console.error('Failed to revoke API key:', err);
@@ -644,9 +647,6 @@
               <div class="flex items-center gap-2">
                 <Key label="" size={16} className="text-slate-400 shrink-0" />
                 <span class="truncate text-sm font-medium">{key.name}</span>
-                <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:bg-white/10 dark:text-slate-400">
-                  {key.prefix}...
-                </span>
               </div>
               <div class="mt-0.5 text-xs text-slate-400">
                 Created {new Date(key.created_at).toLocaleDateString()}
