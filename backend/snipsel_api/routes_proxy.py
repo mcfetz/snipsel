@@ -99,9 +99,7 @@ def proxy_deezer():
     except HTTPError as e:
         return json_response({"error": str(e)}, status=e.code)
     except URLError as e:
-        raise api_error(
-            502, "external_error", f"Failed to connect to YouTube: {e!s}"
-        )
+        raise api_error(502, "external_error", f"Failed to connect to YouTube: {e!s}")
     except Exception as e:
         raise api_error(500, "internal_error", str(e)) from e
 
@@ -381,9 +379,7 @@ def proxy_youtube():
     except HTTPError as e:
         return json_response({"error": str(e)}, status=e.code)
     except URLError as e:
-        raise api_error(
-            502, "external_error", f"Failed to connect to YouTube: {e!s}"
-        )
+        raise api_error(502, "external_error", f"Failed to connect to YouTube: {e!s}")
     except Exception as e:
         raise api_error(500, "internal_error", str(e)) from e
 
@@ -396,7 +392,9 @@ def proxy_spotify():
     if not spotify_url:
         raise api_error(400, "invalid_input", "url is required")
 
-    oembed_url = f"https://open.spotify.com/oembed?url={urllib_parse.quote(spotify_url)}"
+    oembed_url = (
+        f"https://open.spotify.com/oembed?url={urllib_parse.quote(spotify_url)}"
+    )
 
     try:
         data = _fetch_spotify_metadata(oembed_url)
@@ -404,9 +402,7 @@ def proxy_spotify():
     except HTTPError as e:
         return json_response({"error": str(e)}, status=e.code)
     except URLError as e:
-        raise api_error(
-            502, "external_error", f"Failed to connect to Spotify: {e!s}"
-        )
+        raise api_error(502, "external_error", f"Failed to connect to Spotify: {e!s}")
     except Exception as e:
         raise api_error(500, "internal_error", str(e)) from e
 
@@ -427,7 +423,7 @@ def proxy_unsplash_search():
         raise api_error(
             503,
             "external_error",
-            "Unsplash API is not configured (SNIPSEL_UNSPLASH_ACCESS_KEY is missing)."
+            "Unsplash API is not configured (SNIPSEL_UNSPLASH_ACCESS_KEY is missing).",
         )
 
     search_url = (
@@ -438,14 +434,17 @@ def proxy_unsplash_search():
     try:
         resp = requests.get(
             search_url,
-            headers={"Authorization": f"Client-ID {access_key}", "Accept-Version": "v1"},
+            headers={
+                "Authorization": f"Client-ID {access_key}",
+                "Accept-Version": "v1",
+            },
             timeout=10,
         )
         resp.raise_for_status()
         return json_response(resp.json())
     except requests.exceptions.HTTPError:
         status_code = resp.status_code if "resp" in locals() else 500
-        
+
         # Unsplash rate limiting is usually 403 (for Demo apps) or 429
         if status_code in (403, 429):
             # Check for Unsplash errors in body
@@ -454,14 +453,24 @@ def proxy_unsplash_search():
                 if data.get("errors"):
                     msg = data["errors"][0]
                     if "rate limit" in msg.lower():
-                        raise api_error(429, "rate_limit_exceeded", "Unsplash rate limit reached. Please try again later.")
-                    raise api_error(status_code, "external_error", f"Unsplash error: {msg}")
+                        raise api_error(
+                            429,
+                            "rate_limit_exceeded",
+                            "Unsplash rate limit reached. Please try again later.",
+                        )
+                    raise api_error(
+                        status_code, "external_error", f"Unsplash error: {msg}"
+                    )
             except (ValueError, KeyError, ApiError) as ex:
                 if isinstance(ex, ApiError):
                     raise
 
             # Fallback for rate limit
-            raise api_error(429, "rate_limit_exceeded", "Unsplash rate limit reached. Please try again later.")
+            raise api_error(
+                429,
+                "rate_limit_exceeded",
+                "Unsplash rate limit reached. Please try again later.",
+            )
 
         # Generic error handling
         error_msg = f"Unsplash API error ({status_code})"
@@ -471,10 +480,9 @@ def proxy_unsplash_search():
                 error_msg = data["errors"][0]
         except Exception:
             logger.debug("Could not parse upstream error body", exc_info=True)
-            
+
         raise api_error(status_code, "external_error", error_msg)
     except Exception as e:
         raise api_error(
             502, "external_error", f"Failed to connect to Unsplash: {e!s}"
         ) from e
-

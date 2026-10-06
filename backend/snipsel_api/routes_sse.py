@@ -39,7 +39,7 @@ def sse_events():
 
     # CRITICAL: Release the checkout of the database connection back to the SQLAlchemy pool
     # before we block indefinitely in the streaming generator.
-    # Otherwise, every open SSE tab holds a DB connection forever, causing a timeout 
+    # Otherwise, every open SSE tab holds a DB connection forever, causing a timeout
     # once ~15 tabs are open (default SQLAlchemy QueuePool size).
     db.session.remove()
 

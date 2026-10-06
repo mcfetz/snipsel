@@ -34,7 +34,7 @@ search_bp = Blueprint("search", __name__)
 def _get_tags_cached(user_id: str, scope: str):
     logger.debug(f"CACHE MISS: Fetching tags for user={user_id} scope={scope}")
     start = time.time()
-    
+
     user = db.session.get(User, user_id)
     if not user:
         return []
@@ -64,29 +64,33 @@ def _get_tags_cached(user_id: str, scope: str):
         .exists()
     )
 
-    rows = (
-        db.session.execute(
-            db.select(Tag.name, db.func.count(SnipselTag.snipsel_id))
-            .select_from(SnipselTag)
-            .join(Tag, Tag.id == SnipselTag.tag_id)
-            .join(Snipsel, Snipsel.id == SnipselTag.snipsel_id)
-            .where(
-                accessible_cs_sq,
-                Tag.owner_user_id == user.id if scope == "my" else Tag.owner_user_id != user.id if scope == "shared" else db.true(),
-                Snipsel.deleted_at.is_(None),
-            )
-            .group_by(Tag.name)
-            .order_by(db.func.count(SnipselTag.snipsel_id).desc(), Tag.name.asc())
-            # We fetch more than 100 for the cache so filtering by 'q' in Python has room to work
-            .limit(1000)
-        ).all()
-    )
+    rows = db.session.execute(
+        db.select(Tag.name, db.func.count(SnipselTag.snipsel_id))
+        .select_from(SnipselTag)
+        .join(Tag, Tag.id == SnipselTag.tag_id)
+        .join(Snipsel, Snipsel.id == SnipselTag.snipsel_id)
+        .where(
+            accessible_cs_sq,
+            Tag.owner_user_id == user.id
+            if scope == "my"
+            else Tag.owner_user_id != user.id
+            if scope == "shared"
+            else db.true(),
+            Snipsel.deleted_at.is_(None),
+        )
+        .group_by(Tag.name)
+        .order_by(db.func.count(SnipselTag.snipsel_id).desc(), Tag.name.asc())
+        # We fetch more than 100 for the cache so filtering by 'q' in Python has room to work
+        .limit(1000)
+    ).all()
     result = [
         {"name": name, "count": int(count)}
         for name, count in rows
         if name and name[:1].isalpha()
     ]
-    logger.debug(f"SQL execution took {time.time() - start:.3f}s for {len(result)} items")
+    logger.debug(
+        f"SQL execution took {time.time() - start:.3f}s for {len(result)} items"
+    )
     return result
 
 
@@ -103,9 +107,8 @@ def list_tags():
     if q:
         filtered = [t for t in tags if q in t["name"].lower()]
         return json_response({"tags": filtered[:100]})
-    
-    return json_response({"tags": tags[:100]})
 
+    return json_response({"tags": tags[:100]})
 
 
 @cache.memoize(timeout=600)
@@ -140,22 +143,24 @@ def _get_mentions_cached(user_id: str, scope: str):
         .exists()
     )
 
-    rows = (
-        db.session.execute(
-            db.select(Mention.name, db.func.count(SnipselMention.snipsel_id))
-            .select_from(SnipselMention)
-            .join(Mention, Mention.id == SnipselMention.mention_id)
-            .join(Snipsel, Snipsel.id == SnipselMention.snipsel_id)
-            .where(
-                accessible_cs_sq,
-                Mention.owner_user_id == user.id if scope == "my" else Mention.owner_user_id != user.id if scope == "shared" else db.true(),
-                Snipsel.deleted_at.is_(None),
-            )
-            .group_by(Mention.name)
-            .order_by(db.func.count(SnipselMention.snipsel_id).desc(), Mention.name.asc())
-            .limit(1000)
-        ).all()
-    )
+    rows = db.session.execute(
+        db.select(Mention.name, db.func.count(SnipselMention.snipsel_id))
+        .select_from(SnipselMention)
+        .join(Mention, Mention.id == SnipselMention.mention_id)
+        .join(Snipsel, Snipsel.id == SnipselMention.snipsel_id)
+        .where(
+            accessible_cs_sq,
+            Mention.owner_user_id == user.id
+            if scope == "my"
+            else Mention.owner_user_id != user.id
+            if scope == "shared"
+            else db.true(),
+            Snipsel.deleted_at.is_(None),
+        )
+        .group_by(Mention.name)
+        .order_by(db.func.count(SnipselMention.snipsel_id).desc(), Mention.name.asc())
+        .limit(1000)
+    ).all()
     return [
         {"name": name, "count": int(count)}
         for name, count in rows
@@ -231,7 +236,10 @@ def search():
             )
             .where(
                 Collection.deleted_at.is_(None),
-                db.or_(Collection.owner_user_id == user.id, CollectionShare.permission == "write"),
+                db.or_(
+                    Collection.owner_user_id == user.id,
+                    CollectionShare.permission == "write",
+                ),
             )
         )
         .scalars()
@@ -267,7 +275,7 @@ def search():
     )
     if not include_archived:
         stmt = stmt.where(Collection.archived_at.is_(None))
-    
+
     stmt = stmt.options(joinedload(Snipsel.reactions)).distinct()
 
     if snipsel_type:
@@ -285,7 +293,7 @@ def search():
     if q:
         # Split search query into terms and require ALL terms to match (AND search)
         # Also replace + with space to handle URL-encoded spaces
-        q = q.replace('+', ' ')
+        q = q.replace("+", " ")
         terms = q.split()
         for term in terms:
             if not term:
@@ -300,7 +308,9 @@ def search():
             )
 
     if tag:
-        stmt = stmt.join(SnipselTag, SnipselTag.snipsel_id == Snipsel.id).join(Tag, Tag.id == SnipselTag.tag_id)
+        stmt = stmt.join(SnipselTag, SnipselTag.snipsel_id == Snipsel.id).join(
+            Tag, Tag.id == SnipselTag.tag_id
+        )
         if scope == "shared":
             stmt = stmt.where(Tag.owner_user_id != user.id, Tag.name == tag)
         elif scope == "all":
@@ -363,12 +373,29 @@ def search():
                 ~has_user_mention_sq,
             )
 
-    accessible_rows = db.session.execute(stmt.order_by(Snipsel.modified_at.desc()).limit(100)).unique().all()
+    accessible_rows = (
+        db.session.execute(stmt.order_by(Snipsel.modified_at.desc()).limit(100))
+        .unique()
+        .all()
+    )
 
-    hits_by_id: dict[str, tuple[Snipsel, str | None, int | None, str | None, str | None, bool, bool, bool]] = {}
-    for s, collection_id, position, collection_title, collection_icon in accessible_rows:
+    hits_by_id: dict[
+        str,
+        tuple[
+            Snipsel, str | None, int | None, str | None, str | None, bool, bool, bool
+        ],
+    ] = {}
+    for (
+        s,
+        collection_id,
+        position,
+        collection_title,
+        collection_icon,
+    ) in accessible_rows:
         if s.id not in hits_by_id:
-            can_write = bool(s.owner_user_id == user.id or (collection_id in writable_set))
+            can_write = bool(
+                s.owner_user_id == user.id or (collection_id in writable_set)
+            )
             can_toggle_task_done = bool(s.type == "task")
             hits_by_id[s.id] = (
                 s,
@@ -389,7 +416,7 @@ def search():
             m_task_done_q = Snipsel.task_done.in_([1, 2])
         elif task_done_filter == 2:
             m_task_done_q = Snipsel.task_done == 2
-        
+
         m_stmt = (
             db.select(
                 Snipsel,
@@ -406,7 +433,11 @@ def search():
             .distinct()
         )
 
-        mentioned_rows = db.session.execute(m_stmt.order_by(Snipsel.modified_at.desc()).limit(100)).unique().all()
+        mentioned_rows = (
+            db.session.execute(m_stmt.order_by(Snipsel.modified_at.desc()).limit(100))
+            .unique()
+            .all()
+        )
         for (s,) in mentioned_rows:
             if s.id in hits_by_id:
                 continue
@@ -421,7 +452,9 @@ def search():
                 bool(s.type == "task"),
             )
 
-    rows = sorted(hits_by_id.values(), key=lambda r: r[0].modified_at, reverse=True)[:100]
+    rows = sorted(hits_by_id.values(), key=lambda r: r[0].modified_at, reverse=True)[
+        :100
+    ]
 
     collection_hits = []
     if q:
@@ -452,7 +485,9 @@ def search():
                     "collection_title": collection_title,
                     "collection_icon": collection_icon,
                     "position": position,
-                    "reminder_at": s.reminder_at.isoformat() + "Z" if s.reminder_at else None,
+                    "reminder_at": s.reminder_at.isoformat() + "Z"
+                    if s.reminder_at
+                    else None,
                     "reminder_rrule": s.reminder_rrule,
                     "has_collection_access": has_collection_access,
                     "has_write_access": has_write_access,
@@ -466,14 +501,14 @@ def search():
                     "id": c.id,
                     "title": c.title,
                     "icon": c.icon,
-                    "list_for_day": c.list_for_day.isoformat() if c.list_for_day else None,
+                    "list_for_day": c.list_for_day.isoformat()
+                    if c.list_for_day
+                    else None,
                 }
                 for c in collection_hits
             ],
         }
     )
-
-
 
 
 @search_bp.get("/search/mentions/incoming")
@@ -484,17 +519,17 @@ def get_incoming_day_mentions():
     day_str = request.args.get("day")
     if not day_str:
         raise api_error(400, "invalid_input", "day parameter is required")
-    
+
     try:
         day_parsed = date.fromisoformat(day_str)
     except ValueError:
         raise api_error(400, "invalid_input", "day must be in YYYY-MM-DD format")
-    
+
     if not getattr(user, "username", None):
         return json_response({"snipsels": []})
-    
+
     uname = str(user.username).casefold()
-    
+
     # Find snipsels from OTHER users' daily collections on this day that mention the current user
     # Note: We don't require the collection to be shared - we just need to find any daily
     # collection from another user on the same day that mentions the current user
@@ -520,29 +555,41 @@ def get_incoming_day_mentions():
         )
         .distinct()
     )
-    
-    rows = db.session.execute(stmt.options(joinedload(Snipsel.reactions)).order_by(Snipsel.modified_at.desc()).limit(100)).unique().all()
-    
+
+    rows = (
+        db.session.execute(
+            stmt.options(joinedload(Snipsel.reactions))
+            .order_by(Snipsel.modified_at.desc())
+            .limit(100)
+        )
+        .unique()
+        .all()
+    )
+
     if rows:
         # Fetch attachments for all snipsels
         snipsel_ids = [s.id for s, _, _, _, _ in rows]
         attachments = (
             db.session.execute(
                 db.select(Attachment).where(Attachment.snipsel_id.in_(snipsel_ids))
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
         attachments_by_snipsel = {}
         for a in attachments:
             if a.snipsel_id not in attachments_by_snipsel:
                 attachments_by_snipsel[a.snipsel_id] = []
-            attachments_by_snipsel[a.snipsel_id].append({
-                "id": a.id,
-                "filename": a.filename,
-                "mime_type": a.mime_type,
-                "size_bytes": a.size_bytes,
-                "has_thumbnail": a.thumbnail_path is not None,
-            })
-        
+            attachments_by_snipsel[a.snipsel_id].append(
+                {
+                    "id": a.id,
+                    "filename": a.filename,
+                    "mime_type": a.mime_type,
+                    "size_bytes": a.size_bytes,
+                    "has_thumbnail": a.thumbnail_path is not None,
+                }
+            )
+
         return json_response(
             {
                 "snipsels": [
@@ -560,7 +607,9 @@ def get_incoming_day_mentions():
                         "collection_id": collection_id,
                         "created_by_username": owner_username,
                         "position": int(position) if position is not None else None,
-                        "reminder_at": s.reminder_at.isoformat() + "Z" if s.reminder_at else None,
+                        "reminder_at": s.reminder_at.isoformat() + "Z"
+                        if s.reminder_at
+                        else None,
                         "reminder_rrule": s.reminder_rrule,
                         "attachments": attachments_by_snipsel.get(s.id, []),
                         "reactions": s.get_reaction_summary(user.id),

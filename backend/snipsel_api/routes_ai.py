@@ -19,7 +19,9 @@ ai_bp = Blueprint("ai", __name__)
 @ai_bp.post("/generate")
 @require_auth
 def generate():
-    current_app.logger.info(f"AI Generate request received for user: {current_user().id}")
+    current_app.logger.info(
+        f"AI Generate request received for user: {current_user().id}"
+    )
     user = current_user()
     if not user.ai_llm_url or not user.ai_api_key:
         raise api_error(
@@ -61,8 +63,10 @@ def generate():
         for att in attachments:
             # Verify permission: either owner OR can read the snipsel it belongs to
             is_authorized = False
-            if att.created_by_id == user.id or att.snipsel_id and can_read_snipsel_via_collections(
-                user.id, att.snipsel_id
+            if (
+                att.created_by_id == user.id
+                or att.snipsel_id
+                and can_read_snipsel_via_collections(user.id, att.snipsel_id)
             ):
                 is_authorized = True
 
@@ -139,13 +143,13 @@ def generate():
             # Expecting OpenAI format
             if "choices" in res_data and len(res_data["choices"]) > 0:
                 ai_text = res_data["choices"][0]["message"]["content"]
-                
+
                 # Save to history
                 try:
                     hist_entry = db.session.execute(
                         db.select(AiPromptHistory).where(
                             AiPromptHistory.user_id == user.id,
-                            AiPromptHistory.prompt == prompt
+                            AiPromptHistory.prompt == prompt,
                         )
                     ).scalar_one_or_none()
 
@@ -249,22 +253,27 @@ def get_history():
         db.session.execute(
             db.select(AiPromptHistory)
             .where(AiPromptHistory.user_id == user.id)
-            .order_by(AiPromptHistory.starred.desc(), AiPromptHistory.last_used_at.desc())
+            .order_by(
+                AiPromptHistory.starred.desc(), AiPromptHistory.last_used_at.desc()
+            )
         )
         .scalars()
         .all()
     )
-    
-    return json_response({
-        "history": [
-            {
-                "id": h.id,
-                "text": h.prompt,
-                "starred": h.starred,
-                "last_used_at": h.last_used_at.isoformat()
-            } for h in history
-        ]
-    })
+
+    return json_response(
+        {
+            "history": [
+                {
+                    "id": h.id,
+                    "text": h.prompt,
+                    "starred": h.starred,
+                    "last_used_at": h.last_used_at.isoformat(),
+                }
+                for h in history
+            ]
+        }
+    )
 
 
 @ai_bp.post("/history/toggle-star")
@@ -283,22 +292,20 @@ def toggle_star():
         stmt = stmt.where(AiPromptHistory.id == prompt_id)
     else:
         stmt = stmt.where(AiPromptHistory.prompt == prompt_text)
-    
+
     hist_entry = db.session.execute(stmt).scalar_one_or_none()
     if not hist_entry:
         raise api_error(404, "not_found", "History entry not found")
 
     hist_entry.starred = not hist_entry.starred
     db.session.commit()
-    
+
     if not hist_entry.starred:
         _cleanup_ai_history(user.id)
 
-    return json_response({
-        "id": hist_entry.id,
-        "text": hist_entry.prompt,
-        "starred": hist_entry.starred
-    })
+    return json_response(
+        {"id": hist_entry.id, "text": hist_entry.prompt, "starred": hist_entry.starred}
+    )
 
 
 @ai_bp.delete("/history/<id>")
@@ -307,8 +314,7 @@ def delete_history_item(id):
     user = current_user()
     hist_entry = db.session.execute(
         db.select(AiPromptHistory).where(
-            AiPromptHistory.id == id,
-            AiPromptHistory.user_id == user.id
+            AiPromptHistory.id == id, AiPromptHistory.user_id == user.id
         )
     ).scalar_one_or_none()
 
@@ -331,7 +337,7 @@ def _cleanup_ai_history(user_id: str):
         .scalars()
         .all()
     )
-    
+
     if len(unstarred) > 10:
         for item in unstarred[10:]:
             db.session.delete(item)

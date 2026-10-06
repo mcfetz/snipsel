@@ -195,8 +195,6 @@ def sync_all_data():
     offset = int(request.args.get("offset", 0))
     limit = int(request.args.get("limit", 0)) or 500
 
-
-
     # ── Step 1: materialise accessible collection IDs ────────────────
     owned_ids = set(
         db.session.execute(
@@ -204,29 +202,36 @@ def sync_all_data():
                 Collection.owner_user_id == user.id,
                 Collection.deleted_at.is_(None),
             )
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )
     shared_ids = set(
         db.session.execute(
             db.select(CollectionShare.collection_id).where(
                 CollectionShare.shared_with_user_id == user.id,
             )
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )
     all_ids_set = owned_ids | shared_ids
     all_ids = list(all_ids_set)
-
 
     res = {}
 
     # ── Collections ──────────────────────────────────────────────────
     if include_collections:
-        collections = db.session.execute(
-            db.select(Collection).where(
-                Collection.id.in_(all_ids),
-                Collection.deleted_at.is_(None),
+        collections = (
+            db.session.execute(
+                db.select(Collection).where(
+                    Collection.id.in_(all_ids),
+                    Collection.deleted_at.is_(None),
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         # Batch-fetch modified_by usernames to avoid lazy loads
         mod_user_ids = list({c.modified_by_id for c in collections if c.modified_by_id})
@@ -243,10 +248,14 @@ def sync_all_data():
                 db.select(CollectionFavorite.collection_id).where(
                     CollectionFavorite.user_id == user.id
                 )
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
 
-        shared_collection_ids = [c.id for c in collections if c.owner_user_id != user.id]
+        shared_collection_ids = [
+            c.id for c in collections if c.owner_user_id != user.id
+        ]
         perms = {}
         if shared_collection_ids:
             perms = dict(
@@ -260,7 +269,9 @@ def sync_all_data():
                 ).all()
             )
 
-        owner_ids = list({c.owner_user_id for c in collections if c.owner_user_id != user.id})
+        owner_ids = list(
+            {c.owner_user_id for c in collections if c.owner_user_id != user.id}
+        )
         owner_names = {}
         if owner_ids:
             owner_names = dict(
@@ -277,7 +288,9 @@ def sync_all_data():
                     db.select(db.distinct(CollectionShare.collection_id)).where(
                         CollectionShare.collection_id.in_(owned_item_ids)
                     )
-                ).scalars().all()
+                )
+                .scalars()
+                .all()
             )
 
         cols_out = []
@@ -399,18 +412,19 @@ def sync_all_data():
             .offset(offset)
         ).all()
 
-
         snipsel_ids = list({r.snipsel_id for r in cs_rows})
-
 
         # 2) Batch-fetch Snipsel objects
         snipsels_map = {}
         if snipsel_ids:
-            snipsels = db.session.execute(
-                db.select(Snipsel).where(Snipsel.id.in_(snipsel_ids))
-            ).scalars().all()
+            snipsels = (
+                db.session.execute(
+                    db.select(Snipsel).where(Snipsel.id.in_(snipsel_ids))
+                )
+                .scalars()
+                .all()
+            )
             snipsels_map = {s.id: s for s in snipsels}
-
 
         # 3) Batch-fetch usernames
         user_ids_needed = set()
@@ -431,28 +445,31 @@ def sync_all_data():
                 ).all()
             )
 
-
         # 4) Batch-fetch reactions
         reactions_by_sid = {sid: [] for sid in snipsel_ids}
         if snipsel_ids:
-            for r in db.session.execute(
-                db.select(SnipselReaction).where(
-                    SnipselReaction.snipsel_id.in_(snipsel_ids)
+            for r in (
+                db.session.execute(
+                    db.select(SnipselReaction).where(
+                        SnipselReaction.snipsel_id.in_(snipsel_ids)
+                    )
                 )
-            ).scalars().all():
+                .scalars()
+                .all()
+            ):
                 reactions_by_sid[r.snipsel_id].append(r)
-
 
         # 5) Batch-fetch attachments
         attachments_by_sid = {sid: [] for sid in snipsel_ids}
         if snipsel_ids:
-            for a in db.session.execute(
-                db.select(Attachment).where(
-                    Attachment.snipsel_id.in_(snipsel_ids)
+            for a in (
+                db.session.execute(
+                    db.select(Attachment).where(Attachment.snipsel_id.in_(snipsel_ids))
                 )
-            ).scalars().all():
+                .scalars()
+                .all()
+            ):
                 attachments_by_sid[a.snipsel_id].append(a)
-
 
         # Helper: reaction summary
         def _reaction_summary(snipsel_id: str) -> list:
@@ -493,7 +510,9 @@ def sync_all_data():
                     "geo_lat": s.geo_lat,
                     "geo_lng": s.geo_lng,
                     "geo_accuracy_m": s.geo_accuracy_m,
-                    "reminder_at": s.reminder_at.isoformat() + "Z" if s.reminder_at else None,
+                    "reminder_at": s.reminder_at.isoformat() + "Z"
+                    if s.reminder_at
+                    else None,
                     "reminder_rrule": s.reminder_rrule,
                     "created_at": s.created_at.isoformat() + "Z",
                     "created_by_id": s.created_by_id,
@@ -518,11 +537,14 @@ def sync_all_data():
             }
             items_out.setdefault(row.collection_id, []).append(item)
         res["items"] = items_out
-    logger.info("SYNC offset=%d limit=%d items=%d total=%.3fs",
-                offset, limit, len(cs_rows) if include_items else 0,
-                time.monotonic() - t0_total)
+    logger.info(
+        "SYNC offset=%d limit=%d items=%d total=%.3fs",
+        offset,
+        limit,
+        len(cs_rows) if include_items else 0,
+        time.monotonic() - t0_total,
+    )
     return json_response(res)
-
 
 
 @collections_bp.get("/today")
@@ -547,10 +569,10 @@ def get_today_collection():
         is not None
     )
     j["access_level"] = "owner"
-    
+
     # Commit changes from helper if any (creation, carry-overs)
     db.session.commit()
-    
+
     return json_response({"collection": j})
 
 
@@ -601,7 +623,9 @@ def get_diced_moment():
         return json_response({"snipsel": None})
 
     tag_names = [
-        t.strip().lower().lstrip("#") for t in user.diced_moments_tags.split(",") if t.strip()
+        t.strip().lower().lstrip("#")
+        for t in user.diced_moments_tags.split(",")
+        if t.strip()
     ]
     if not tag_names:
         return json_response({"snipsel": None})
@@ -715,7 +739,7 @@ def _get_or_create_daily_collection(user_id: str, day: date) -> Collection:
         _maybe_copy_template_contents(
             user=user, template_collection_id=tpl_id, target_collection=c
         )
-    
+
     return c
 
 
@@ -1206,8 +1230,11 @@ def create_collection():
     j["is_favorite"] = False
     j["access_level"] = "owner"
     # Notify all clients of the owner that the collection list changed
-    sse_bus.publish([user.id], {"type": "collection_list_changed"},
-    origin_client_id=request.headers.get("X-Client-Id"))
+    sse_bus.publish(
+        [user.id],
+        {"type": "collection_list_changed"},
+        origin_client_id=request.headers.get("X-Client-Id"),
+    )
     return json_response({"collection": j}, status=201)
 
 
@@ -1217,19 +1244,19 @@ def create_collection():
 def duplicate_collection(collection_id: str):
     """Duplicate a collection with all its settings and snipsels."""
     user = current_user()
-    
+
     # Get the source collection and verify ownership
     source = db.session.get(Collection, collection_id)
     if not source or source.deleted_at is not None:
         raise api_error(404, "not_found", "Collection not found")
     if source.owner_user_id != user.id:
         raise api_error(403, "forbidden", "Only the owner can duplicate a collection")
-    
+
     data = request.get_json() or {}
     new_title = (data.get("title") or "").strip()
     if not new_title:
         raise api_error(400, "invalid_input", "title is required")
-    
+
     # Create new collection with same settings as source
     new_collection = Collection(
         owner_user_id=user.id,
@@ -1252,7 +1279,7 @@ def duplicate_collection(collection_id: str):
     )
     db.session.add(new_collection)
     db.session.flush()
-    
+
     # Get all snipsels from source collection
     source_items = (
         db.session.execute(
@@ -1267,11 +1294,11 @@ def duplicate_collection(collection_id: str):
         .scalars()
         .all()
     )
-    
+
     # Copy each snipsel with its content and attachments
     for cs in source_items:
         src_snipsel = cs.snipsel
-        
+
         # Create new snipsel with same content
         new_snipsel = Snipsel(
             owner_user_id=user.id,
@@ -1294,22 +1321,22 @@ def duplicate_collection(collection_id: str):
         )
         db.session.add(new_snipsel)
         db.session.flush()
-        
+
         # Copy attachments
         for att in src_snipsel.attachments:
             src_path = _resolve_attachment_path(att)
             if not src_path:
                 continue
-            
+
             new_att_id = str(uuid.uuid4())
             upload_dir = src_path.parent
             dst_path = upload_dir / f"{new_att_id}_{att.filename}"
-            
+
             try:
                 dst_path.write_bytes(src_path.read_bytes())
             except OSError:
                 continue
-            
+
             # Copy thumbnail if exists
             thumb_path = None
             src_thumb = _resolve_thumbnail_path(att)
@@ -1319,7 +1346,7 @@ def duplicate_collection(collection_id: str):
                     thumb_path.write_bytes(src_thumb.read_bytes())
                 except OSError:
                     thumb_path = None
-            
+
             new_att = Attachment(
                 id=new_att_id,
                 snipsel_id=new_snipsel.id,
@@ -1332,7 +1359,7 @@ def duplicate_collection(collection_id: str):
                 created_by_id=user.id,
             )
             db.session.add(new_att)
-        
+
         # Create collection-snipsel link
         db.session.add(
             CollectionSnipsel(
@@ -1342,21 +1369,24 @@ def duplicate_collection(collection_id: str):
                 indent=cs.indent,
             )
         )
-        
+
         # Sync tags and mentions for the new snipsel
         _sync_tags_mentions(user_id=user.id, snipsel=new_snipsel)
         _sync_backlinks(user_id=user.id, snipsel=new_snipsel)
-    
+
     db.session.commit()
-    
+
     j = _collection_json(new_collection)
     j["is_favorite"] = False
     j["access_level"] = "owner"
-    
+
     # Notify all clients of the owner that the collection list changed
-    sse_bus.publish([user.id], {"type": "collection_list_changed"},
-    origin_client_id=request.headers.get("X-Client-Id"))
-    
+    sse_bus.publish(
+        [user.id],
+        {"type": "collection_list_changed"},
+        origin_client_id=request.headers.get("X-Client-Id"),
+    )
+
     return json_response({"collection": j}, status=201)
 
 
@@ -1468,9 +1498,7 @@ def update_collection(collection_id: str):
             data.get("default_snipsel_type") or ""
         ).strip() or None
     if "view_mode" in data:
-        c.view_mode = (
-            data.get("view_mode") or "list"
-        ).strip() or "list"
+        c.view_mode = (data.get("view_mode") or "list").strip() or "list"
     if "show_completed_tasks" in data:
         c.show_completed_tasks = bool(data.get("show_completed_tasks"))
     if "mute_notifications" in data:
@@ -1494,8 +1522,11 @@ def update_collection(collection_id: str):
     )
     j["access_level"] = "owner"
     # Notify all users with access that this collection changed
-    sse_bus.publish(_collection_user_ids(c), {"type": "collection_updated", "ids": [c.id]},
-                   origin_client_id=request.headers.get("X-Client-Id"))
+    sse_bus.publish(
+        _collection_user_ids(c),
+        {"type": "collection_updated", "ids": [c.id]},
+        origin_client_id=request.headers.get("X-Client-Id"),
+    )
     return json_response({"collection": j})
 
 
@@ -1577,8 +1608,11 @@ def delete_collection(collection_id: str):
 
     db.session.commit()
     # Notify all users with access that the collection list changed (it's gone)
-    sse_bus.publish(_collection_user_ids(c), {"type": "collection_list_changed"},
-                   origin_client_id=request.headers.get("X-Client-Id"))
+    sse_bus.publish(
+        _collection_user_ids(c),
+        {"type": "collection_list_changed"},
+        origin_client_id=request.headers.get("X-Client-Id"),
+    )
     return json_response({"ok": True})
 
 

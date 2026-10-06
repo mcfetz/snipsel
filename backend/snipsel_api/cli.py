@@ -9,6 +9,7 @@ from snipsel_api.commands import cleanup, db_init, process_reminders_command
 def _create_app():
     return create_app()
 
+
 cli = FlaskGroup(create_app=_create_app)
 cli.add_command(db_init)
 cli.add_command(cleanup)

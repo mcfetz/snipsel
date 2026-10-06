@@ -15,7 +15,9 @@ def list_users():
     user = current_user()
     rows = (
         db.session.execute(
-            db.select(User).where(User.deleted_at.is_(None), User.is_active == True).order_by(User.username.asc())
+            db.select(User)
+            .where(User.deleted_at.is_(None), User.is_active == True)
+            .order_by(User.username.asc())
         )
         .scalars()
         .all()

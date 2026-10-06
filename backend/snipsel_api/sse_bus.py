@@ -46,7 +46,9 @@ def unsubscribe(user_id: str, q: queue.Queue) -> None:
             _subscribers.pop(user_id, None)
 
 
-def publish(user_ids: list[str], event: dict, origin_client_id: str | None = None) -> None:
+def publish(
+    user_ids: list[str], event: dict, origin_client_id: str | None = None
+) -> None:
     """
     Send *event* to all open SSE connections of the given *user_ids*.
 
@@ -81,7 +83,9 @@ def close_all(user_id: str) -> None:
                 pass
 
 
-def event_stream(user_id: str, client_id: str, timeout: float = 25.0) -> Generator[str, None, None]:
+def event_stream(
+    user_id: str, client_id: str, timeout: float = 25.0
+) -> Generator[str, None, None]:
     """
     Generator that yields SSE-formatted text chunks.
 

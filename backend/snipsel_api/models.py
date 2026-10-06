@@ -86,12 +86,8 @@ class User(db.Model):
     ai_model_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
     ai_api_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    light_background_color: Mapped[str | None] = mapped_column(
-        String(7), nullable=True
-    )
-    dark_background_color: Mapped[str | None] = mapped_column(
-        String(7), nullable=True
-    )
+    light_background_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    dark_background_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
     diced_moments_tags: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -127,9 +123,7 @@ class Collection(db.Model):
     mute_notifications: Mapped[bool] = mapped_column(default=False, nullable=False)
     exclude_from_todo_list: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    default_snipsel_type: Mapped[str | None] = mapped_column(
-        String(32), nullable=True
-    )
+    default_snipsel_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     view_mode: Mapped[str | None] = mapped_column(
         String(32), nullable=True, default="list"
     )
@@ -151,9 +145,7 @@ class Collection(db.Model):
         ForeignKey("users.id"), nullable=True
     )
 
-    twos_id: Mapped[str | None] = mapped_column(
-        String(64), nullable=True, index=True
-    )
+    twos_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     public_token: Mapped[str | None] = mapped_column(
         String(64), nullable=True, unique=True, index=True
     )

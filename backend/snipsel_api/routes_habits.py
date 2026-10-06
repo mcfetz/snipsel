@@ -467,8 +467,12 @@ def habit_stats():
                 "completion_rate": round(completion_rate, 2),
                 "current_streak": current_streak,
                 "longest_streak": longest_streak,
-                "first_completion": first_completion.isoformat() if first_completion else None,
-                "last_completion": last_completion.isoformat() if last_completion else None,
+                "first_completion": first_completion.isoformat()
+                if first_completion
+                else None,
+                "last_completion": last_completion.isoformat()
+                if last_completion
+                else None,
                 "avg_interval_days": avg_interval_days,
                 "top_weekday": top_weekday,
                 "top_weekday_count": top_weekday_count,

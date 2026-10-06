@@ -367,8 +367,6 @@ def passkeys_register_complete():
     return json_response({"user": _user_json(user)})
 
 
-
-
 @auth_bp.post("/passkeys/login/begin")
 @enforce_json
 def passkeys_login_begin():
@@ -471,6 +469,7 @@ def passkeys_login_complete():
     session.permanent = True
     session["user_id"] = user.id
     return json_response({"user": _user_json(user)})
+
 
 @auth_bp.get("/passkeys")
 @require_auth
@@ -646,9 +645,7 @@ def update_me():
         ).strip() or None
 
     if "diced_moments_tags" in data:
-        user.diced_moments_tags = (
-            data.get("diced_moments_tags") or ""
-        ).strip() or None
+        user.diced_moments_tags = (data.get("diced_moments_tags") or "").strip() or None
 
     if "email" in data or "password" in data:
         current_password = data.get("current_password") or ""
@@ -875,9 +872,7 @@ def _get_oidc_metadata():
         _oidc_metadata = resp.json()
         return _oidc_metadata
     except Exception:
-        logging.getLogger("snipsel_api.oidc").exception(
-            "Failed to fetch OIDC metadata"
-        )
+        logging.getLogger("snipsel_api.oidc").exception("Failed to fetch OIDC metadata")
         return None
 
 

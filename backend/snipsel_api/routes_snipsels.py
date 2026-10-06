@@ -563,7 +563,7 @@ def update_snipsel(snipsel_id: str):
         try:
             s.diced_count = int(data.get("diced_count", 0))
         except (ValueError, TypeError):
-             pass
+            pass
     if "content_markdown" in data and has_write_access:
         s.content_markdown = data.get("content_markdown")
     if "task_done" in data:
@@ -575,14 +575,14 @@ def update_snipsel(snipsel_id: str):
                 status = int(val) if val is not None else 0
             except (ValueError, TypeError):
                 status = 0
-        
+
         old_status = int(s.task_done)
         s.task_done = status
-        
+
         if status in {1, 2}:
             s.done_at = utcnow()
             s.done_by_id = user.id
-            
+
             # Completion notification and recurrence only for status 1 (Done)
             if status == 1 and old_status == 0:
                 if user.id != s.created_by_id and s.created_by_id:
@@ -652,7 +652,8 @@ def update_snipsel(snipsel_id: str):
                                 db.session.execute(
                                     db.update(CollectionSnipsel)
                                     .where(
-                                        CollectionSnipsel.collection_id == p.collection_id,
+                                        CollectionSnipsel.collection_id
+                                        == p.collection_id,
                                         CollectionSnipsel.position > p.position,
                                     )
                                     .values(position=CollectionSnipsel.position + 1)
@@ -770,7 +771,11 @@ def delete_from_collection(collection_id: str, snipsel_id: str):
     # Notify: snipsel removed from collection
     sse_bus.publish(
         _snipsel_collection_user_ids(collection_id),
-        {"type": "snipsels_updated", "collection_id": collection_id, "ids": [snipsel_id]},
+        {
+            "type": "snipsels_updated",
+            "collection_id": collection_id,
+            "ids": [snipsel_id],
+        },
         origin_client_id=request.headers.get("X-Client-Id"),
     )
     return json_response({"ok": True})
@@ -1011,15 +1016,19 @@ def _sync_tags_mentions(
         db.session.add(SnipselMention(snipsel_id=snipsel.id, mention_id=m.id))
 
     # Check if this snipsel is in an active daily collection
-    mention_day = db.session.execute(
-        db.select(Collection.list_for_day)
-        .join(CollectionSnipsel, Collection.id == CollectionSnipsel.collection_id)
-        .where(
-            CollectionSnipsel.snipsel_id == snipsel.id,
-            Collection.list_for_day.is_not(None),
-            Collection.deleted_at.is_(None),
+    mention_day = (
+        db.session.execute(
+            db.select(Collection.list_for_day)
+            .join(CollectionSnipsel, Collection.id == CollectionSnipsel.collection_id)
+            .where(
+                CollectionSnipsel.snipsel_id == snipsel.id,
+                Collection.list_for_day.is_not(None),
+                Collection.deleted_at.is_(None),
+            )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
     is_in_daily = mention_day is not None
 
     for name in set(mention_names):
@@ -1052,13 +1061,16 @@ def _sync_tags_mentions(
                             if preview
                             else f"{author_name} mentioned you."
                         )
-                    
+
                     notification_collection_id = None
                     if is_in_daily:
                         from snipsel_api.routes_collections import (
                             _get_or_create_daily_collection,
                         )
-                        dest_col = _get_or_create_daily_collection(mentioned_user.id, mention_day)
+
+                        dest_col = _get_or_create_daily_collection(
+                            mentioned_user.id, mention_day
+                        )
                         notification_collection_id = dest_col.id
 
                     if not _is_snipsel_muted(snipsel.id):
@@ -1170,9 +1182,12 @@ def _is_snipsel_muted(snipsel_id: str) -> bool:
     return not_muted_count == 0
 
 
-def _snipsel_json(s: Snipsel, user_id: str | None = None, collection_refs: list[dict] | None = None) -> dict:
+def _snipsel_json(
+    s: Snipsel, user_id: str | None = None, collection_refs: list[dict] | None = None
+) -> dict:
     if collection_refs is None:
         from sqlalchemy.orm import joinedload
+
         refs = (
             db.session.execute(
                 db.select(SnipselCollectionRef)
@@ -1205,11 +1220,15 @@ def _snipsel_json(s: Snipsel, user_id: str | None = None, collection_refs: list[
         seen_ids = set()
         for r in refs:
             if r.collection_id not in seen_ids:
-                collection_refs.append({"title": r.collection.title, "collection_id": r.collection_id})
+                collection_refs.append(
+                    {"title": r.collection.title, "collection_id": r.collection_id}
+                )
                 seen_ids.add(r.collection_id)
         for m in memberships:
             if m.collection_id not in seen_ids:
-                collection_refs.append({"title": m.collection.title, "collection_id": m.collection_id})
+                collection_refs.append(
+                    {"title": m.collection.title, "collection_id": m.collection_id}
+                )
                 seen_ids.add(m.collection_id)
 
     return {
@@ -1258,6 +1277,7 @@ def _collection_item_json(
 ) -> dict:
     if refs is None:
         from sqlalchemy.orm import joinedload
+
         refs = list(
             db.session.execute(
                 db.select(SnipselCollectionRef)
@@ -1271,12 +1291,11 @@ def _collection_item_json(
             .scalars()
             .all()
         )
-    
+
     formatted_refs = [
-        {"title": r.collection.title, "collection_id": r.collection_id}
-        for r in refs
+        {"title": r.collection.title, "collection_id": r.collection_id} for r in refs
     ]
-    
+
     return {
         "collection_id": cs.collection_id,
         "snipsel_id": cs.snipsel_id,

@@ -42,7 +42,10 @@ def upload_attachment(snipsel_id: str):
     if (
         not snipsel
         or snipsel.deleted_at is not None
-        or (snipsel.owner_user_id != user.id and not can_write_snipsel_via_collections(user.id, snipsel_id))
+        or (
+            snipsel.owner_user_id != user.id
+            and not can_write_snipsel_via_collections(user.id, snipsel_id)
+        )
     ):
         raise api_error(404, "not_found", "Snipsel not found")
 
@@ -112,7 +115,10 @@ def upload_collection_header(collection_id: str):
     if (
         not collection
         or collection.deleted_at is not None
-        or (collection.owner_user_id != user.id and not can_write_collection(user.id, collection_id))
+        or (
+            collection.owner_user_id != user.id
+            and not can_write_collection(user.id, collection_id)
+        )
     ):
         raise api_error(404, "not_found", "Collection not found")
 
@@ -153,11 +159,11 @@ def upload_collection_header(collection_id: str):
         created_by_id=user.id,
     )
     db.session.add(att)
-    
+
     collection.header_image_url = f"/api/attachments/{att_id}"
     collection.modified_at = utcnow()
     collection.modified_by_id = user.id
-    
+
     db.session.commit()
 
     return json_response(
@@ -177,39 +183,44 @@ def upload_collection_header(collection_id: str):
 def download_attachment(attachment_id: str):
     user_id = session.get("user_id")
     public_authorized = session.get("public_authorized_collections") or []
-    
+
     att = db.session.get(Attachment, attachment_id)
     if not att:
         raise api_error(404, "not_found", "Attachment not found")
 
     is_authorized = False
-    
+
     if user_id:
         # Standard user check
         if att.snipsel_id:
             snipsel = db.session.get(Snipsel, att.snipsel_id)
             if snipsel and snipsel.deleted_at is None:
-                if snipsel.owner_user_id == user_id or can_read_snipsel_via_collections(user_id, snipsel.id):
+                if snipsel.owner_user_id == user_id or can_read_snipsel_via_collections(
+                    user_id, snipsel.id
+                ):
                     is_authorized = True
                 else:
                     user = db.session.get(User, user_id)
                     uname = (getattr(user, "username", "") or "").strip().casefold()
                     if uname:
                         is_mentioned = (
-                            (db.session.execute(
+                            db.session.execute(
                                 db.select(db.func.count())
                                 .select_from(SnipselMention)
                                 .join(Mention, Mention.id == SnipselMention.mention_id)
-                                .where(SnipselMention.snipsel_id == snipsel.id, Mention.name == uname)
-                            ).scalar() or 0)
-                            > 0
-                        )
+                                .where(
+                                    SnipselMention.snipsel_id == snipsel.id,
+                                    Mention.name == uname,
+                                )
+                            ).scalar()
+                            or 0
+                        ) > 0
                         if is_mentioned:
                             is_authorized = True
         elif att.collection_id:
             if can_read_collection(user_id, att.collection_id):
                 is_authorized = True
-    
+
     if not is_authorized and public_authorized:
         # Check public access
         if att.collection_id:
@@ -217,14 +228,17 @@ def download_attachment(attachment_id: str):
                 is_authorized = True
         elif att.snipsel_id:
             # Check if snipsel is in any of the authorized public collections
-            in_public = (db.session.execute(
-                db.select(db.func.count())
-                .select_from(CollectionSnipsel)
-                .where(
-                    CollectionSnipsel.snipsel_id == att.snipsel_id,
-                    CollectionSnipsel.collection_id.in_(public_authorized)
-                )
-            ).scalar() or 0) > 0
+            in_public = (
+                db.session.execute(
+                    db.select(db.func.count())
+                    .select_from(CollectionSnipsel)
+                    .where(
+                        CollectionSnipsel.snipsel_id == att.snipsel_id,
+                        CollectionSnipsel.collection_id.in_(public_authorized),
+                    )
+                ).scalar()
+                or 0
+            ) > 0
             if in_public:
                 is_authorized = True
 
@@ -245,39 +259,44 @@ def download_attachment(attachment_id: str):
 def download_thumbnail(attachment_id: str):
     user_id = session.get("user_id")
     public_authorized = session.get("public_authorized_collections") or []
-    
+
     att = db.session.get(Attachment, attachment_id)
     if not att or not att.thumbnail_path:
         raise api_error(404, "not_found", "Thumbnail not found")
 
     is_authorized = False
-    
+
     if user_id:
         # Standard user check
         if att.snipsel_id:
             snipsel = db.session.get(Snipsel, att.snipsel_id)
             if snipsel and snipsel.deleted_at is None:
-                if snipsel.owner_user_id == user_id or can_read_snipsel_via_collections(user_id, snipsel.id):
+                if snipsel.owner_user_id == user_id or can_read_snipsel_via_collections(
+                    user_id, snipsel.id
+                ):
                     is_authorized = True
                 else:
                     user = db.session.get(User, user_id)
                     uname = (getattr(user, "username", "") or "").strip().casefold()
                     if uname:
                         is_mentioned = (
-                            (db.session.execute(
+                            db.session.execute(
                                 db.select(db.func.count())
                                 .select_from(SnipselMention)
                                 .join(Mention, Mention.id == SnipselMention.mention_id)
-                                .where(SnipselMention.snipsel_id == snipsel.id, Mention.name == uname)
-                            ).scalar() or 0)
-                            > 0
-                        )
+                                .where(
+                                    SnipselMention.snipsel_id == snipsel.id,
+                                    Mention.name == uname,
+                                )
+                            ).scalar()
+                            or 0
+                        ) > 0
                         if is_mentioned:
                             is_authorized = True
         elif att.collection_id:
             if can_read_collection(user_id, att.collection_id):
                 is_authorized = True
-    
+
     if not is_authorized and public_authorized:
         # Check public access
         if att.collection_id:
@@ -285,14 +304,17 @@ def download_thumbnail(attachment_id: str):
                 is_authorized = True
         elif att.snipsel_id:
             # Check if snipsel is in any of the authorized public collections
-            in_public = (db.session.execute(
-                db.select(db.func.count())
-                .select_from(CollectionSnipsel)
-                .where(
-                    CollectionSnipsel.snipsel_id == att.snipsel_id,
-                    CollectionSnipsel.collection_id.in_(public_authorized)
-                )
-            ).scalar() or 0) > 0
+            in_public = (
+                db.session.execute(
+                    db.select(db.func.count())
+                    .select_from(CollectionSnipsel)
+                    .where(
+                        CollectionSnipsel.snipsel_id == att.snipsel_id,
+                        CollectionSnipsel.collection_id.in_(public_authorized),
+                    )
+                ).scalar()
+                or 0
+            ) > 0
             if in_public:
                 is_authorized = True
 
@@ -323,7 +345,10 @@ def delete_attachment(attachment_id: str):
         if (
             not snipsel
             or snipsel.deleted_at is not None
-            or (snipsel.owner_user_id != user.id and not can_write_snipsel_via_collections(user.id, snipsel.id))
+            or (
+                snipsel.owner_user_id != user.id
+                and not can_write_snipsel_via_collections(user.id, snipsel.id)
+            )
         ):
             raise api_error(404, "not_found", "Attachment not found")
     elif att.collection_id:
@@ -345,7 +370,9 @@ def delete_attachment(attachment_id: str):
 
     db.session.delete(att)
     if att.snipsel_id:
-        _touch_collections_for_snipsel(snipsel_id=att.snipsel_id, modified_by_id=user.id)
+        _touch_collections_for_snipsel(
+            snipsel_id=att.snipsel_id, modified_by_id=user.id
+        )
     elif att.collection_id:
         coll = db.session.get(Collection, att.collection_id)
         if coll:
@@ -357,9 +384,13 @@ def delete_attachment(attachment_id: str):
 
 def delete_collection_header_attachments(collection_id: str):
     """Deletes all attachments associated with a collection's header."""
-    header_atts = db.session.execute(
-        db.select(Attachment).where(Attachment.collection_id == collection_id)
-    ).scalars().all()
+    header_atts = (
+        db.session.execute(
+            db.select(Attachment).where(Attachment.collection_id == collection_id)
+        )
+        .scalars()
+        .all()
+    )
     for att in header_atts:
         # Resolve paths without triggering regeneration
         paths_to_delete = []
@@ -367,7 +398,7 @@ def delete_collection_header_attachments(collection_id: str):
             paths_to_delete.append(Path(att.storage_path))
         if att.thumbnail_path:
             paths_to_delete.append(Path(att.thumbnail_path))
-            
+
         for p in paths_to_delete:
             if p and p.exists():
                 try:
@@ -376,6 +407,7 @@ def delete_collection_header_attachments(collection_id: str):
                     pass
         db.session.delete(att)
     db.session.flush()
+
 
 def delete_attachment_file(att: Attachment) -> None:
     """Deletes the physical files associated with an attachment, given the Attachment object."""
@@ -489,18 +521,22 @@ def _resolve_thumbnail_path(att: Attachment, regenerate: bool = True) -> Path | 
             thumb_name = f"{att.id}_thumb.jpg"
             if "_header_thumb.jpg" in (att.thumbnail_path or ""):
                 thumb_name = f"{att.id}_header_thumb.jpg"
-            elif "_video_thumb.jpg" in (att.thumbnail_path or "") or (att.mime_type and att.mime_type.startswith("video/")):
+            elif "_video_thumb.jpg" in (att.thumbnail_path or "") or (
+                att.mime_type and att.mime_type.startswith("video/")
+            ):
                 thumb_name = f"{att.id}_video_thumb.jpg"
-            
+
             thumb_path = upload_dir / thumb_name
-            
+
             success = False
             if "_video_thumb.jpg" in thumb_name:
                 success = _write_video_thumbnail(original, thumb_path)
             else:
-                _write_thumbnail(original, thumb_path, header=("_header_thumb.jpg" in thumb_name))
+                _write_thumbnail(
+                    original, thumb_path, header=("_header_thumb.jpg" in thumb_name)
+                )
                 success = True
-            
+
             if success:
                 att.thumbnail_path = str(thumb_path)
                 db.session.commit()
@@ -539,16 +575,16 @@ def _write_thumbnail(src: Path, dst: Path, header: bool = False) -> None:
                     im = im.rotate(90, expand=True)
         except Exception:
             logger.debug("EXIF orientation handling failed", exc_info=True)
-        
+
         if header:
             # For headers, we want a reasonably wide thumbnail to support "move" functionality
             # without pre-cropping. We resize to 1200px width and maintain aspect ratio.
             max_w = 1200
             if im.width > max_w:
-                w_percent = (max_w / float(im.width))
+                w_percent = max_w / float(im.width)
                 h_size = int(float(im.height) * float(w_percent))
                 im = im.resize((max_w, h_size), Image.Resampling.LANCZOS)
-            
+
             # Save as optimized JPEG
             im.convert("RGB").save(str(dst), "JPEG", quality=85, optimize=True)
         else:
@@ -560,17 +596,23 @@ def _write_thumbnail(src: Path, dst: Path, header: bool = False) -> None:
 def _write_video_thumbnail(src: Path, dst: Path) -> bool:
     """Generates a thumbnail for a video file using ffmpeg."""
     import subprocess
+
     try:
         # Extract 1 frame from 1 second into the video
         cmd = [
             "ffmpeg",
             "-y",
-            "-i", str(src),
-            "-ss", "00:00:01",
-            "-vframes", "1",
-            "-f", "image2",
-            "-vcodec", "mjpeg",
-            str(dst)
+            "-i",
+            str(src),
+            "-ss",
+            "00:00:01",
+            "-vframes",
+            "1",
+            "-f",
+            "image2",
+            "-vcodec",
+            "mjpeg",
+            str(dst),
         ]
         result = subprocess.run(cmd, capture_output=True, check=False)
         if result.returncode == 0:
@@ -589,4 +631,3 @@ def _write_video_thumbnail(src: Path, dst: Path) -> bool:
     except Exception:
         logger.warning("Error generating video thumbnail", exc_info=True)
     return False
-

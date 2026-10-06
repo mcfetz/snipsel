@@ -35,7 +35,7 @@ def _extract_prefixed(text: str, prefix: str) -> set[str]:
     return out
 
 
-_COLLECTION_REF_RE = re.compile(r'\[\[([^\[\]]+)\]\]')
+_COLLECTION_REF_RE = re.compile(r"\[\[([^\[\]]+)\]\]")
 
 
 def extract_collection_refs(text: str) -> set[str]:

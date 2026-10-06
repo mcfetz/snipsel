@@ -35,7 +35,11 @@ def get_collection_access_level(user_id: str, collection_id: str) -> str | None:
 
 
 def can_read_collection(user_id: str, collection_id: str) -> bool:
-    return get_collection_access_level(user_id, collection_id) in {"owner", "write", "read"}
+    return get_collection_access_level(user_id, collection_id) in {
+        "owner",
+        "write",
+        "read",
+    }
 
 
 def can_write_collection(user_id: str, collection_id: str) -> bool:
@@ -58,7 +62,10 @@ def can_read_snipsel_via_collections(user_id: str, snipsel_id: str) -> bool:
             .where(
                 CollectionSnipsel.snipsel_id == snipsel_id,
                 Collection.deleted_at.is_(None),
-                db.or_(Collection.owner_user_id == user_id, CollectionShare.permission.in_(["read", "write"])),
+                db.or_(
+                    Collection.owner_user_id == user_id,
+                    CollectionShare.permission.in_(["read", "write"]),
+                ),
             )
         ).scalar()
         or 0
@@ -82,24 +89,29 @@ def can_write_snipsel_via_collections(user_id: str, snipsel_id: str) -> bool:
             .where(
                 CollectionSnipsel.snipsel_id == snipsel_id,
                 Collection.deleted_at.is_(None),
-                db.or_(Collection.owner_user_id == user_id, CollectionShare.permission == "write"),
+                db.or_(
+                    Collection.owner_user_id == user_id,
+                    CollectionShare.permission == "write",
+                ),
             )
         ).scalar()
         or 0
     )
     return count > 0
 
+
 PASSCODE_GRACE_MINUTES = 2
+
 
 def is_passcode_unlocked(collection_id: str) -> bool:
     """Returns True if the current session has a valid passcode unlock for this collection."""
     verified_at_str = session.get("passcode_verified_at")
     verified_cid = session.get("passcode_verified_collection_id")
-    
+
     # Sticky unlock: always allow if this is the active collection
     if verified_cid == collection_id:
         return True
-    
+
     # Grace period: allow if verified within the last 2 minutes
     if verified_at_str:
         try:
@@ -108,5 +120,5 @@ def is_passcode_unlocked(collection_id: str) -> bool:
                 return True
         except ValueError:
             pass
-    
+
     return False

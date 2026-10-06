@@ -53,7 +53,9 @@ def _twos_api_request(endpoint: str, data: dict | None = None) -> dict:
         print(f"[TwoS Import] API error {e.code}: {error_body}")
         raise api_error(e.code, "external_error", f"TwoS API error: {error_body}")
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to TwoS: {e!s}") from e
+        raise api_error(
+            502, "external_error", f"Failed to connect to TwoS: {e!s}"
+        ) from e
 
 
 def _download_image(url: str) -> bytes | None:
@@ -94,7 +96,9 @@ def _write_thumbnail(src_path: Path, dst_path: Path) -> None:
         logger.warning("[TwoS Import] Failed to create thumbnail", exc_info=True)
 
 
-def _download_and_create_attachment(photo_url: str, snipsel_id: str, user_id: str, index: int) -> Attachment | None:
+def _download_and_create_attachment(
+    photo_url: str, snipsel_id: str, user_id: str, index: int
+) -> Attachment | None:
     """Download a photo and create an attachment record."""
     upload_dir = Path(current_app.config.get("SNIPSEL_UPLOAD_DIR", "./uploads"))
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -186,7 +190,9 @@ def twos_login():
     except ApiError:
         raise
     except Exception as e:
-        raise api_error(502, "external_error", f"Failed to connect to TwoS: {e!s}") from e
+        raise api_error(
+            502, "external_error", f"Failed to connect to TwoS: {e!s}"
+        ) from e
 
 
 @importer_bp.route("/twos/lists", methods=["POST"])
@@ -207,18 +213,18 @@ def twos_lists():
     try:
         all_lists_data = []
         page = 0
-        
+
         while True:
             print(f"[TwoS Import] Fetching lists page {page}...")
             result = _twos_api_request(
                 f"/apiV2/user/{user_id}/entries/newest",
                 data={"page": page, "user_id": user_id, "token": token},
             )
-            
+
             entries = result.get("entries") or []
             if not entries:
                 break
-                
+
             all_lists_data.extend(entries)
             page += 1
 
@@ -324,8 +330,8 @@ def twos_import():
                 "startDate": "1980-01-01T00:00:00.000Z",
                 "endDate": "2030-01-01T23:59:59.000Z",
                 "user_id": twos_user_id,
-                "token": token
-            }
+                "token": token,
+            },
         )
         notifications = notif_result.get("notifications", [])
         print(f"[TwoS Import] Found {len(notifications)} notifications.")
@@ -340,7 +346,7 @@ def twos_import():
     import_context = {
         "imported_ids": {},
         "active_ids": set(),
-        "notification_lookup": notification_lookup
+        "notification_lookup": notification_lookup,
     }
 
     imported = 0
@@ -413,7 +419,9 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
             logger.exception(f"[TwoS Import] Failed to fetch list {list_id}")
             return None
 
-        lst = result.get("entry", result)  # Response may have "entry" wrapper or be direct
+        lst = result.get(
+            "entry", result
+        )  # Response may have "entry" wrapper or be direct
         list_name = lst.get("title", "Untitled")
         print(f"[TwoS Import] Importing list: {list_name} ({list_id})")
 
@@ -452,7 +460,9 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
                 existing.deleted_at = db.func.now()
                 db.session.flush()
             else:
-                print(f"[TwoS Import] Skipping existing list (already in DB): {list_name}")
+                print(
+                    f"[TwoS Import] Skipping existing list (already in DB): {list_name}"
+                )
                 context["imported_ids"][list_id] = existing.id
                 return existing.id
 
@@ -473,9 +483,11 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
                 normalised_name = list_name
                 for bad, good in _TWOS_DAY_FIXES.items():
                     if normalised_name.startswith(bad):
-                        normalised_name = good + normalised_name[len(bad):]
+                        normalised_name = good + normalised_name[len(bad) :]
                         break
-                dt = datetime.strptime(normalised_name, "%a %b %d, %Y").replace(tzinfo=UTC)
+                dt = datetime.strptime(normalised_name, "%a %b %d, %Y").replace(
+                    tzinfo=UTC
+                )
                 list_for_day = dt.date()
             except Exception:
                 logger.debug("Could not parse list name as a date", exc_info=True)
@@ -544,20 +556,29 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
             # Handle Reminders (Notifications in Twos)
             reminder_at = None
             reminder_rrule = None
-            
+
             notif = context["notification_lookup"].get(thing_id)
             if notif and not notif.get("hide"):
                 fire_date_ms = notif.get("fireDate")
                 if fire_date_ms:
                     try:
-                        reminder_at = datetime.fromtimestamp(int(fire_date_ms) / 1000.0, tz=UTC).replace(tzinfo=None)
-                        print(f"[TwoS Import]   Reminder found for '{body[:20]}...': {reminder_at}")
-                        
+                        reminder_at = datetime.fromtimestamp(
+                            int(fire_date_ms) / 1000.0, tz=UTC
+                        ).replace(tzinfo=None)
+                        print(
+                            f"[TwoS Import]   Reminder found for '{body[:20]}...': {reminder_at}"
+                        )
+
                         # Handle repeat interval
                         rep = notif.get("repeatInterval")
                         every = notif.get("everyNumber", 1)
                         if rep:
-                            freq_map = {"day": "DAILY", "week": "WEEKLY", "month": "MONTHLY", "year": "YEARLY"}
+                            freq_map = {
+                                "day": "DAILY",
+                                "week": "WEEKLY",
+                                "month": "MONTHLY",
+                                "year": "YEARLY",
+                            }
                             freq = freq_map.get(rep.lower())
                             if freq:
                                 reminder_rrule = f"FREQ={freq}"
@@ -589,7 +610,9 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
             if photos:
                 for photo_idx, photo_url in enumerate(photos):
                     if photo_url and isinstance(photo_url, str):
-                        _download_and_create_attachment(photo_url, snipsel.id, user.id, photo_idx + 1)
+                        _download_and_create_attachment(
+                            photo_url, snipsel.id, user.id, photo_idx + 1
+                        )
 
             cs = CollectionSnipsel(
                 collection_id=collection.id,
@@ -602,18 +625,27 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
 
             if is_subentry:
                 ref_list_id = thing.get("subEntry_id")
-                linked_collection_id = import_list_with_id(user, data, ref_list_id, context)
+                linked_collection_id = import_list_with_id(
+                    user, data, ref_list_id, context
+                )
                 if linked_collection_id:
                     db.session.flush()
-                    exists = db.session.execute(
-                        db.select(SnipselCollectionRef).where(
-                            SnipselCollectionRef.snipsel_id == snipsel.id,
-                            SnipselCollectionRef.collection_id == linked_collection_id
+                    exists = (
+                        db.session.execute(
+                            db.select(SnipselCollectionRef).where(
+                                SnipselCollectionRef.snipsel_id == snipsel.id,
+                                SnipselCollectionRef.collection_id
+                                == linked_collection_id,
+                            )
                         )
-                    ).scalars().first()
-                    
+                        .scalars()
+                        .first()
+                    )
+
                     if not exists:
-                        ref = SnipselCollectionRef(snipsel_id=snipsel.id, collection_id=linked_collection_id)
+                        ref = SnipselCollectionRef(
+                            snipsel_id=snipsel.id, collection_id=linked_collection_id
+                        )
                         db.session.add(ref)
                         db.session.flush()
 
