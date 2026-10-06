@@ -1,0 +1,17 @@
+# Local checks, pinned to the same versions as CI (.github/workflows/lint.yml).
+# One-time setup: uv tool install pre-commit && pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: backend-ruff
+        name: ruff (check + format, backend)
+        entry: bash -c 'uvx --from ruff==0.16.10 ruff check . && uvx --from ruff==0.16.10 ruff format --check .'
+        language: system
+        pass_filenames: false
+        files: \.py$
+      - id: backend-ty
+        name: ty type check (backend)
+        entry: bash -c 'cd backend && uv sync --frozen && uvx --from ty==0.0.84 ty check .'
+        language: system
+        pass_filenames: false
+        files: ^backend/.*\.py$

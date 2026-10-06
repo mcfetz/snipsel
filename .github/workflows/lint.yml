@@ -21,8 +21,11 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v10.2.0
 
-      - name: Run ruff
+      - name: Run ruff check
         run: uvx --from ruff==0.16.10 ruff check .
+
+      - name: Check ruff formatting
+        run: uvx --from ruff==0.16.10 ruff format --check .
 
   ty:
     runs-on: ubuntu-latest
@@ -40,4 +43,4 @@ jobs:
         run: uv sync --frozen
 
       - name: Run ty
-        run: uvx --from ty==0.0.84 ty check snipsel_api
+        run: uvx --from ty==0.0.84 ty check .
