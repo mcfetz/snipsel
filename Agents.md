@@ -43,7 +43,23 @@ Every code change must be verified before committing.
 - Do not commit code that fails linting, build, or compilation checks.
 - If multiple validation steps exist, run the relevant ones for the affected code.
 
-**Examples:**
+**Examples for this repository:**
+```bash
+# Backend lint (from repository root; config: .ruff.toml)
+uvx --from ruff==0.16.10 ruff check .
+
+# Backend type check (from backend/; config: backend/ty.toml)
+cd backend && uvx --from ty==0.0.84 ty check snipsel_api
+
+# Frontend (from frontend/)
+npm run build
+npm run check   # svelte-check baseline: 317 pre-existing errors, add none
+```
+
+CI runs ruff and ty on every push and pull request
+(`.github/workflows/lint.yml`); both must stay at zero findings.
+
+Generic examples:
 ```bash
 npm run lint
 npm run build

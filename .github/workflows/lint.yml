@@ -1,0 +1,43 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
+
+      - name: Run ruff
+        run: uvx --from ruff==0.16.10 ruff check .
+
+  ty:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run ty
+        run: uvx --from ty==0.0.84 ty check snipsel_api
