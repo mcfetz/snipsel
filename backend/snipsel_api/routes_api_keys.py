@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import secrets
 import subprocess
 import uuid
-from datetime import datetime
 from pathlib import Path
 
 from flask import Blueprint, current_app, request
@@ -28,15 +28,19 @@ from snipsel_api.auth_session import (
 from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
 from snipsel_api.models import (
-    User,
-    UserApiKey,
+    Attachment,
     Collection,
     CollectionSnipsel,
     Snipsel,
-    Tag,
     SnipselTag,
-    Attachment,
+    Tag,
+    User,
+    UserApiKey,
+    utc_today,
+    utcnow,
 )
+
+logger = logging.getLogger(__name__)
 
 api_keys_bp = Blueprint("api_keys", __name__)
 
@@ -173,7 +177,7 @@ def _get_user_from_api_key(api_key: str) -> User | None:
         return None
 
     # Update last used timestamp
-    api_key_record.last_used_at = datetime.utcnow()
+    api_key_record.last_used_at = utcnow()
     db.session.commit()
 
     # Get the user
@@ -186,9 +190,8 @@ def _get_user_from_api_key(api_key: str) -> User | None:
 
 def _get_or_create_day_collection(user_id: str) -> Collection:
     """Get or create today's collection for a user."""
-    from datetime import date
 
-    today = date.today()
+    today = utc_today()
 
     # Look for today's collection
     collection = (
@@ -292,7 +295,7 @@ def quick_add_snipsel():
 
         for uploaded_file in uploaded_files:
             att_id = str(uuid.uuid4())
-            safe_name = os.path.basename(uploaded_file.filename)
+            safe_name = os.path.basename(uploaded_file.filename or "")
             storage_path = upload_dir / f"{att_id}_{safe_name}"
 
             uploaded_file.save(storage_path)
@@ -431,7 +434,7 @@ def _write_thumbnail(src: Path, dst: Path) -> None:
                 elif orientation == 8:
                     im = im.rotate(90, expand=True)
         except Exception:
-            pass
+            logger.debug("EXIF orientation handling failed", exc_info=True)
         im.thumbnail((512, 512))
         im = im.convert("RGB")
         im.save(dst, format="JPEG", quality=80)
@@ -466,6 +469,6 @@ def _write_video_thumbnail(src: Path, dst: Path) -> bool:
                 if dst.exists():
                     _write_thumbnail(dst, dst)
                 return True
-    except Exception as e:
-        print(f"Error generating video thumbnail: {e}")
+    except Exception:
+        logger.warning("Error generating video thumbnail", exc_info=True)
     return False

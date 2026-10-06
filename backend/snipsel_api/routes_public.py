@@ -1,14 +1,23 @@
 from __future__ import annotations
-import uuid
-import re
-from flask import Blueprint, request, session, current_app
-from snipsel_api.extensions import db
-from snipsel_api.models import Collection, Snipsel, User, Attachment, CollectionSnipsel, CollectionShare
+
+from flask import Blueprint, request, session
+from sqlalchemy import func
+
 from snipsel_api.auth_session import json_response
 from snipsel_api.errors import api_error
-from datetime import datetime
-from sqlalchemy import func
-from snipsel_api.routes_snipsels import _collection_item_json, _sync_backlinks, _sync_tags_mentions
+from snipsel_api.extensions import db
+from snipsel_api.models import (
+    Collection,
+    CollectionShare,
+    CollectionSnipsel,
+    Snipsel,
+    utcnow,
+)
+from snipsel_api.routes_snipsels import (
+    _collection_item_json,
+    _sync_backlinks,
+    _sync_tags_mentions,
+)
 
 public_bp = Blueprint("public", __name__)
 
@@ -80,7 +89,11 @@ def verify_public_passcode(token: str):
     owner = c.owner
     # Use the owner's passcode for the collection
     from werkzeug.security import check_password_hash
-    if not owner.passcode_hash or not check_password_hash(owner.passcode_hash, passcode):
+    if (
+        not owner.passcode_hash
+        or not isinstance(passcode, str)
+        or not check_password_hash(owner.passcode_hash, passcode)
+    ):
         raise api_error(401, "invalid_passcode", "Invalid passcode")
         
     session["public_passcode_verified_collection_id"] = c.id
@@ -201,7 +214,7 @@ def public_patch_snipsel(token: str, snipsel_id: str):
         s.task_done = bool(data["task_done"])
     
     s.modified_by_id = "public"
-    s.modified_at = datetime.utcnow()
+    s.modified_at = utcnow()
 
     _sync_tags_mentions(user_id=c.owner_user_id, snipsel=s)
     _sync_backlinks(user_id=c.owner_user_id, snipsel=s)

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 import re
 from datetime import datetime
-from dateutil import rrule
 
+from dateutil import rrule
 from flask import Blueprint, request
 
+from snipsel_api import sse_bus
 from snipsel_api.auth_session import (
     current_user,
     enforce_json,
@@ -14,21 +16,12 @@ from snipsel_api.auth_session import (
 )
 from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
-from snipsel_api.permissions import (
-    can_read_collection,
-    can_write_collection,
-    can_read_snipsel_via_collections,
-    can_write_snipsel_via_collections,
-    is_passcode_unlocked,
-)
-from snipsel_api.routes_search import clear_search_cache
-
 from snipsel_api.models import (
-    Attachment,
-    CollectionSnipsel,
     Collection,
     CollectionShare,
+    CollectionSnipsel,
     Mention,
+    Notification,
     Snipsel,
     SnipselCollectionRef,
     SnipselLink,
@@ -37,13 +30,20 @@ from snipsel_api.models import (
     SnipselTag,
     Tag,
     User,
-    Notification,
+    utcnow,
 )
-from snipsel_api import sse_bus
+from snipsel_api.permissions import (
+    can_read_collection,
+    can_read_snipsel_via_collections,
+    can_write_collection,
+    can_write_snipsel_via_collections,
+    is_passcode_unlocked,
+)
+from snipsel_api.routes_search import clear_search_cache
 
 
 def _touch_collections_for_snipsel(*, snipsel_id: str, modified_by_id: str) -> None:
-    now = datetime.utcnow()
+    now = utcnow()
     collection_ids = (
         db.session.execute(
             db.select(CollectionSnipsel.collection_id).where(
@@ -100,11 +100,14 @@ def _hard_delete_snipsel(s: Snipsel) -> None:
 
 
 from sqlalchemy.orm import joinedload, selectinload
+
 from snipsel_api.utils_text import (
     extract_collection_refs,
     extract_mentions,
     extract_tags,
 )
+
+logger = logging.getLogger(__name__)
 
 snipsels_bp = Blueprint("snipsels", __name__)
 
@@ -317,7 +320,7 @@ def reference_snipsel(collection_id: str, snipsel_id: str):
     db.session.execute(
         db.update(Collection)
         .where(Collection.id == collection_id, Collection.deleted_at.is_(None))
-        .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
+        .values(modified_at=utcnow(), modified_by_id=user.id)
     )
     clear_search_cache(user.id)
     db.session.commit()
@@ -543,9 +546,10 @@ def update_snipsel(snipsel_id: str):
         s.type == "task" and (has_collection_access or is_mentioned)
     )
 
-    if not has_write_access:
-        if not (can_toggle_task_done and "task_done" in (request.get_json() or {})):
-            raise api_error(404, "not_found", "Snipsel not found")
+    if not has_write_access and not (
+        can_toggle_task_done and "task_done" in (request.get_json() or {})
+    ):
+        raise api_error(404, "not_found", "Snipsel not found")
     data = request.get_json() or {}
 
     old_type = s.type
@@ -568,7 +572,7 @@ def update_snipsel(snipsel_id: str):
             status = 1 if val else 0
         else:
             try:
-                status = int(val)
+                status = int(val) if val is not None else 0
             except (ValueError, TypeError):
                 status = 0
         
@@ -576,7 +580,7 @@ def update_snipsel(snipsel_id: str):
         s.task_done = status
         
         if status in {1, 2}:
-            s.done_at = datetime.utcnow()
+            s.done_at = utcnow()
             s.done_by_id = user.id
             
             # Completion notification and recurrence only for status 1 (Done)
@@ -661,9 +665,12 @@ def update_snipsel(snipsel_id: str):
                                     indent=p.indent,
                                 )
                                 db.session.add(new_p)
-                    except Exception as e:
+                    except Exception:
                         # Log error but don't fail completion
-                        print(f"Error handling recurrence for snipsel {s.id}: {e}")
+                        logger.warning(
+                            f"Error handling recurrence for snipsel {s.id}",
+                            exc_info=True,
+                        )
         else:
             s.done_at = None
             s.done_by_id = None
@@ -750,13 +757,13 @@ def delete_from_collection(collection_id: str, snipsel_id: str):
         if _is_empty_snipsel(s):
             _hard_delete_snipsel(s)
         elif s.deleted_at is None:
-            s.deleted_at = datetime.utcnow()
+            s.deleted_at = utcnow()
             s.deleted_by_id = user.id
 
     db.session.execute(
         db.update(Collection)
         .where(Collection.id == collection_id, Collection.deleted_at.is_(None))
-        .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
+        .values(modified_at=utcnow(), modified_by_id=user.id)
     )
     clear_search_cache(user.id)
     db.session.commit()
@@ -819,7 +826,7 @@ def reorder_collection(collection_id: str):
     db.session.execute(
         db.update(Collection)
         .where(Collection.id == collection_id, Collection.deleted_at.is_(None))
-        .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
+        .values(modified_at=utcnow(), modified_by_id=user.id)
     )
     db.session.commit()
     # Notify: order changed in collection
@@ -851,7 +858,7 @@ def delete_completed_tasks(collection_id: str):
     items = db.session.execute(stmt).scalars().all()
 
     deleted_count = 0
-    now = datetime.utcnow()
+    now = utcnow()
 
     for cs in items:
         snipsel_id = cs.snipsel_id
@@ -913,7 +920,7 @@ def reset_completed_tasks(collection_id: str):
     snipsels = db.session.execute(stmt).scalars().all()
 
     reset_count = 0
-    now = datetime.utcnow()
+    now = utcnow()
 
     for s in snipsels:
         s.task_done = 0
@@ -1048,7 +1055,9 @@ def _sync_tags_mentions(
                     
                     notification_collection_id = None
                     if is_in_daily:
-                        from snipsel_api.routes_collections import _get_or_create_daily_collection
+                        from snipsel_api.routes_collections import (
+                            _get_or_create_daily_collection,
+                        )
                         dest_col = _get_or_create_daily_collection(mentioned_user.id, mention_day)
                         notification_collection_id = dest_col.id
 
@@ -1249,7 +1258,7 @@ def _collection_item_json(
 ) -> dict:
     if refs is None:
         from sqlalchemy.orm import joinedload
-        refs = (
+        refs = list(
             db.session.execute(
                 db.select(SnipselCollectionRef)
                 .join(Collection, Collection.id == SnipselCollectionRef.collection_id)
@@ -1316,12 +1325,12 @@ def empty_trash_snipsels():
 
     from snipsel_api.models import (
         CollectionSnipsel,
+        Notification,
         SnipselCollectionRef,
         SnipselLink,
-        SnipselTag,
         SnipselMention,
         SnipselReaction,
-        Notification,
+        SnipselTag,
     )
     from snipsel_api.routes_attachments import delete_attachment_file
 
@@ -1381,7 +1390,7 @@ def restore_snipsel(snipsel_id: str):
     if s.deleted_at is not None:
         s.deleted_at = None
         s.deleted_by_id = None
-        s.modified_at = datetime.utcnow()
+        s.modified_at = utcnow()
         s.modified_by_id = user.id
 
     if collection_id:
@@ -1420,7 +1429,7 @@ def restore_snipsel(snipsel_id: str):
             db.session.execute(
                 db.update(Collection)
                 .where(Collection.id == collection_id, Collection.deleted_at.is_(None))
-                .values(modified_at=datetime.utcnow(), modified_by_id=user.id)
+                .values(modified_at=utcnow(), modified_by_id=user.id)
             )
 
     db.session.commit()
@@ -1440,12 +1449,12 @@ def permanent_delete_snipsel(snipsel_id: str):
 
     from snipsel_api.models import (
         CollectionSnipsel,
+        Notification,
         SnipselCollectionRef,
         SnipselLink,
-        SnipselTag,
         SnipselMention,
         SnipselReaction,
-        Notification,
+        SnipselTag,
     )
     from snipsel_api.routes_attachments import delete_attachment_file
 

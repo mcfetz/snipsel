@@ -1,8 +1,10 @@
 from __future__ import annotations
-from datetime import date, datetime, timedelta
-from typing import Optional
+
+from datetime import date, timedelta
 
 from flask import Blueprint, request
+
+from snipsel_api import sse_bus
 from snipsel_api.auth_session import (
     current_user,
     enforce_json,
@@ -10,15 +12,14 @@ from snipsel_api.auth_session import (
     require_auth,
 )
 from snipsel_api.extensions import db
-from snipsel_api.models import Habit, HabitCompletion
-from snipsel_api import sse_bus
+from snipsel_api.models import Habit, HabitCompletion, utc_today, utcnow
 
 habits_bp = Blueprint("habits", __name__)
 
 
 def _habit_json(habit: Habit, user_id: str, today: date | None = None) -> dict:
     if today is None:
-        today = date.today()
+        today = utc_today()
 
     today_completed = (
         db.session.execute(
@@ -48,7 +49,7 @@ def _habit_json(habit: Habit, user_id: str, today: date | None = None) -> dict:
     current_streak = 0
     longest_streak = 0
     streak = 0
-    prev_date: Optional[date] = None
+    prev_date: date | None = None
 
     for d in completions:
         if prev_date is None:
@@ -88,7 +89,7 @@ def list_habits():
     user = current_user()
     include_archived = request.args.get("include_archived") == "1"
     date_str = request.args.get("date")
-    target_date = date.fromisoformat(date_str) if date_str else date.today()
+    target_date = date.fromisoformat(date_str) if date_str else utc_today()
 
     q = db.select(Habit).where(
         Habit.owner_user_id == user.id,
@@ -227,7 +228,7 @@ def delete_habit(habit_id: str):
     if not habit:
         return json_response({"error": "Habit not found"}, 404)
 
-    habit.deleted_at = datetime.utcnow()
+    habit.deleted_at = utcnow()
     db.session.commit()
 
     sse_bus.publish(
@@ -257,7 +258,7 @@ def complete_habit(habit_id: str):
 
     data = request.json or {}
     date_str = data.get("date")
-    completed_date = date.fromisoformat(date_str) if date_str else date.today()
+    completed_date = date.fromisoformat(date_str) if date_str else utc_today()
 
     existing = db.session.execute(
         db.select(HabitCompletion).where(
@@ -320,7 +321,7 @@ def uncomplete_habit(habit_id: str):
         return json_response({"error": "Habit not found"}, 404)
 
     date_str = request.args.get("date")
-    completed_date = date.fromisoformat(date_str) if date_str else date.today()
+    completed_date = date.fromisoformat(date_str) if date_str else utc_today()
 
     db.session.execute(
         db.delete(HabitCompletion).where(
@@ -350,7 +351,7 @@ def habit_stats():
     if to_str:
         to_date = date.fromisoformat(to_str)
     else:
-        to_date = date.today()
+        to_date = utc_today()
 
     if from_str:
         from_date = date.fromisoformat(from_str)
@@ -409,7 +410,7 @@ def habit_stats():
         current_streak = 0
         longest_streak = 0
         streak = 0
-        prev_date: Optional[date] = None
+        prev_date: date | None = None
         for d in all_completions:
             if prev_date is None:
                 streak = 1
@@ -421,7 +422,7 @@ def habit_stats():
             longest_streak = max(longest_streak, streak)
             prev_date = d
 
-        today = date.today()
+        today = utc_today()
         if all_completions and (today - all_completions[0]).days <= 1:
             current_streak = streak
 
@@ -433,7 +434,7 @@ def habit_stats():
         weekday_counts: dict[int, int] = {}
         for d in all_completions:
             weekday_counts[d.isoweekday()] = weekday_counts.get(d.isoweekday(), 0) + 1
-        top_weekday: Optional[int] = None
+        top_weekday: int | None = None
         top_weekday_count = 0
         for iso_weekday in range(1, 8):
             count = weekday_counts.get(iso_weekday, 0)

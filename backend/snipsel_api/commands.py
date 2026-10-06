@@ -1,9 +1,12 @@
 from __future__ import annotations
-import click
+
 import os
+
+import click
 from flask.cli import with_appcontext
-from snipsel_api.extensions import db
+
 from snipsel_api import models
+from snipsel_api.extensions import db
 from snipsel_api.routes_attachments import (
     _resolve_attachment_path,
     _resolve_thumbnail_path,
@@ -154,8 +157,8 @@ def cleanup():
 @with_appcontext
 def process_reminders_command():
     """Check for due reminders and create notifications."""
-    from snipsel_api.reminders import process_reminders as run_process
     from snipsel_api.reminders import process_habit_reminders
+    from snipsel_api.reminders import process_reminders as run_process
 
     count = run_process()
     habit_count = process_habit_reminders()

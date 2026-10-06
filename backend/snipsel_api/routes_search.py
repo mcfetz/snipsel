@@ -1,14 +1,15 @@
 from __future__ import annotations
-import time
+
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from flask import Blueprint, request
-
 from sqlalchemy import literal
+from sqlalchemy.orm import joinedload
 
 from snipsel_api.auth_session import current_user, json_response, require_auth
 from snipsel_api.errors import api_error
@@ -20,13 +21,11 @@ from snipsel_api.models import (
     CollectionSnipsel,
     Mention,
     Snipsel,
-    SnipselReaction,
     SnipselMention,
     SnipselTag,
     Tag,
     User,
 )
-from sqlalchemy.orm import joinedload
 
 search_bp = Blueprint("search", __name__)
 
@@ -112,7 +111,6 @@ def list_tags():
 @cache.memoize(timeout=600)
 def _get_mentions_cached(user_id: str, scope: str):
     logger.debug(f"CACHE MISS: Fetching mentions for user={user_id} scope={scope}")
-    start = time.time()
 
     user = db.session.get(User, user_id)
     if not user:
@@ -322,7 +320,7 @@ def search():
             stmt = stmt.where(Mention.owner_user_id == user.id, Mention.name == mention)
 
     if day_parsed:
-        start = datetime(day_parsed.year, day_parsed.month, day_parsed.day)
+        start = datetime(day_parsed.year, day_parsed.month, day_parsed.day, tzinfo=UTC)
         end = start + timedelta(days=1)
         stmt = stmt.where(
             db.or_(
@@ -497,20 +495,6 @@ def get_incoming_day_mentions():
     
     uname = str(user.username).casefold()
     
-    # First check: how many mentions exist for this user?
-    mentions_for_user = db.session.execute(
-        db.select(Mention).where(Mention.name == uname)
-    ).all()
-    # Second check: how many daily collections exist for this day?
-    daily_collections = db.session.execute(
-        db.select(Collection, User.username)
-        .join(User, User.id == Collection.owner_user_id)
-        .where(
-            Collection.deleted_at.is_(None),
-            Collection.list_for_day == day_parsed,
-            Collection.owner_user_id != user.id,
-        )
-    ).all()
     # Find snipsels from OTHER users' daily collections on this day that mention the current user
     # Note: We don't require the collection to be shared - we just need to find any daily
     # collection from another user on the same day that mentions the current user

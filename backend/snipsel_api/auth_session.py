@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 from flask import Response, g, request, session
 
 from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
 from snipsel_api.models import User
-
 
 T = TypeVar("T")
 
@@ -59,7 +59,7 @@ def enforce_json(fn: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
-def json_response(payload: dict, status: int = 200) -> Response:
+def json_response(payload: dict, status: int = 200) -> tuple[Response, int]:
     from flask import jsonify
 
     return jsonify(payload), status

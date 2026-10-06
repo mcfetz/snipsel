@@ -3,26 +3,25 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pyotp
 import qrcode
 import webauthn
+from flask import Blueprint, request, send_file, session
 from webauthn import (
     generate_authentication_options,
     generate_registration_options,
     verify_authentication_response,
-    verify_registration_response,
 )
-from webauthn.helpers import bytes_to_base64url, options_to_json
+from webauthn.helpers import options_to_json
 from webauthn.helpers.structs import (
     AuthenticatorSelectionCriteria,
     PublicKeyCredentialDescriptor,
     UserVerificationRequirement,
 )
-
-from flask import Blueprint, request, send_file, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from snipsel_api.auth_session import (
@@ -38,13 +37,15 @@ from snipsel_api.extensions import db
 from snipsel_api.models import (
     Attachment,
     Collection,
-    CollectionSnipsel,
     PasswordResetToken,
     Snipsel,
     User,
     UserOidcLink,
     UserPasskey,
+    utcnow,
 )
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -354,7 +355,7 @@ def passkeys_register_complete():
             credential_current_sign_count=passkey.sign_count,
         )
     except Exception as e:
-        raise api_error(401, "verification_failed", str(e))
+        raise api_error(401, "verification_failed", str(e)) from e
 
     passkey.sign_count = verification.new_sign_count
     db.session.commit()
@@ -398,7 +399,7 @@ def passkeys_login_begin():
     options = generate_authentication_options(
         rp_id=rp_id,
         allow_credentials=[
-            webauthn.helpers.structs.PublicKeyCredentialDescriptor(
+            PublicKeyCredentialDescriptor(
                 id=webauthn.helpers.base64url_to_bytes(p.credential_id)
             )
             for p in passkeys
@@ -460,7 +461,7 @@ def passkeys_login_complete():
             credential_current_sign_count=passkey.sign_count,
         )
     except Exception as e:
-        raise api_error(401, "verification_failed", str(e))
+        raise api_error(401, "verification_failed", str(e)) from e
 
     passkey.sign_count = verification.new_sign_count
     db.session.commit()
@@ -692,7 +693,7 @@ def update_me():
                 new_password, method="pbkdf2:sha256"
             )
 
-    user.modified_at = datetime.utcnow()
+    user.modified_at = utcnow()
     db.session.commit()
     return json_response({"user": _user_json(user)})
 
@@ -713,7 +714,7 @@ def password_reset_request():
 
     raw_token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
-    expires_at = datetime.utcnow() + timedelta(hours=2)
+    expires_at = utcnow() + timedelta(hours=2)
 
     prt = PasswordResetToken(
         user_id=user.id, token_hash=token_hash, expires_at=expires_at
@@ -745,7 +746,7 @@ def password_reset_confirm():
         .scalars()
         .first()
     )
-    if not prt or prt.used_at is not None or prt.expires_at < datetime.utcnow():
+    if not prt or prt.used_at is not None or prt.expires_at < utcnow():
         raise api_error(400, "invalid_token", "Token is invalid or expired")
 
     user = db.session.get(User, prt.user_id)
@@ -753,8 +754,8 @@ def password_reset_confirm():
         raise api_error(400, "invalid_token", "Token is invalid")
 
     user.password_hash = generate_password_hash(new_password, method="pbkdf2:sha256")
-    user.modified_at = datetime.utcnow()
-    prt.used_at = datetime.utcnow()
+    user.modified_at = utcnow()
+    prt.used_at = utcnow()
     db.session.commit()
 
     return json_response({"ok": True})
@@ -813,11 +814,11 @@ def verify_passcode():
             )
 
     user.passcode_failed_attempts = 0
-    session["passcode_verified_at"] = datetime.utcnow().isoformat()
+    session["passcode_verified_at"] = utcnow().isoformat()
     session["passcode_verified_collection_id"] = collection_id
     db.session.commit()
 
-    unlocked_until = (datetime.utcnow() + timedelta(minutes=2)).isoformat() + "Z"
+    unlocked_until = (utcnow() + timedelta(minutes=2)).isoformat() + "Z"
     return json_response({"ok": True, "unlocked_until": unlocked_until})
 
 
@@ -873,11 +874,9 @@ def _get_oidc_metadata():
         resp.raise_for_status()
         _oidc_metadata = resp.json()
         return _oidc_metadata
-    except Exception as e:
-        import logging
-
-        logging.getLogger("snipsel_api.oidc").error(
-            f"Failed to fetch OIDC metadata: {e}"
+    except Exception:
+        logging.getLogger("snipsel_api.oidc").exception(
+            "Failed to fetch OIDC metadata"
         )
         return None
 
@@ -1005,6 +1004,7 @@ def oidc_callback():
             )
             userinfo = claims
         except Exception:
+            logger.debug("Could not decode ID token claims", exc_info=True)
             userinfo = None
     else:
         userinfo = None
@@ -1019,6 +1019,7 @@ def oidc_callback():
             if userinfo_response.ok:
                 userinfo = userinfo_response.json()
         except Exception:
+            logger.debug("OIDC userinfo request failed", exc_info=True)
             userinfo = None
 
     if not userinfo or not userinfo.get("sub"):

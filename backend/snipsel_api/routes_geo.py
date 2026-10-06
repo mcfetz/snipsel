@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from flask import Blueprint, request
-from sqlalchemy.orm import joinedload
 
 from snipsel_api.auth_session import current_user, json_response, require_auth
 from snipsel_api.errors import api_error

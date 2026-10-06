@@ -1,0 +1,17 @@
+# Ruff configuration for the snipsel repository.
+#
+# Intentionally minimal: the rule set stays at ruff's defaults (see CI, which
+# pins the ruff version so the enabled rules cannot drift silently).
+
+target-version = "py311"
+line-length = 88
+
+exclude = [
+  ".git",
+  ".venv",
+  "backend/.venv",
+  "backend/*.egg-info",
+  "frontend",
+  "**/node_modules",
+  "**/dist",
+]

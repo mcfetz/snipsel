@@ -21,8 +21,8 @@ import uuid
 
 from flask import Blueprint, Response, request, stream_with_context
 
-from snipsel_api.auth_session import current_user, require_auth
 from snipsel_api import sse_bus
+from snipsel_api.auth_session import current_user, require_auth
 from snipsel_api.extensions import db
 
 sse_bp = Blueprint("sse", __name__)

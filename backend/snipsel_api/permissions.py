@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+
 from flask import session
 
 from snipsel_api.extensions import db
-from snipsel_api.models import Collection, CollectionShare, CollectionSnipsel
+from snipsel_api.models import Collection, CollectionShare, CollectionSnipsel, utcnow
 
 
 def get_collection_access_level(user_id: str, collection_id: str) -> str | None:
@@ -103,7 +104,7 @@ def is_passcode_unlocked(collection_id: str) -> bool:
     if verified_at_str:
         try:
             verified_at = datetime.fromisoformat(verified_at_str)
-            if datetime.utcnow() - verified_at < timedelta(minutes=PASSCODE_GRACE_MINUTES):
+            if utcnow() - verified_at < timedelta(minutes=PASSCODE_GRACE_MINUTES):
                 return True
         except ValueError:
             pass

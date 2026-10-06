@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 
-
 _TRAILING_PUNCT_RE = re.compile(r"[\]\[\)\}\.,;:!?]+$")
 
 

@@ -1,11 +1,12 @@
 import json
 from urllib.parse import urlparse
-from pywebpush import webpush, WebPushException
+
+from pywebpush import WebPushException, webpush
 from sqlalchemy import event
 
-from snipsel_api.extensions import db
-from snipsel_api.models import PushSubscription, Notification
 from snipsel_api import sse_bus
+from snipsel_api.extensions import db
+from snipsel_api.models import Notification, PushSubscription
 
 
 def send_push_notification(user_id: str, payload: dict, commit: bool = True):
@@ -43,7 +44,10 @@ def send_push_notification(user_id: str, payload: dict, commit: bool = True):
             # push endpoint (e.g. https://fcm.googleapis.com for Chrome).
             parsed = urlparse(sub.endpoint)
             endpoint_origin = f"{parsed.scheme}://{parsed.netloc}"
-            claims_with_aud = {**vapid_claims, "aud": endpoint_origin}
+            claims_with_aud: dict[str, str | int] = {
+                **vapid_claims,
+                "aud": endpoint_origin,
+            }
 
             response = webpush(
                 subscription_info=sub_info,
@@ -51,12 +55,15 @@ def send_push_notification(user_id: str, payload: dict, commit: bool = True):
                 vapid_private_key=settings.vapid_private_key,
                 vapid_claims=claims_with_aud
             )
-            print(f"[PushService] Push success! Response: {response.status_code if response else 'No Response'}")
+            if isinstance(response, str):
+                print(f"[PushService] Push success! Response: {response or 'No Response'}")
+            else:
+                print(f"[PushService] Push success! Response: {response.status_code if response else 'No Response'}")
         except WebPushException as ex:
             print(f"[PushService] Push failed: {ex}")
             # 410 Gone means subscription is invalid/expired
             if ex.response is not None and ex.response.status_code == 410:
-                print(f"[PushService] Subscription 410 Gone. Deleting...")
+                print("[PushService] Subscription 410 Gone. Deleting...")
                 db.session.delete(sub)
 
     if commit:

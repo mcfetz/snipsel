@@ -2,32 +2,31 @@ from __future__ import annotations
 
 import logging
 import os
-from pathlib import Path
-
 from datetime import timedelta
+from pathlib import Path
 
 from flask import Flask, send_from_directory
 
 from snipsel_api.config import Settings
 from snipsel_api.extensions import cache, cors, db, migrate
-from snipsel_api.routes_errors import errors_bp
+from snipsel_api.routes_admin import admin_bp
+from snipsel_api.routes_ai import ai_bp
+from snipsel_api.routes_api_keys import api_keys_bp
 from snipsel_api.routes_attachments import attachments_bp
 from snipsel_api.routes_auth import auth_bp
 from snipsel_api.routes_collections import collections_bp
+from snipsel_api.routes_errors import errors_bp
+from snipsel_api.routes_geo import geo_bp
+from snipsel_api.routes_habits import habits_bp
+from snipsel_api.routes_importer import importer_bp
+from snipsel_api.routes_notifications import notifications_bp
+from snipsel_api.routes_proxy import proxy_bp
+from snipsel_api.routes_public import public_bp
+from snipsel_api.routes_reactions import bp as reactions_bp
 from snipsel_api.routes_search import search_bp
 from snipsel_api.routes_snipsels import snipsels_bp
-from snipsel_api.routes_users import users_bp
-from snipsel_api.routes_notifications import notifications_bp
-from snipsel_api.routes_importer import importer_bp
-from snipsel_api.routes_proxy import proxy_bp
-from snipsel_api.routes_reactions import bp as reactions_bp
-from snipsel_api.routes_public import public_bp
-from snipsel_api.routes_ai import ai_bp
-from snipsel_api.routes_geo import geo_bp
-from snipsel_api.routes_api_keys import api_keys_bp
-from snipsel_api.routes_admin import admin_bp
 from snipsel_api.routes_sse import sse_bp
-from snipsel_api.routes_habits import habits_bp
+from snipsel_api.routes_users import users_bp
 
 
 def create_app() -> Flask:
@@ -95,9 +94,10 @@ def create_app() -> Flask:
     # vice-versa.  Must be done via an event, not connect_args, because
     # journal_mode is a PRAGMA rather than a connection-level option.
     if settings.database_url.startswith("sqlite"):
+        import sqlite3 as _sqlite3
+
         from sqlalchemy import event
         from sqlalchemy.engine import Engine
-        import sqlite3 as _sqlite3
 
         @event.listens_for(Engine, "connect")
         def _set_sqlite_pragma(dbapi_conn, _conn_record):
@@ -135,6 +135,8 @@ def create_app() -> Flask:
     from snipsel_api.commands import (
         cleanup,
         db_init,
+    )
+    from snipsel_api.commands import (
         process_reminders_command as process_reminders,
     )
     from snipsel_api.push_service import init_push_listeners
@@ -161,9 +163,9 @@ def create_app() -> Flask:
                 )
                 db.session.add(public_user)
                 db.session.commit()
-        except Exception as e:
+        except Exception:
             # Database might not be migrated yet, ignore errors here
-            app.logger.warning(f"Could not ensure public user exists: {e}")
+            app.logger.warning("Could not ensure public user exists", exc_info=True)
             db.session.rollback()
 
     _ = models

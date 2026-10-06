@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib import request as urllib_request
-from urllib.error import URLError, HTTPError
-
-from flask import Blueprint, current_app
-from PIL import Image
-from datetime import datetime, timezone
+from urllib.error import HTTPError, URLError
 
 import sqlalchemy.exc
+from flask import Blueprint, current_app
+from PIL import Image
 
-from snipsel_api.routes_snipsels import _sync_tags_mentions
 from snipsel_api.auth_session import current_user, json_response, require_auth
 from snipsel_api.errors import ApiError, api_error
 from snipsel_api.extensions import db
@@ -26,6 +25,9 @@ from snipsel_api.models import (
     SnipselCollectionRef,
     utcnow,
 )
+from snipsel_api.routes_snipsels import _sync_tags_mentions
+
+logger = logging.getLogger(__name__)
 
 importer_bp = Blueprint("importer", __name__)
 
@@ -51,7 +53,7 @@ def _twos_api_request(endpoint: str, data: dict | None = None) -> dict:
         print(f"[TwoS Import] API error {e.code}: {error_body}")
         raise api_error(e.code, "external_error", f"TwoS API error: {error_body}")
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to TwoS: {str(e)}")
+        raise api_error(502, "external_error", f"Failed to connect to TwoS: {e!s}") from e
 
 
 def _download_image(url: str) -> bytes | None:
@@ -83,13 +85,13 @@ def _write_thumbnail(src_path: Path, dst_path: Path) -> None:
                     elif orientation == 8:
                         im = im.rotate(90, expand=True)
             except Exception:
-                pass  # EXIF handling is best-effort
+                logger.debug("EXIF handling is best-effort", exc_info=True)
 
             im.thumbnail((512, 512))
             im = im.convert("RGB")
             im.save(dst_path, format="JPEG", quality=80)
-    except Exception as e:
-        print(f"[TwoS Import] Failed to create thumbnail: {e}")
+    except Exception:
+        logger.warning("[TwoS Import] Failed to create thumbnail", exc_info=True)
 
 
 def _download_and_create_attachment(photo_url: str, snipsel_id: str, user_id: str, index: int) -> Attachment | None:
@@ -184,7 +186,7 @@ def twos_login():
     except ApiError:
         raise
     except Exception as e:
-        raise api_error(502, "external_error", f"Failed to connect to TwoS: {str(e)}")
+        raise api_error(502, "external_error", f"Failed to connect to TwoS: {e!s}") from e
 
 
 @importer_bp.route("/twos/lists", methods=["POST"])
@@ -237,7 +239,7 @@ def twos_lists():
     except ApiError:
         raise
     except Exception as e:
-        raise api_error(502, "external_error", f"Failed to fetch lists: {str(e)}")
+        raise api_error(502, "external_error", f"Failed to fetch lists: {e!s}") from e
 
 
 @importer_bp.route("/twos/search", methods=["POST"])
@@ -286,7 +288,7 @@ def twos_search():
     except ApiError:
         raise
     except Exception as e:
-        raise api_error(502, "external_error", f"Failed to search TwoS: {str(e)}")
+        raise api_error(502, "external_error", f"Failed to search TwoS: {e!s}") from e
 
 
 @importer_bp.route("/twos/import", methods=["POST"])
@@ -318,7 +320,7 @@ def twos_import():
         notif_result = _twos_api_request(
             f"/apiV2/notification/{twos_user_id}/interval",
             data={
-                "currentDate": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "currentDate": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
                 "startDate": "1980-01-01T00:00:00.000Z",
                 "endDate": "2030-01-01T23:59:59.000Z",
                 "user_id": twos_user_id,
@@ -331,8 +333,8 @@ def twos_import():
             p_id = n.get("post_id")
             if p_id:
                 notification_lookup[p_id] = n
-    except Exception as e:
-        print(f"[TwoS Import] WARNING: Failed to fetch notifications: {e}")
+    except Exception:
+        logger.warning("[TwoS Import] Failed to fetch notifications", exc_info=True)
 
     # Track imported collection IDs for subEntry references and recursion prevention
     import_context = {
@@ -363,8 +365,8 @@ def twos_import():
             errors.append(error_msg)
         except Exception as e:
             db.session.rollback()
-            error_msg = f"Failed to import list '{list_id}': {str(e)}"
-            print(f"[TwoS Import] ERROR: {error_msg}")
+            error_msg = f"Failed to import list '{list_id}': {e!s}"
+            logger.exception(f"[TwoS Import] {error_msg}")
             errors.append(error_msg)
 
     print(f"[TwoS Import] <== Finished import: {imported} imported or updated")
@@ -407,8 +409,8 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
         except ApiError as e:
             print(f"[TwoS Import] ERROR: Failed to fetch list {list_id}: {e.message}")
             return None
-        except Exception as e:
-            print(f"[TwoS Import] ERROR: Failed to fetch list {list_id}: {str(e)}")
+        except Exception:
+            logger.exception(f"[TwoS Import] Failed to fetch list {list_id}")
             return None
 
         lst = result.get("entry", result)  # Response may have "entry" wrapper or be direct
@@ -473,10 +475,10 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
                     if normalised_name.startswith(bad):
                         normalised_name = good + normalised_name[len(bad):]
                         break
-                dt = datetime.strptime(normalised_name, "%a %b %d, %Y")
+                dt = datetime.strptime(normalised_name, "%a %b %d, %Y").replace(tzinfo=UTC)
                 list_for_day = dt.date()
             except Exception:
-                pass
+                logger.debug("Could not parse list name as a date", exc_info=True)
 
         collection = Collection(
             owner_user_id=user.id,
@@ -548,7 +550,7 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
                 fire_date_ms = notif.get("fireDate")
                 if fire_date_ms:
                     try:
-                        reminder_at = datetime.fromtimestamp(int(fire_date_ms) / 1000.0, tz=timezone.utc).replace(tzinfo=None)
+                        reminder_at = datetime.fromtimestamp(int(fire_date_ms) / 1000.0, tz=UTC).replace(tzinfo=None)
                         print(f"[TwoS Import]   Reminder found for '{body[:20]}...': {reminder_at}")
                         
                         # Handle repeat interval
@@ -562,8 +564,11 @@ def import_list_with_id(user, data, list_id, context: dict) -> str | None:
                                 if every > 1:
                                     reminder_rrule += f";INTERVAL={every}"
                                 print(f"[TwoS Import]   Recurrence: {reminder_rrule}")
-                    except Exception as e:
-                        print(f"[TwoS Import]   Warning: Failed to parse fireDate '{fire_date_ms}': {e}")
+                    except Exception:
+                        logger.warning(
+                            f"[TwoS Import] Failed to parse fireDate '{fire_date_ms}'",
+                            exc_info=True,
+                        )
 
             snipsel = Snipsel(
                 owner_user_id=user.id,

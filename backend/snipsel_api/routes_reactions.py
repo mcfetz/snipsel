@@ -1,8 +1,10 @@
-from flask import Blueprint, jsonify, request
 import logging
+
+from flask import Blueprint, jsonify, request
+
+from snipsel_api import models
 from snipsel_api.auth_session import current_user, require_auth
 from snipsel_api.extensions import db
-from snipsel_api import models
 
 logger = logging.getLogger(__name__)
 

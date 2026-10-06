@@ -37,7 +37,7 @@ class Settings:
     unsplash_secret_key: str | None
 
     @staticmethod
-    def from_env() -> "Settings":
+    def from_env() -> Settings:
         secret_key = os.environ.get("SNIPSEL_SECRET_KEY", "dev")
         database_url = os.environ.get("SNIPSEL_DATABASE_URL", "sqlite:///snipsel.db")
         upload_dir = os.environ.get("SNIPSEL_UPLOAD_DIR", "./uploads")

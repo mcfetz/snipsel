@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
+from functools import lru_cache
 from html.parser import HTMLParser
-from urllib import request as urllib_request
 from urllib import parse as urllib_parse
-from urllib.error import URLError, HTTPError
+from urllib import request as urllib_request
+from urllib.error import HTTPError, URLError
 
 import requests
-from flask import Blueprint, request, current_app
+from flask import Blueprint, current_app, request
+
 from snipsel_api.auth_session import json_response, require_auth
-from snipsel_api.errors import api_error
-from functools import lru_cache
+from snipsel_api.errors import ApiError, api_error
+
+logger = logging.getLogger(__name__)
 
 proxy_bp = Blueprint("proxy", __name__)
 
@@ -74,8 +78,8 @@ def proxy_deezer():
                     break
         except Exception as e:
             raise api_error(
-                502, "external_error", f"Failed to resolve Deezer link: {str(e)}"
-            )
+                502, "external_error", f"Failed to resolve Deezer link: {e!s}"
+            ) from e
 
     if not media_type or not media_id:
         raise api_error(
@@ -96,10 +100,10 @@ def proxy_deezer():
         return json_response({"error": str(e)}, status=e.code)
     except URLError as e:
         raise api_error(
-            502, "external_error", f"Failed to connect to YouTube: {str(e)}"
+            502, "external_error", f"Failed to connect to YouTube: {e!s}"
         )
     except Exception as e:
-        raise api_error(500, "internal_error", str(e))
+        raise api_error(500, "internal_error", str(e)) from e
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +196,7 @@ def _resolve_map_url(url: str) -> dict:
             )
             result["resolved_url"] = resp.url
         except Exception:
-            pass
+            logger.debug("Failed to resolve redirect", exc_info=True)
 
     target_url = result["resolved_url"]
     coords = _extract_coords_from_url(target_url)
@@ -242,8 +246,7 @@ def _fetch_link_metadata(url: str) -> dict:
     """Fetch a URL and extract title + favicon. Returns a dict with title, favicon_url, domain."""
     parsed = urllib_parse.urlparse(url)
     domain = parsed.netloc or parsed.hostname or url
-    if domain.startswith("www."):
-        domain = domain[4:]
+    domain = domain.removeprefix("www.")
 
     fallback = {"title": domain, "favicon_url": None, "domain": domain}
 
@@ -285,6 +288,7 @@ def _fetch_link_metadata(url: str) -> dict:
         return {"title": title, "favicon_url": favicon_url, "domain": domain}
     except Exception:
         # Graceful degradation: still use Google favicon service
+        logger.debug("Link metadata fetch failed", exc_info=True)
         fallback["favicon_url"] = (
             f"https://www.google.com/s2/favicons?domain={urllib_parse.quote(domain)}&sz=64"
         )
@@ -324,7 +328,7 @@ def proxy_link_metadata():
                 result["lng"] = map_data["coords"]["lng"]
             result["resolved_url"] = map_data.get("resolved_url", url)
         except Exception:
-            pass
+            logger.debug("Failed to resolve map URL", exc_info=True)
 
     try:
         metadata = _fetch_link_metadata(url)
@@ -341,7 +345,7 @@ def proxy_link_metadata():
         result["domain"] = domain
     except URLError as e:
         if not result.get("lat"):
-            raise api_error(502, "external_error", f"Failed to fetch URL: {str(e)}")
+            raise api_error(502, "external_error", f"Failed to fetch URL: {e!s}")
         result["title"] = result.get("title", domain)
         result["favicon_url"] = (
             f"https://www.google.com/s2/favicons?domain={urllib_parse.quote(domain)}&sz=64"
@@ -349,7 +353,8 @@ def proxy_link_metadata():
         result["domain"] = domain
     except Exception as e:
         if not result.get("lat"):
-            raise api_error(500, "internal_error", str(e))
+            raise api_error(500, "internal_error", str(e)) from e
+        logger.debug("Failed to fetch link metadata", exc_info=True)
         result["title"] = result.get("title", domain)
         result["favicon_url"] = (
             f"https://www.google.com/s2/favicons?domain={urllib_parse.quote(domain)}&sz=64"
@@ -377,10 +382,10 @@ def proxy_youtube():
         return json_response({"error": str(e)}, status=e.code)
     except URLError as e:
         raise api_error(
-            502, "external_error", f"Failed to connect to YouTube: {str(e)}"
+            502, "external_error", f"Failed to connect to YouTube: {e!s}"
         )
     except Exception as e:
-        raise api_error(500, "internal_error", str(e))
+        raise api_error(500, "internal_error", str(e)) from e
 
 
 @proxy_bp.route("/spotify", methods=["GET"])
@@ -400,10 +405,10 @@ def proxy_spotify():
         return json_response({"error": str(e)}, status=e.code)
     except URLError as e:
         raise api_error(
-            502, "external_error", f"Failed to connect to Spotify: {str(e)}"
+            502, "external_error", f"Failed to connect to Spotify: {e!s}"
         )
     except Exception as e:
-        raise api_error(500, "internal_error", str(e))
+        raise api_error(500, "internal_error", str(e)) from e
 
 
 @proxy_bp.route("/unsplash/search", methods=["GET"])
@@ -438,7 +443,7 @@ def proxy_unsplash_search():
         )
         resp.raise_for_status()
         return json_response(resp.json())
-    except requests.exceptions.HTTPError as e:
+    except requests.exceptions.HTTPError:
         status_code = resp.status_code if "resp" in locals() else 500
         
         # Unsplash rate limiting is usually 403 (for Demo apps) or 429
@@ -446,13 +451,14 @@ def proxy_unsplash_search():
             # Check for Unsplash errors in body
             try:
                 data = resp.json()
-                if "errors" in data and data["errors"]:
+                if data.get("errors"):
                     msg = data["errors"][0]
                     if "rate limit" in msg.lower():
                         raise api_error(429, "rate_limit_exceeded", "Unsplash rate limit reached. Please try again later.")
                     raise api_error(status_code, "external_error", f"Unsplash error: {msg}")
             except (ValueError, KeyError, ApiError) as ex:
-                if isinstance(ex, ApiError): raise ex
+                if isinstance(ex, ApiError):
+                    raise
 
             # Fallback for rate limit
             raise api_error(429, "rate_limit_exceeded", "Unsplash rate limit reached. Please try again later.")
@@ -461,14 +467,14 @@ def proxy_unsplash_search():
         error_msg = f"Unsplash API error ({status_code})"
         try:
             data = resp.json()
-            if "errors" in data and data["errors"]:
+            if data.get("errors"):
                 error_msg = data["errors"][0]
         except Exception:
-            pass
+            logger.debug("Could not parse upstream error body", exc_info=True)
             
         raise api_error(status_code, "external_error", error_msg)
     except Exception as e:
         raise api_error(
-            502, "external_error", f"Failed to connect to Unsplash: {str(e)}"
-        )
+            502, "external_error", f"Failed to connect to Unsplash: {e!s}"
+        ) from e
 

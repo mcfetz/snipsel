@@ -1,0 +1,10 @@
+# ty (https://docs.astral.sh/ty)
+#
+# Rules below are disabled project-wide because they cannot be fixed in
+# application code.
+
+[rules]
+# Flask-SQLAlchemy types `SQLAlchemy.Model` as `type[_FSAModel]`, so ty cannot
+# build a consistent MRO for any class inheriting `db.Model` (24 model classes).
+# Upstream typing limitation, no code-level fix.
+unsupported-base = "ignore"

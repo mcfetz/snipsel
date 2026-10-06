@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, request
+
 from snipsel_api.auth_session import (
     current_user,
     enforce_json,
@@ -18,7 +19,7 @@ notifications_bp = Blueprint("notifications", __name__)
 def list_notifications():
     user = current_user()
 
-    from snipsel_api.reminders import process_reminders, process_habit_reminders
+    from snipsel_api.reminders import process_habit_reminders, process_reminders
 
     process_reminders(user.id)
     process_habit_reminders(user.id)

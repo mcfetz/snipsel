@@ -1,7 +1,7 @@
 from __future__ import annotations
-from datetime import date, datetime
-from snipsel_api.extensions import db
+
 from snipsel_api import models
+from snipsel_api.extensions import db
 
 
 def _reminder_message(content_markdown: str | None) -> str:
@@ -27,7 +27,7 @@ def process_reminders(user_id: str | None = None) -> int:
     If user_id is None, processes reminders for all users.
     Returns count of new notifications created.
     """
-    now = datetime.utcnow()
+    now = models.utcnow()
 
     q = db.select(models.Snipsel).where(
         models.Snipsel.reminder_at.isnot(None),
@@ -76,9 +76,8 @@ def process_habit_reminders(user_id: str | None = None) -> int:
     If user_id is None, processes reminders for all users.
     Returns count of new notifications created.
     """
-    now = datetime.utcnow()
-    current_time_str = now.strftime("%H:%M")
-    today = date.today()
+    now = models.utcnow()
+    today = models.utc_today()
 
     q = db.select(models.Habit).where(
         models.Habit.reminder_time.isnot(None),

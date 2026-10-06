@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-from sqlalchemy import extract
-
 import logging
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from flask import Blueprint, request
-
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import extract
 from sqlalchemy.orm import joinedload, selectinload
 
 logger = logging.getLogger(__name__)
 
+from snipsel_api import sse_bus
 from snipsel_api.auth_session import (
     current_user,
     enforce_json,
@@ -27,13 +25,15 @@ from snipsel_api.models import (
     CollectionFavorite,
     CollectionShare,
     CollectionSnipsel,
-    Snipsel,
-    User,
-    Notification,
-    SnipselCollectionRef,
     CollectionVisit,
-    Tag,
+    Notification,
+    Snipsel,
+    SnipselCollectionRef,
     SnipselTag,
+    Tag,
+    User,
+    utc_today,
+    utcnow,
 )
 from snipsel_api.permissions import (
     can_read_collection,
@@ -45,8 +45,10 @@ from snipsel_api.routes_attachments import (
     _resolve_attachment_path,
     _resolve_thumbnail_path,
 )
-from snipsel_api.routes_snipsels import _sync_backlinks, _sync_tags_mentions, _collection_item_json
-from snipsel_api import sse_bus
+from snipsel_api.routes_snipsels import (
+    _sync_backlinks,
+    _sync_tags_mentions,
+)
 
 collections_bp = Blueprint("collections", __name__)
 
@@ -182,6 +184,7 @@ def list_collections():
 def sync_all_data():
     """Optimised bulk-sync endpoint."""
     import time
+
     from snipsel_api.models import Attachment, SnipselReaction
 
     user = current_user()
@@ -527,7 +530,7 @@ def sync_all_data():
 def get_today_collection():
     user = current_user()
     day_str = request.args.get("day")
-    day = date.fromisoformat(day_str) if day_str else date.today()
+    day = date.fromisoformat(day_str) if day_str else utc_today()
 
     c = _get_or_create_daily_collection(user_id=user.id, day=day)
 
@@ -934,12 +937,12 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
     log_prefix = f"[CarryOver user={user.id} day={day} today_col={today_collection.id}]"
 
     # Guard: only carry over to today
-    if day != date.today():
+    if day != utc_today():
         logger.debug(
             "%s Skipping – requested day %s is not today (%s)",
             log_prefix,
             day,
-            date.today(),
+            utc_today(),
         )
         return
     if not getattr(user, "carry_over_open_tasks", True):
@@ -1040,7 +1043,7 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
                         "\n", " "
                     )
                 except Exception:
-                    pass
+                    logger.debug("Failed to build snipsel preview", exc_info=True)
 
                 # Check if this snipsel is already in today's collection
                 already = (
@@ -1125,7 +1128,7 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
                 log_prefix,
                 rescued_count,
             )
-            today_collection.modified_at = datetime.utcnow()
+            today_collection.modified_at = utcnow()
             today_collection.modified_by_id = user.id
         # ── End orphan recovery ────────────────────────────────────────────────
 
@@ -1139,7 +1142,7 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
 
         if moved_count > 0:
             # Touch modified_at so frontend caches/lists refresh
-            today_collection.modified_at = datetime.utcnow()
+            today_collection.modified_at = utcnow()
             today_collection.modified_by_id = user.id
 
         db.session.commit()
@@ -1151,12 +1154,10 @@ def _maybe_carry_over_open_tasks(user, today_collection: Collection, day: date) 
             rescued_count,
         )
 
-    except Exception as exc:
-        logger.error(
-            "%s ERROR during carry-over – rolling back! Exception: %s",
+    except Exception:
+        logger.exception(
+            "%s ERROR during carry-over – rolling back!",
             log_prefix,
-            exc,
-            exc_info=True,
         )
         db.session.rollback()
         # Do not re-raise: a carry-over failure should not break the
@@ -1401,7 +1402,7 @@ def get_collection(collection_id: str):
     # Record visit
     visit = db.session.get(CollectionVisit, (user.id, c.id))
     if visit:
-        visit.visited_at = datetime.utcnow()
+        visit.visited_at = utcnow()
     else:
         db.session.add(CollectionVisit(user_id=user.id, collection_id=c.id))
     db.session.commit()
@@ -1457,7 +1458,7 @@ def update_collection(collection_id: str):
             c.header_image_zoom = 1.0
     if "archived" in data:
         archived = bool(data.get("archived"))
-        c.archived_at = datetime.utcnow() if archived else None
+        c.archived_at = utcnow() if archived else None
     if "is_template" in data:
         c.is_template = bool(data.get("is_template"))
     if "is_passcode_protected" in data:
@@ -1503,7 +1504,6 @@ def update_collection(collection_id: str):
 def delete_collection(collection_id: str):
     user = current_user()
     c = _get_owned_collection(user.id, collection_id)
-    from sqlalchemy import and_
 
     # Check for backlinks from snipsels that are in at least one active collection
     has_backlinks = (
@@ -1570,7 +1570,7 @@ def delete_collection(collection_id: str):
         )
         db.session.delete(c)
     else:
-        c.deleted_at = datetime.utcnow()
+        c.deleted_at = utcnow()
         c.deleted_by_id = user.id
         if c.list_for_day is not None:
             c.list_for_day = None
@@ -1868,10 +1868,9 @@ def create_share(collection_id: str):
         db.session.commit()
         return json_response({"share": {"id": existing.id}})
 
-    if shared_with_user_id == "public":
-        if not c.public_token:
-            c.public_token = str(uuid.uuid4())
-            db.session.add(c)
+    if shared_with_user_id == "public" and not c.public_token:
+        c.public_token = str(uuid.uuid4())
+        db.session.add(c)
 
     s = CollectionShare(
         collection_id=collection_id,
@@ -1942,12 +1941,12 @@ def empty_trash_collections():
     cols = db.session.execute(stmt).scalars().all()
 
     from snipsel_api.models import (
-        CollectionSnipsel,
-        CollectionShare,
         CollectionFavorite,
+        CollectionShare,
+        CollectionSnipsel,
         CollectionVisit,
-        SnipselCollectionRef,
         Notification,
+        SnipselCollectionRef,
     )
     from snipsel_api.routes_attachments import delete_collection_header_attachments
 
@@ -1999,7 +1998,7 @@ def restore_collection(collection_id: str):
 
     c.deleted_at = None
     c.deleted_by_id = None
-    c.modified_at = datetime.utcnow()
+    c.modified_at = utcnow()
     c.modified_by_id = user.id
 
     db.session.commit()
@@ -2018,12 +2017,12 @@ def permanent_delete_collection(collection_id: str):
         raise api_error(400, "invalid_state", "Collection is not in the trash")
 
     from snipsel_api.models import (
-        CollectionSnipsel,
-        CollectionShare,
         CollectionFavorite,
+        CollectionShare,
+        CollectionSnipsel,
         CollectionVisit,
-        SnipselCollectionRef,
         Notification,
+        SnipselCollectionRef,
     )
     from snipsel_api.routes_attachments import delete_collection_header_attachments
 

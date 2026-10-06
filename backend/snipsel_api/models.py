@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import Optional
 
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
@@ -22,7 +22,13 @@ from snipsel_api.extensions import db
 
 
 def utcnow() -> datetime:
-    return datetime.utcnow()
+    """Current time as timezone-naive datetime in UTC (matches DateTime columns)."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+def utc_today() -> date:
+    """Current date in UTC, consistent with utcnow()."""
+    return datetime.now(UTC).date()
 
 
 SnipselType = Enum(
@@ -55,14 +61,14 @@ class User(db.Model):
         DateTime, default=utcnow, onupdate=utcnow, nullable=False
     )
 
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    anonymized_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    anonymized_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    default_collection_header_color: Mapped[Optional[str]] = mapped_column(
+    default_collection_header_color: Mapped[str | None] = mapped_column(
         String(7), nullable=True
     )
 
-    day_collection_template_id: Mapped[Optional[str]] = mapped_column(
+    day_collection_template_id: Mapped[str | None] = mapped_column(
         ForeignKey("collections.id"),
         nullable=True,
     )
@@ -70,24 +76,24 @@ class User(db.Model):
     carry_over_open_tasks: Mapped[bool] = mapped_column(default=True, nullable=False)
     theme: Mapped[str] = mapped_column(String(20), nullable=False, default="system")
 
-    passcode_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    passcode_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     passcode_failed_attempts: Mapped[int] = mapped_column(default=0, nullable=False)
 
-    otp_secret: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    otp_secret: Mapped[str | None] = mapped_column(String(32), nullable=True)
     otp_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    ai_llm_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    ai_model_name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    ai_api_key: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    ai_llm_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_model_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ai_api_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    light_background_color: Mapped[Optional[str]] = mapped_column(
+    light_background_color: Mapped[str | None] = mapped_column(
         String(7), nullable=True
     )
-    dark_background_color: Mapped[Optional[str]] = mapped_column(
+    dark_background_color: Mapped[str | None] = mapped_column(
         String(7), nullable=True
     )
     is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
-    diced_moments_tags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    diced_moments_tags: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class Collection(db.Model):
@@ -102,15 +108,15 @@ class Collection(db.Model):
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     icon: Mapped[str] = mapped_column(String(8), nullable=False, default="🗒")
-    header_image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    header_color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
-    header_image_position: Mapped[Optional[str]] = mapped_column(
+    header_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    header_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    header_image_position: Mapped[str | None] = mapped_column(
         String(32), nullable=True, default="50%"
     )
-    header_image_x_position: Mapped[Optional[str]] = mapped_column(
+    header_image_x_position: Mapped[str | None] = mapped_column(
         String(32), nullable=True, default="50%"
     )
-    header_image_zoom: Mapped[Optional[float]] = mapped_column(
+    header_image_zoom: Mapped[float | None] = mapped_column(
         Float, nullable=True, default=1.0
     )
 
@@ -121,15 +127,15 @@ class Collection(db.Model):
     mute_notifications: Mapped[bool] = mapped_column(default=False, nullable=False)
     exclude_from_todo_list: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    default_snipsel_type: Mapped[Optional[str]] = mapped_column(
+    default_snipsel_type: Mapped[str | None] = mapped_column(
         String(32), nullable=True
     )
-    view_mode: Mapped[Optional[str]] = mapped_column(
+    view_mode: Mapped[str | None] = mapped_column(
         String(32), nullable=True, default="list"
     )
 
-    archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    list_for_day: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    list_for_day: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, nullable=False
@@ -140,15 +146,15 @@ class Collection(db.Model):
     )
     modified_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    deleted_by_id: Mapped[Optional[str]] = mapped_column(
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    deleted_by_id: Mapped[str | None] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )
 
-    twos_id: Mapped[Optional[str]] = mapped_column(
+    twos_id: Mapped[str | None] = mapped_column(
         String(64), nullable=True, index=True
     )
-    public_token: Mapped[Optional[str]] = mapped_column(
+    public_token: Mapped[str | None] = mapped_column(
         String(64), nullable=True, unique=True, index=True
     )
 
@@ -229,26 +235,26 @@ class Snipsel(db.Model):
     type: Mapped[str] = mapped_column(SnipselType, nullable=False, index=True)
     card_view: Mapped[bool] = mapped_column(default=True, nullable=False)
 
-    content_markdown: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    content_markdown: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    geo_lat: Mapped[Optional[float]] = mapped_column(nullable=True, index=True)
-    geo_lng: Mapped[Optional[float]] = mapped_column(nullable=True, index=True)
-    geo_accuracy_m: Mapped[Optional[float]] = mapped_column(nullable=True)
+    geo_lat: Mapped[float | None] = mapped_column(nullable=True, index=True)
+    geo_lng: Mapped[float | None] = mapped_column(nullable=True, index=True)
+    geo_accuracy_m: Mapped[float | None] = mapped_column(nullable=True)
 
     task_done: Mapped[int] = mapped_column(default=0, nullable=False)
-    done_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    done_by_id: Mapped[Optional[str]] = mapped_column(
+    done_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    done_by_id: Mapped[str | None] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )
 
-    external_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    external_label: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    external_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    external_label: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    internal_target_snipsel_id: Mapped[Optional[str]] = mapped_column(
+    internal_target_snipsel_id: Mapped[str | None] = mapped_column(
         ForeignKey("snipsels.id"), nullable=True
     )
-    reminder_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    reminder_rrule: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reminder_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reminder_rrule: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, nullable=False
@@ -259,10 +265,10 @@ class Snipsel(db.Model):
     )
     modified_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+    deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, index=True
     )
-    deleted_by_id: Mapped[Optional[str]] = mapped_column(
+    deleted_by_id: Mapped[str | None] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )
     diced_count: Mapped[int] = mapped_column(default=0, nullable=False, index=True)
@@ -272,21 +278,21 @@ class Snipsel(db.Model):
     created_by = relationship("User", foreign_keys=[created_by_id])
     modified_by = relationship("User", foreign_keys=[modified_by_id])
 
-    attachments: Mapped[list["Attachment"]] = relationship(
+    attachments: Mapped[list[Attachment]] = relationship(
         "Attachment", back_populates="snipsel", cascade="all, delete-orphan"
     )
-    tags: Mapped[list["SnipselTag"]] = relationship(
+    tags: Mapped[list[SnipselTag]] = relationship(
         "SnipselTag", back_populates="snipsel", cascade="all, delete-orphan"
     )
-    mentions: Mapped[list["SnipselMention"]] = relationship(
+    mentions: Mapped[list[SnipselMention]] = relationship(
         "SnipselMention", back_populates="snipsel", cascade="all, delete-orphan"
     )
-    reactions: Mapped[list["SnipselReaction"]] = relationship(
+    reactions: Mapped[list[SnipselReaction]] = relationship(
         "SnipselReaction", back_populates="snipsel", cascade="all, delete-orphan"
     )
 
     def get_reaction_summary(self, user_id: str):
-        summary = {}
+        summary: dict[str, dict[str, Any]] = {}
         for r in self.reactions:
             e = r.emoji
             if e not in summary:
@@ -465,29 +471,29 @@ class Attachment(db.Model):
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    snipsel_id: Mapped[Optional[str]] = mapped_column(
+    snipsel_id: Mapped[str | None] = mapped_column(
         ForeignKey("snipsels.id"), nullable=True, index=True
     )
-    collection_id: Mapped[Optional[str]] = mapped_column(
+    collection_id: Mapped[str | None] = mapped_column(
         ForeignKey("collections.id"), nullable=True, index=True
     )
 
     filename: Mapped[str] = mapped_column(String(512), nullable=False)
-    mime_type: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    mime_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
     size_bytes: Mapped[int] = mapped_column(nullable=False)
 
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
-    thumbnail_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    thumbnail_path: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, nullable=False
     )
     created_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    snipsel: Mapped[Optional[Snipsel]] = relationship(
+    snipsel: Mapped[Snipsel | None] = relationship(
         "Snipsel", back_populates="attachments"
     )
-    collection: Mapped[Optional[Collection]] = relationship("Collection")
+    collection: Mapped[Collection | None] = relationship("Collection")
 
 
 class PasswordResetToken(db.Model):
@@ -501,7 +507,7 @@ class PasswordResetToken(db.Model):
     )
     token_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, nullable=False
     )
@@ -521,10 +527,10 @@ class Notification(db.Model):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     is_read: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    snipsel_id: Mapped[Optional[str]] = mapped_column(
+    snipsel_id: Mapped[str | None] = mapped_column(
         ForeignKey("snipsels.id"), nullable=True
     )
-    collection_id: Mapped[Optional[str]] = mapped_column(
+    collection_id: Mapped[str | None] = mapped_column(
         ForeignKey("collections.id"), nullable=True
     )
 
@@ -611,7 +617,7 @@ class UserApiKey(db.Model):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, nullable=False
     )
-    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     user = relationship("User")
 
@@ -629,7 +635,7 @@ class UserOidcLink(db.Model):
     provider: Mapped[str] = mapped_column(String(64), nullable=False, default="oidc")
     subject: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
-    name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    name: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, nullable=False
@@ -675,10 +681,10 @@ class Habit(db.Model):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     icon: Mapped[str] = mapped_column(String(8), nullable=False, default="✅")
-    color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+    color: Mapped[str | None] = mapped_column(String(7), nullable=True)
 
-    reminder_time: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)
-    reminder_rrule: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reminder_time: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    reminder_rrule: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     sort_position: Mapped[int] = mapped_column(nullable=False, default=0)
     is_archived: Mapped[bool] = mapped_column(default=False, nullable=False)
@@ -689,10 +695,10 @@ class Habit(db.Model):
     modified_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow, nullable=False
     )
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     owner = relationship("User", foreign_keys=[owner_user_id])
-    completions: Mapped[list["HabitCompletion"]] = relationship(
+    completions: Mapped[list[HabitCompletion]] = relationship(
         "HabitCompletion", back_populates="habit", cascade="all, delete-orphan"
     )
 

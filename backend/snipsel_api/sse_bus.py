@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import queue
 import threading
-from typing import Generator
+from collections.abc import Generator
 
 _lock = threading.Lock()
 # user_id -> list of (client_id, queue) tuples

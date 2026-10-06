@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import logging
 import os
 import uuid
-from datetime import datetime
 from pathlib import Path
 
 from flask import Blueprint, current_app, request, send_file, session
@@ -11,15 +11,25 @@ from PIL import Image
 from snipsel_api.auth_session import current_user, json_response, require_auth
 from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
-from snipsel_api.models import Attachment, Collection, Snipsel, CollectionSnipsel, User
-from snipsel_api.models import Mention, SnipselMention
+from snipsel_api.models import (
+    Attachment,
+    Collection,
+    CollectionSnipsel,
+    Mention,
+    Snipsel,
+    SnipselMention,
+    User,
+    utcnow,
+)
 from snipsel_api.permissions import (
     can_read_collection,
-    can_write_collection,
     can_read_snipsel_via_collections,
+    can_write_collection,
     can_write_snipsel_via_collections,
 )
 from snipsel_api.routes_snipsels import _touch_collections_for_snipsel
+
+logger = logging.getLogger(__name__)
 
 attachments_bp = Blueprint("attachments", __name__)
 
@@ -145,7 +155,7 @@ def upload_collection_header(collection_id: str):
     db.session.add(att)
     
     collection.header_image_url = f"/api/attachments/{att_id}"
-    collection.modified_at = datetime.utcnow()
+    collection.modified_at = utcnow()
     collection.modified_by_id = user.id
     
     db.session.commit()
@@ -339,7 +349,7 @@ def delete_attachment(attachment_id: str):
     elif att.collection_id:
         coll = db.session.get(Collection, att.collection_id)
         if coll:
-            coll.modified_at = datetime.utcnow()
+            coll.modified_at = utcnow()
             coll.modified_by_id = user.id
     db.session.commit()
     return json_response({"ok": True})
@@ -528,7 +538,7 @@ def _write_thumbnail(src: Path, dst: Path, header: bool = False) -> None:
                 elif orientation == 8:
                     im = im.rotate(90, expand=True)
         except Exception:
-            pass
+            logger.debug("EXIF orientation handling failed", exc_info=True)
         
         if header:
             # For headers, we want a reasonably wide thumbnail to support "move" functionality
@@ -536,7 +546,7 @@ def _write_thumbnail(src: Path, dst: Path, header: bool = False) -> None:
             max_w = 1200
             if im.width > max_w:
                 w_percent = (max_w / float(im.width))
-                h_size = int((float(im.height) * float(w_percent)))
+                h_size = int(float(im.height) * float(w_percent))
                 im = im.resize((max_w, h_size), Image.Resampling.LANCZOS)
             
             # Save as optimized JPEG
@@ -576,7 +586,7 @@ def _write_video_thumbnail(src: Path, dst: Path) -> bool:
                 if dst.exists():
                     _write_thumbnail(dst, dst)
                 return True
-    except Exception as e:
-        print(f"Error generating video thumbnail: {e}")
+    except Exception:
+        logger.warning("Error generating video thumbnail", exc_info=True)
     return False
 

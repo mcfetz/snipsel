@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from flask import Blueprint
 
 from snipsel_api.auth_session import json_response
@@ -10,7 +12,9 @@ errors_bp = Blueprint("errors", __name__)
 
 @errors_bp.app_errorhandler(ApiError)
 def handle_api_error(err: ApiError):
-    payload = {"error": {"code": err.code, "message": err.message}}
+    payload: dict[str, dict[str, Any]] = {
+        "error": {"code": err.code, "message": err.message}
+    }
     if err.details:
         payload["error"]["details"] = err.details
     return json_response(payload, status=err.status_code)

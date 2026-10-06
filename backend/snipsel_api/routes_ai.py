@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import base64
 import json
-from pathlib import Path
 from urllib import request as urllib_request
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError, URLError
 
-from flask import Blueprint, request, current_app
-from snipsel_api.auth_session import json_response, require_auth, current_user
+from flask import Blueprint, current_app, request
+
+from snipsel_api.auth_session import current_user, json_response, require_auth
 from snipsel_api.errors import api_error
 from snipsel_api.extensions import db
-from snipsel_api.models import Attachment, AiPromptHistory
+from snipsel_api.models import AiPromptHistory, Attachment
 from snipsel_api.permissions import can_read_snipsel_via_collections
 
 ai_bp = Blueprint("ai", __name__)
@@ -61,9 +61,7 @@ def generate():
         for att in attachments:
             # Verify permission: either owner OR can read the snipsel it belongs to
             is_authorized = False
-            if att.created_by_id == user.id:
-                is_authorized = True
-            elif att.snipsel_id and can_read_snipsel_via_collections(
+            if att.created_by_id == user.id or att.snipsel_id and can_read_snipsel_via_collections(
                 user.id, att.snipsel_id
             ):
                 is_authorized = True
@@ -86,8 +84,11 @@ def generate():
                                     },
                                 }
                             )
-                    except Exception as e:
-                        print(f"Error encoding image attachment {att.id}: {e}")
+                    except Exception:
+                        current_app.logger.warning(
+                            f"Error encoding image attachment {att.id}",
+                            exc_info=True,
+                        )
             else:
                 if att.size_bytes < 500000:
                     path = _resolve_attachment_path(att)
@@ -102,8 +103,11 @@ def generate():
                                         "text": f"Attachment Content ({att.filename}):\n{f.read()}",
                                     }
                                 )
-                        except:
-                            pass
+                        except Exception:
+                            current_app.logger.debug(
+                                f"Could not read attachment {att.filename}",
+                                exc_info=True,
+                            )
 
     # OpenAI compatible payload
     payload = {
@@ -153,8 +157,8 @@ def generate():
 
                     db.session.commit()
                     _cleanup_ai_history(user.id)
-                except Exception as e:
-                    current_app.logger.error(f"Failed to save AI history: {e}")
+                except Exception:
+                    current_app.logger.exception("Failed to save AI history")
                     db.session.rollback()
 
                 return json_response({"text": ai_text})
@@ -174,14 +178,14 @@ def generate():
             return json_response(
                 {"error": f"LLM Error: {e.code}", "details": error_json}, status=e.code
             )
-        except:
+        except ValueError:
             return json_response(
                 {"error": f"LLM Error: {e.code}", "details": error_body}, status=e.code
             )
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to LLM: {str(e)}")
+        raise api_error(502, "external_error", f"Failed to connect to LLM: {e!s}")
     except Exception as e:
-        raise api_error(500, "internal_error", str(e))
+        raise api_error(500, "internal_error", str(e)) from e
 
 
 @ai_bp.get("/models")
@@ -227,14 +231,14 @@ def get_models():
             return json_response(
                 {"error": f"LLM Error: {e.code}", "details": error_json}, status=e.code
             )
-        except:
+        except ValueError:
             return json_response(
                 {"error": f"LLM Error: {e.code}", "details": error_body}, status=e.code
             )
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to LLM: {str(e)}")
+        raise api_error(502, "external_error", f"Failed to connect to LLM: {e!s}")
     except Exception as e:
-        raise api_error(500, "internal_error", str(e))
+        raise api_error(500, "internal_error", str(e)) from e
 
 
 @ai_bp.get("/history")

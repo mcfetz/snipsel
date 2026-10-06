@@ -1,5 +1,7 @@
 import os
+
 from PIL import Image
+
 
 def process_logo():
     img_path = '/Users/daniel/.gemini/antigravity/brain/448dfc80-df36-470c-a77c-6151a0e8ee2b/snipsel_logo_concepts_1776974577866.png'
@@ -26,10 +28,10 @@ def process_logo():
             p = quadrant.getpixel((x, y))
             diff = abs(p[0] - bg_color[0]) + abs(p[1] - bg_color[1]) + abs(p[2] - bg_color[2])
             if diff > threshold:
-                if x < left: left = x
-                if y < top: top = y
-                if x > right: right = x
-                if y > bottom: bottom = y
+                left = min(left, x)
+                top = min(top, y)
+                right = max(right, x)
+                bottom = max(bottom, y)
 
     # The bounding box dimensions
     bw = right - left
