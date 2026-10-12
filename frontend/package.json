@@ -20,7 +20,7 @@
     "tailwindcss": "^4.2.4",
     "typescript": "~6.0.3",
     "vite": "^8.3.4",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^2.0.0"
   },
   "dependencies": {
     "@animated-color-icons/lucide-svelte": "^1.0.0",
