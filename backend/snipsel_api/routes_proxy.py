@@ -84,10 +84,25 @@ def _fetch_deezer_metadata(url: str) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
+DEEZER_SHORT_LINK_BASES = {
+    "link.deezer.com": "https://link.deezer.com",
+    "deezer.link": "https://deezer.link",
+}
+
+
 @lru_cache(maxsize=1000)
 def _resolve_deezer_url(short_url: str) -> str:
-    _assert_public_url(short_url)
-    req = urllib_request.Request(short_url, headers={"User-Agent": "Snipsel/1.0"})
+    parsed = urllib_parse.urlparse(short_url)
+    host = (parsed.hostname or "").lower()
+    base = DEEZER_SHORT_LINK_BASES.get(host)
+    if base is None:
+        raise api_error(400, "invalid_input", "Unsupported Deezer link")
+
+    request_url = base + parsed.path
+    if parsed.query:
+        request_url = f"{request_url}?{parsed.query}"
+
+    req = urllib_request.Request(request_url, headers={"User-Agent": "Snipsel/1.0"})
     with urllib_request.urlopen(req, timeout=10) as response:
         return response.geturl()
 
@@ -231,21 +246,25 @@ def _resolve_map_url(url: str) -> dict:
     - coords: {lat, lng} or None if not found
     """
     parsed = urllib_parse.urlparse(url)
-    domain = (parsed.hostname or "").lower()
 
     result = {"resolved_url": url, "coords": None}
 
-    is_short_link = (
-        _host_matches(domain, "maps.app.goo.gl")
-        or (_host_matches(domain, "goo.gl") and "maps" in url)
-        or (_host_matches(domain, "maps.apple.com") and "/p/" in url)
-    )
+    host = (parsed.hostname or "").lower()
+    base: str | None = None
+    if _host_matches(host, "maps.app.goo.gl"):
+        base = "https://maps.app.goo.gl"
+    elif _host_matches(host, "goo.gl") and "maps" in url:
+        base = "https://goo.gl"
+    elif _host_matches(host, "maps.apple.com") and "/p/" in url:
+        base = "https://maps.apple.com"
 
-    if is_short_link:
+    if base is not None:
         try:
-            _assert_public_url(url)
+            request_url = base + parsed.path
+            if parsed.query:
+                request_url = f"{request_url}?{parsed.query}"
             resp = requests.head(
-                url,
+                request_url,
                 allow_redirects=True,
                 timeout=10,
                 headers={
