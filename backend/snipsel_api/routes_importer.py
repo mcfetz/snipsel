@@ -53,9 +53,8 @@ def _twos_api_request(endpoint: str, data: dict | None = None) -> dict:
         print(f"[TwoS Import] API error {e.code}: {error_body}")
         raise api_error(e.code, "external_error", f"TwoS API error: {error_body}")
     except URLError as e:
-        raise api_error(
-            502, "external_error", f"Failed to connect to TwoS: {e!s}"
-        ) from e
+        logger.debug("Failed to connect to TwoS", exc_info=True)
+        raise api_error(502, "external_error", "Failed to connect to TwoS") from e
 
 
 def _download_image(url: str) -> bytes | None:
@@ -190,9 +189,8 @@ def twos_login():
     except ApiError:
         raise
     except Exception as e:
-        raise api_error(
-            502, "external_error", f"Failed to connect to TwoS: {e!s}"
-        ) from e
+        logger.debug("Failed to connect to TwoS", exc_info=True)
+        raise api_error(502, "external_error", "Failed to connect to TwoS") from e
 
 
 @importer_bp.route("/twos/lists", methods=["POST"])
@@ -366,15 +364,15 @@ def twos_import():
 
             print(f"[TwoS Import]   Completed: {list_id}")
 
-        except sqlalchemy.exc.IntegrityError as e:
+        except sqlalchemy.exc.IntegrityError:
             db.session.rollback()
-            error_msg = f"Datenbank-Konflikt in Liste '{list_id}'. Möglicherweise Duplikate im Export oder Element bereits importiert. Details: {getattr(e, 'orig', str(e))}"
-            print(f"[TwoS Import] ERROR: {error_msg}")
+            error_msg = f"Datenbank-Konflikt in Liste '{list_id}'. Möglicherweise Duplikate im Export oder Element bereits importiert."
+            logger.exception("[TwoS Import] %s", error_msg)
             errors.append(error_msg)
-        except Exception as e:
+        except Exception:
             db.session.rollback()
-            error_msg = f"Failed to import list '{list_id}': {e!s}"
-            logger.exception(f"[TwoS Import] {error_msg}")
+            error_msg = f"Failed to import list '{list_id}'"
+            logger.exception("[TwoS Import] %s", error_msg)
             errors.append(error_msg)
 
     print(f"[TwoS Import] <== Finished import: {imported} imported or updated")
