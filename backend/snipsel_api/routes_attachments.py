@@ -7,6 +7,7 @@ from pathlib import Path
 
 from flask import Blueprint, current_app, request, send_file, session
 from PIL import Image
+from werkzeug.utils import secure_filename
 
 from snipsel_api.auth_session import current_user, json_response, require_auth
 from snipsel_api.errors import api_error
@@ -60,7 +61,8 @@ def upload_attachment(snipsel_id: str):
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     att_id = str(uuid.uuid4())
-    safe_name = os.path.basename(file.filename)
+    display_name = os.path.basename(file.filename)
+    safe_name = secure_filename(display_name) or "file"
     storage_path = upload_dir / f"{att_id}_{safe_name}"
 
     file.save(storage_path)
@@ -82,7 +84,7 @@ def upload_attachment(snipsel_id: str):
     att = Attachment(
         id=att_id,
         snipsel_id=snipsel.id,
-        filename=safe_name,
+        filename=display_name,
         mime_type=mime_type,
         size_bytes=size,
         storage_path=str(storage_path),
@@ -133,7 +135,8 @@ def upload_collection_header(collection_id: str):
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     att_id = str(uuid.uuid4())
-    safe_name = os.path.basename(file.filename)
+    display_name = os.path.basename(file.filename)
+    safe_name = secure_filename(display_name) or "file"
     storage_path = upload_dir / f"{att_id}_{safe_name}"
 
     file.save(storage_path)
@@ -151,7 +154,7 @@ def upload_collection_header(collection_id: str):
     att = Attachment(
         id=att_id,
         collection_id=collection.id,
-        filename=safe_name,
+        filename=display_name,
         mime_type=mime_type,
         size_bytes=size,
         storage_path=str(storage_path),

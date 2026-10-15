@@ -10,6 +10,7 @@ from pathlib import Path
 
 from flask import Blueprint, current_app, request
 from PIL import Image
+from werkzeug.utils import secure_filename
 
 # Try to import HEIF support for Apple images
 try:
@@ -46,8 +47,9 @@ api_keys_bp = Blueprint("api_keys", __name__)
 
 
 def _hash_key(key: str) -> str:
-    """Hash an API key for storage."""
-    return hashlib.sha256(key.encode()).hexdigest()
+    """Hash an API key for storage using a salted key-derivation function."""
+    salt = str(current_app.config.get("SECRET_KEY", "snipsel")).encode()
+    return hashlib.pbkdf2_hmac("sha256", key.encode(), salt, 100_000).hex()
 
 
 def _generate_api_key() -> str:
@@ -151,27 +153,11 @@ def _get_user_from_api_key(api_key: str) -> User | None:
     """Get user from an API key."""
     key_hash = _hash_key(api_key)
 
-    # Debug logging
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.debug(f"Looking for API key hash: {key_hash[:20]}...")
-    logger.debug(
-        f"Received key prefix: {api_key[:30] if len(api_key) > 30 else api_key}..."
-    )
-
     api_key_record = (
         db.session.execute(db.select(UserApiKey).where(UserApiKey.key_hash == key_hash))
         .scalars()
         .first()
     )
-
-    if not api_key_record:
-        # Log all available keys for debugging (only in development!)
-        all_keys = db.session.execute(db.select(UserApiKey)).scalars().all()
-        logger.debug(f"No matching key found. Available keys in DB: {len(all_keys)}")
-        for k in all_keys:
-            logger.debug(f"  - Key hash prefix: {k.key_hash[:20]}...")
 
     if not api_key_record:
         return None
@@ -295,7 +281,8 @@ def quick_add_snipsel():
 
         for uploaded_file in uploaded_files:
             att_id = str(uuid.uuid4())
-            safe_name = os.path.basename(uploaded_file.filename or "")
+            display_name = os.path.basename(uploaded_file.filename or "")
+            safe_name = secure_filename(display_name) or "file"
             storage_path = upload_dir / f"{att_id}_{safe_name}"
 
             uploaded_file.save(storage_path)
@@ -325,7 +312,7 @@ def quick_add_snipsel():
             att = Attachment(
                 id=att_id,
                 snipsel_id=snipsel.id,
-                filename=safe_name,
+                filename=display_name,
                 mime_type=mime_type,
                 size_bytes=size,
                 storage_path=str(storage_path),

@@ -263,11 +263,6 @@ def disable_2fa():
     raw_password = data.get("password_confirm") or ""
     password_confirm = str(raw_password).strip()
 
-    first_char = password_confirm[0] if password_confirm else ""
-    logger.debug(
-        f"Disable 2FA request for user {user.username}. Password length: {len(password_confirm)}, first char: {first_char}"
-    )
-
     if not password_confirm:
         logger.warning(
             f"Disable 2FA failed: password_confirm missing for user {user.username}"
@@ -355,7 +350,8 @@ def passkeys_register_complete():
             credential_current_sign_count=passkey.sign_count,
         )
     except Exception as e:
-        raise api_error(401, "verification_failed", str(e)) from e
+        logger.debug("Passkey authentication verification failed", exc_info=True)
+        raise api_error(401, "verification_failed", "Verification failed") from e
 
     passkey.sign_count = verification.new_sign_count
     db.session.commit()
@@ -459,7 +455,8 @@ def passkeys_login_complete():
             credential_current_sign_count=passkey.sign_count,
         )
     except Exception as e:
-        raise api_error(401, "verification_failed", str(e)) from e
+        logger.debug("Passkey authentication verification failed", exc_info=True)
+        raise api_error(401, "verification_failed", "Verification failed") from e
 
     passkey.sign_count = verification.new_sign_count
     db.session.commit()

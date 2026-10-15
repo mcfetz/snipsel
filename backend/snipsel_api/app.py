@@ -6,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from flask import Flask, send_from_directory
+from werkzeug.utils import safe_join
 
 from snipsel_api.config import Settings
 from snipsel_api.extensions import cache, cors, db, migrate
@@ -185,8 +186,8 @@ def create_app() -> Flask:
                     "error": {"code": "not_found", "message": "API endpoint not found"}
                 }, 404
 
-            fp = Path(str(frontend_dir)) / path
-            if path and fp.is_file():
+            fp = safe_join(str(frontend_dir), path)
+            if path and fp and Path(fp).is_file():
                 return send_from_directory(str(frontend_dir), path)
             return send_from_directory(str(frontend_dir), "index.html")
 

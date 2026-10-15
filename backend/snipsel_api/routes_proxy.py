@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
 import re
+import socket
 from functools import lru_cache
 from html.parser import HTMLParser
 from urllib import parse as urllib_parse
@@ -20,6 +22,59 @@ logger = logging.getLogger(__name__)
 proxy_bp = Blueprint("proxy", __name__)
 
 
+def _host_matches(host: str, domain: str) -> bool:
+    """Return True when ``host`` is ``domain`` or a subdomain of it."""
+    normalized_host = (host or "").strip().lower().rstrip(".")
+    normalized_domain = domain.strip().lower().strip(".")
+    return normalized_host == normalized_domain or normalized_host.endswith(
+        f".{normalized_domain}"
+    )
+
+
+def _is_public_ip(ip: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return not (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_reserved
+        or addr.is_multicast
+        or addr.is_unspecified
+    )
+
+
+def _assert_public_url(url: str) -> None:
+    """Reject URLs that point at non-public hosts to prevent SSRF."""
+    parsed = urllib_parse.urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise api_error(400, "invalid_input", "Only http/https URLs are supported")
+
+    host = parsed.hostname
+    if not host:
+        raise api_error(400, "invalid_input", "URL must include a host")
+
+    if host.lower() in {"localhost", "localhost.localdomain", "ip6-localhost"}:
+        raise api_error(400, "invalid_input", "URL host is not allowed")
+
+    try:
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError as exc:
+        raise api_error(400, "invalid_input", "URL has an invalid port") from exc
+
+    try:
+        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    except socket.gaierror as exc:
+        raise api_error(400, "invalid_input", "Could not resolve URL host") from exc
+
+    for info in infos:
+        resolved_ip = str(info[4][0])
+        if not _is_public_ip(resolved_ip):
+            raise api_error(400, "invalid_input", "URL host is not allowed")
+
+
 # Cache metadata for 1 hour (using a simple lru_cache for in-process memory)
 # Note: In a multi-worker production environment, Redis or similar would be better.
 @lru_cache(maxsize=1000)
@@ -31,6 +86,7 @@ def _fetch_deezer_metadata(url: str) -> dict:
 
 @lru_cache(maxsize=1000)
 def _resolve_deezer_url(short_url: str) -> str:
+    _assert_public_url(short_url)
     req = urllib_request.Request(short_url, headers={"User-Agent": "Snipsel/1.0"})
     with urllib_request.urlopen(req, timeout=10) as response:
         return response.geturl()
@@ -77,8 +133,9 @@ def proxy_deezer():
                     media_id = parts[i + 1].split("?")[0]  # strip query params
                     break
         except Exception as e:
+            logger.debug("Failed to resolve Deezer link", exc_info=True)
             raise api_error(
-                502, "external_error", f"Failed to resolve Deezer link: {e!s}"
+                502, "external_error", "Failed to resolve Deezer link"
             ) from e
 
     if not media_type or not media_id:
@@ -97,11 +154,13 @@ def proxy_deezer():
             return json_response(data, status=400)
         return json_response(data)
     except HTTPError as e:
-        return json_response({"error": str(e)}, status=e.code)
+        return json_response({"error": "Upstream request failed"}, status=e.code)
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to YouTube: {e!s}")
+        logger.debug("Failed to connect to Deezer", exc_info=True)
+        raise api_error(502, "external_error", "Failed to connect to Deezer") from e
     except Exception as e:
-        raise api_error(500, "internal_error", str(e)) from e
+        logger.debug("Deezer proxy error", exc_info=True)
+        raise api_error(500, "internal_error", "Internal error") from e
 
 
 # ---------------------------------------------------------------------------
@@ -111,13 +170,15 @@ def proxy_deezer():
 
 def _extract_coords_from_url(url: str) -> dict | None:
     """Extract coordinates from a URL (Google Maps or Apple Maps)."""
+    coord = r"(-?\d{1,3}\.\d{1,12})"
+
     # Google Maps @lat,lng format
-    at_match = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
+    at_match = re.search(rf"@{coord},{coord}", url)
     if at_match:
         return {"lat": float(at_match.group(1)), "lng": float(at_match.group(2))}
 
     # Google Maps search/lat,+lng format (from short links)
-    search_match = re.search(r"/search/(-?\d+\.\d+),\+(-?\d+\.\d+)", url)
+    search_match = re.search(rf"/search/{coord},\+{coord}", url)
     if search_match:
         return {
             "lat": float(search_match.group(1)),
@@ -125,17 +186,17 @@ def _extract_coords_from_url(url: str) -> dict | None:
         }
 
     # Google Maps ?q=lat,lng or ?q=lat%2Clng
-    q_match = re.search(r"[?&]q=(-?\d+\.\d+)[,%2C](-?\d+\.\d+)", url)
+    q_match = re.search(rf"[?&]q={coord}[,%2C]{coord}", url)
     if q_match:
         return {"lat": float(q_match.group(1)), "lng": float(q_match.group(2))}
 
     # Apple Maps ?ll=lat,lng
-    ll_match = re.search(r"[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)", url)
+    ll_match = re.search(rf"[?&]ll={coord},{coord}", url)
     if ll_match:
         return {"lat": float(ll_match.group(1)), "lng": float(ll_match.group(2))}
 
     # Apple Maps ?q=lat,lng
-    apple_q_match = re.search(r"[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)", url)
+    apple_q_match = re.search(rf"[?&]q={coord},{coord}", url)
     if apple_q_match:
         return {
             "lat": float(apple_q_match.group(1)),
@@ -143,7 +204,7 @@ def _extract_coords_from_url(url: str) -> dict | None:
         }
 
     # Apple Maps coordinate=lat,lng (from short links)
-    apple_coord_match = re.search(r"[?&]coordinate=(-?\d+\.\d+),(-?\d+\.\d+)", url)
+    apple_coord_match = re.search(rf"[?&]coordinate={coord},{coord}", url)
     if apple_coord_match:
         return {
             "lat": float(apple_coord_match.group(1)),
@@ -151,7 +212,7 @@ def _extract_coords_from_url(url: str) -> dict | None:
         }
 
     # Apple Maps center=lat,lng (iframe embeds)
-    apple_center_match = re.search(r"[?&]center=(-?\d+\.\d+),(-?\d+\.\d+)", url)
+    apple_center_match = re.search(rf"[?&]center={coord},{coord}", url)
     if apple_center_match:
         return {
             "lat": float(apple_center_match.group(1)),
@@ -170,19 +231,19 @@ def _resolve_map_url(url: str) -> dict:
     - coords: {lat, lng} or None if not found
     """
     parsed = urllib_parse.urlparse(url)
-    domain = parsed.netloc.lower()
+    domain = (parsed.hostname or "").lower()
 
     result = {"resolved_url": url, "coords": None}
 
     is_short_link = (
-        "maps.app.goo.gl" in domain
-        or ("goo.gl" in domain and "maps" in url)
-        or ("maps.apple.com" in domain and "/p/" in url)
-        or ("maps.apple" in domain and "/p/" in url)
+        _host_matches(domain, "maps.app.goo.gl")
+        or (_host_matches(domain, "goo.gl") and "maps" in url)
+        or (_host_matches(domain, "maps.apple.com") and "/p/" in url)
     )
 
     if is_short_link:
         try:
+            _assert_public_url(url)
             resp = requests.head(
                 url,
                 allow_redirects=True,
@@ -249,6 +310,7 @@ def _fetch_link_metadata(url: str) -> dict:
     fallback = {"title": domain, "favicon_url": None, "domain": domain}
 
     try:
+        _assert_public_url(url)
         req = urllib_request.Request(
             url,
             headers={
@@ -305,15 +367,13 @@ def proxy_link_metadata():
     if parsed.scheme not in ("http", "https"):
         raise api_error(400, "invalid_input", "Only http/https URLs are supported")
 
-    domain = parsed.netloc.lower()
+    domain = (parsed.hostname or "").lower()
     is_map_url = (
-        "google.com" in domain
-        and "maps" in url
-        or "maps.google" in domain
-        or "maps.app.goo.gl" in domain
-        or "maps.apple" in domain
-        or "apple.com" in domain
-        and "maps" in url
+        (_host_matches(domain, "google.com") and "maps" in url)
+        or _host_matches(domain, "maps.google.com")
+        or _host_matches(domain, "maps.app.goo.gl")
+        or _host_matches(domain, "maps.apple.com")
+        or (_host_matches(domain, "apple.com") and "maps" in url)
     )
 
     result = {}
@@ -335,7 +395,7 @@ def proxy_link_metadata():
         result["domain"] = metadata.get("domain", domain)
     except HTTPError as e:
         if not result.get("lat"):
-            return json_response({"error": str(e)}, status=e.code)
+            return json_response({"error": "Upstream request failed"}, status=e.code)
         result["title"] = result.get("title", domain)
         result["favicon_url"] = (
             f"https://www.google.com/s2/favicons?domain={urllib_parse.quote(domain)}&sz=64"
@@ -343,7 +403,8 @@ def proxy_link_metadata():
         result["domain"] = domain
     except URLError as e:
         if not result.get("lat"):
-            raise api_error(502, "external_error", f"Failed to fetch URL: {e!s}")
+            logger.debug("Failed to fetch URL", exc_info=True)
+            raise api_error(502, "external_error", "Failed to fetch URL") from e
         result["title"] = result.get("title", domain)
         result["favicon_url"] = (
             f"https://www.google.com/s2/favicons?domain={urllib_parse.quote(domain)}&sz=64"
@@ -351,7 +412,8 @@ def proxy_link_metadata():
         result["domain"] = domain
     except Exception as e:
         if not result.get("lat"):
-            raise api_error(500, "internal_error", str(e)) from e
+            logger.debug("Failed to fetch link metadata", exc_info=True)
+            raise api_error(500, "internal_error", "Internal error") from e
         logger.debug("Failed to fetch link metadata", exc_info=True)
         result["title"] = result.get("title", domain)
         result["favicon_url"] = (
@@ -377,11 +439,13 @@ def proxy_youtube():
         data = _fetch_youtube_metadata(oembed_url)
         return json_response(data)
     except HTTPError as e:
-        return json_response({"error": str(e)}, status=e.code)
+        return json_response({"error": "Upstream request failed"}, status=e.code)
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to YouTube: {e!s}")
+        logger.debug("Failed to connect to YouTube", exc_info=True)
+        raise api_error(502, "external_error", "Failed to connect to YouTube") from e
     except Exception as e:
-        raise api_error(500, "internal_error", str(e)) from e
+        logger.debug("YouTube proxy error", exc_info=True)
+        raise api_error(500, "internal_error", "Internal error") from e
 
 
 @proxy_bp.route("/spotify", methods=["GET"])
@@ -400,11 +464,13 @@ def proxy_spotify():
         data = _fetch_spotify_metadata(oembed_url)
         return json_response(data)
     except HTTPError as e:
-        return json_response({"error": str(e)}, status=e.code)
+        return json_response({"error": "Upstream request failed"}, status=e.code)
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to Spotify: {e!s}")
+        logger.debug("Failed to connect to Spotify", exc_info=True)
+        raise api_error(502, "external_error", "Failed to connect to Spotify") from e
     except Exception as e:
-        raise api_error(500, "internal_error", str(e)) from e
+        logger.debug("Spotify proxy error", exc_info=True)
+        raise api_error(500, "internal_error", "Internal error") from e
 
 
 @proxy_bp.route("/unsplash/search", methods=["GET"])
@@ -483,6 +549,5 @@ def proxy_unsplash_search():
 
         raise api_error(status_code, "external_error", error_msg)
     except Exception as e:
-        raise api_error(
-            502, "external_error", f"Failed to connect to Unsplash: {e!s}"
-        ) from e
+        logger.debug("Failed to connect to Unsplash", exc_info=True)
+        raise api_error(502, "external_error", "Failed to connect to Unsplash") from e

@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it';
+import { decodeHtmlEntities } from './html';
 
 export const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
@@ -81,12 +82,7 @@ export function renderWithWikiLinks(
       refMap.set(r.title.toLowerCase(), r.collection_id);
     }
     html = html.replace(/\[\[([^\]]+)\]\]/g, (_match, title: string) => {
-      const unescapedTitle = title
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
+      const unescapedTitle = decodeHtmlEntities(title);
 
       const collectionId = refMap.get(unescapedTitle.toLowerCase());
       if (collectionId) {

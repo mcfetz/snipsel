@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-_TRAILING_PUNCT_RE = re.compile(r"[\]\[\)\}\.,;:!?]+$")
+_TRAILING_PUNCT = "[](){},.;:!?"
 
 
 def normalize_token(raw: str) -> str:
@@ -28,7 +28,7 @@ def _extract_prefixed(text: str, prefix: str) -> set[str]:
         token = part[1:]
         if not token or not token[:1].isalpha():
             continue
-        token = _TRAILING_PUNCT_RE.sub("", token)
+        token = token.rstrip(_TRAILING_PUNCT)
         if not token:
             continue
         out.add(normalize_token(token))

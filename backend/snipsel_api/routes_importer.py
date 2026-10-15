@@ -245,7 +245,8 @@ def twos_lists():
     except ApiError:
         raise
     except Exception as e:
-        raise api_error(502, "external_error", f"Failed to fetch lists: {e!s}") from e
+        logger.debug("Failed to fetch lists", exc_info=True)
+        raise api_error(502, "external_error", "Failed to fetch lists") from e
 
 
 @importer_bp.route("/twos/search", methods=["POST"])
@@ -294,7 +295,8 @@ def twos_search():
     except ApiError:
         raise
     except Exception as e:
-        raise api_error(502, "external_error", f"Failed to search TwoS: {e!s}") from e
+        logger.debug("Failed to search TwoS", exc_info=True)
+        raise api_error(502, "external_error", "Failed to search TwoS") from e
 
 
 @importer_bp.route("/twos/import", methods=["POST"])

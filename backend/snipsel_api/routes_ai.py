@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 from urllib import request as urllib_request
 from urllib.error import HTTPError, URLError
 
@@ -14,6 +15,8 @@ from snipsel_api.models import AiPromptHistory, Attachment
 from snipsel_api.permissions import can_read_snipsel_via_collections
 
 ai_bp = Blueprint("ai", __name__)
+
+logger = logging.getLogger(__name__)
 
 
 @ai_bp.post("/generate")
@@ -187,9 +190,11 @@ def generate():
                 {"error": f"LLM Error: {e.code}", "details": error_body}, status=e.code
             )
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to LLM: {e!s}")
+        logger.debug("Failed to connect to LLM", exc_info=True)
+        raise api_error(502, "external_error", "Failed to connect to LLM") from e
     except Exception as e:
-        raise api_error(500, "internal_error", str(e)) from e
+        logger.debug("LLM proxy error", exc_info=True)
+        raise api_error(500, "internal_error", "Internal error") from e
 
 
 @ai_bp.get("/models")
@@ -240,9 +245,11 @@ def get_models():
                 {"error": f"LLM Error: {e.code}", "details": error_body}, status=e.code
             )
     except URLError as e:
-        raise api_error(502, "external_error", f"Failed to connect to LLM: {e!s}")
+        logger.debug("Failed to connect to LLM", exc_info=True)
+        raise api_error(502, "external_error", "Failed to connect to LLM") from e
     except Exception as e:
-        raise api_error(500, "internal_error", str(e)) from e
+        logger.debug("LLM proxy error", exc_info=True)
+        raise api_error(500, "internal_error", "Internal error") from e
 
 
 @ai_bp.get("/history")

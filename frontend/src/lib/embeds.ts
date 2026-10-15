@@ -1,3 +1,5 @@
+import { decodeHtmlEntities } from './html';
+
 export type DeezerEmbed = {
   type: 'track' | 'album' | 'artist' | null;
   id: string | null;
@@ -114,12 +116,7 @@ export function getCollectionLink(
   const match = trimmed.match(/^\[\[([^\]]+)\]\]$/);
   if (!match) return null;
 
-  const title = match[1]
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+  const title = decodeHtmlEntities(match[1]);
 
   const ref = refs.find((r) => r.title.toLowerCase() === title.toLowerCase());
   return ref ? ref.collection_id : null;
