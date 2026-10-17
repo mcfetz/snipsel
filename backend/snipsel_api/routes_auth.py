@@ -644,6 +644,37 @@ def update_me():
     if "diced_moments_tags" in data:
         user.diced_moments_tags = (data.get("diced_moments_tags") or "").strip() or None
 
+    if "ntfy_enabled" in data:
+        user.ntfy_enabled = bool(data.get("ntfy_enabled"))
+
+    if "ntfy_replace_web_push" in data:
+        user.ntfy_replace_web_push = bool(data.get("ntfy_replace_web_push"))
+
+    if "ntfy_url" in data:
+        ntfy_url = (data.get("ntfy_url") or "").strip()
+        if ntfy_url:
+            from snipsel_api.push_service import is_valid_http_url
+
+            if not is_valid_http_url(ntfy_url):
+                raise api_error(
+                    400, "invalid_input", "ntfy URL must be a valid http(s) URL"
+                )
+            user.ntfy_url = ntfy_url
+        else:
+            user.ntfy_url = None
+
+    if "ntfy_topic" in data:
+        user.ntfy_topic = (data.get("ntfy_topic") or "").strip() or None
+
+    if "ntfy_token" in data:
+        new_token = data.get("ntfy_token")
+        if new_token is None:
+            user.ntfy_token = None
+        else:
+            stripped_token = new_token.strip()
+            if stripped_token:
+                user.ntfy_token = stripped_token
+
     if "email" in data or "password" in data:
         current_password = data.get("current_password") or ""
         if not current_password or not check_password_hash(
@@ -845,6 +876,11 @@ def _user_json(user: User) -> dict:
         "dark_background_color": user.dark_background_color,
         "is_admin": getattr(user, "is_admin", False),
         "diced_moments_tags": user.diced_moments_tags,
+        "ntfy_enabled": getattr(user, "ntfy_enabled", False),
+        "ntfy_url": getattr(user, "ntfy_url", None),
+        "ntfy_topic": getattr(user, "ntfy_topic", None),
+        "ntfy_token_set": getattr(user, "ntfy_token", None) is not None,
+        "ntfy_replace_web_push": getattr(user, "ntfy_replace_web_push", False),
         "created_at": user.created_at.isoformat() + "Z",
     }
 

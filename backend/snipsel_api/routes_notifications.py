@@ -131,6 +131,35 @@ def test_push():
     return json_response({"success": True})
 
 
+@notifications_bp.post("/test-ntfy")
+@require_auth
+def test_ntfy():
+    user = current_user()
+
+    from snipsel_api.push_service import send_ntfy_notification
+
+    if not (user.ntfy_enabled and user.ntfy_url and user.ntfy_topic):
+        return json_response(
+            {"success": False, "error": "ntfy is not fully configured."}, 400
+        )
+
+    delivered = send_ntfy_notification(
+        user.id,
+        {
+            "title": "Snipsel",
+            "body": "ntfy test notification 🎉",
+            "url": "/notifications",
+        },
+    )
+
+    if not delivered:
+        return json_response(
+            {"success": False, "error": "Could not deliver ntfy notification."}, 502
+        )
+
+    return json_response({"success": True})
+
+
 @notifications_bp.post("/subscribe")
 @require_auth
 @enforce_json

@@ -1,14 +1,8 @@
 <script lang="ts">
   import Check from '@animated-color-icons/lucide-svelte/Check.svelte';
-  import BellRing from '@animated-color-icons/lucide-svelte/BellRing.svelte';
   import { api, type Collection } from '../api';
   import { currentUser } from '../session';
   import { getContrastColor } from '../colors';
-  import {
-    checkPushSubscription,
-    subscribeToPushNotifications,
-    unsubscribeFromPushNotifications,
-  } from '../pushManager';
 
   interface Props {
     accent: string;
@@ -21,14 +15,6 @@
   let dayTemplateId = $state($currentUser?.day_collection_template_id ?? '');
   let showDayTemplateSaved = $state(false);
   let savingDayTemplate = $state(false);
-  let hasPushEnabled = $state(false);
-  let pushBusy = $state(false);
-
-  $effect(() => {
-    checkPushSubscription().then((enabled) => {
-      hasPushEnabled = enabled;
-    });
-  });
 
   async function saveDayTemplate() {
     savingDayTemplate = true;
@@ -55,31 +41,6 @@
       currentUser.set(res.user);
     } catch (err) {
       console.error('Failed to update carry over tasks:', err);
-    }
-  }
-
-  async function togglePush() {
-    pushBusy = true;
-    try {
-      if (hasPushEnabled) {
-        await unsubscribeFromPushNotifications();
-        hasPushEnabled = false;
-      } else {
-        const success = await subscribeToPushNotifications();
-        hasPushEnabled = success;
-      }
-    } catch (err) {
-      console.error('Failed to toggle push notifications:', err);
-    } finally {
-      pushBusy = false;
-    }
-  }
-
-  async function sendTestPush() {
-    try {
-      await api.push.test();
-    } catch (err) {
-      console.error('Failed to send test push notification:', err);
     }
   }
 </script>
@@ -151,44 +112,5 @@
         ></span>
       </button>
     </div>
-  </div>
-
-  <!-- Notifications -->
-  <div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80 dark:ring-white/10">
-    <div class="text-xs uppercase text-slate-500">Notifications</div>
-    <div class="mt-3 flex items-center justify-between gap-4">
-      <div>
-        <div class="text-sm font-medium text-slate-900 dark:text-slate-100">Push Notifications</div>
-        <div class="text-xs text-slate-500 dark:text-slate-400">Receive alerts on this device for reminders.</div>
-      </div>
-      <button
-        type="button"
-        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50"
-        style={hasPushEnabled ? `background-color: ${accent}; color: ${getContrastColor(accent)}` : 'background-color: #cbd5e1'}
-        role="switch"
-        aria-checked={hasPushEnabled}
-        aria-label="Toggle push notifications"
-        onclick={togglePush}
-        disabled={isBusy || pushBusy}
-      >
-        <span
-          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {hasPushEnabled ? 'translate-x-5' : 'translate-x-0'}"
-        ></span>
-      </button>
-    </div>
-
-    {#if hasPushEnabled}
-      <div class="mt-3 flex items-center justify-end">
-        <button
-          class="al-icon-wrapper flex items-center gap-1.5 text-xs font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-          type="button"
-          onclick={sendTestPush}
-          disabled={isBusy || pushBusy}
-        >
-          <BellRing label="" size={14} />
-          Send Test Notification
-        </button>
-      </div>
-    {/if}
   </div>
 </div>

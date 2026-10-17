@@ -12,6 +12,7 @@
   import SettingsAi from '../lib/settings/SettingsAi.svelte';
   import SettingsSecurity from '../lib/settings/SettingsSecurity.svelte';
   import SettingsDataSync from '../lib/settings/SettingsDataSync.svelte';
+  import SettingsNotifications from '../lib/settings/SettingsNotifications.svelte';
 
   let userStats = $state<UserStats | null>(null);
   let templateCollections = $state<Collection[]>([]);
@@ -92,10 +93,16 @@
       {isBusy}
     />
 
-    <!-- General Settings (Day Template, Carry Over Tasks, Push Notifications) -->
+    <!-- General Settings (Day Template, Carry Over Tasks) -->
     <SettingsGeneral
       {accent}
       {templateCollections}
+      {isBusy}
+    />
+
+    <!-- Notifications (Web Push, ntfy) -->
+    <SettingsNotifications
+      {accent}
       {isBusy}
     />
 

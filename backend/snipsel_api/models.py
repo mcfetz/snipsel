@@ -91,6 +91,12 @@ class User(db.Model):
     is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
     diced_moments_tags: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    ntfy_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ntfy_topic: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    ntfy_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    ntfy_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    ntfy_replace_web_push: Mapped[bool] = mapped_column(default=False, nullable=False)
+
 
 class Collection(db.Model):
     __tablename__ = "collections"

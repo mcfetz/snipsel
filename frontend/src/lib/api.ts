@@ -26,6 +26,11 @@ export type User = {
   dark_background_color?: string | null;
   is_admin?: boolean;
   diced_moments_tags?: string | null;
+  ntfy_enabled?: boolean;
+  ntfy_url?: string | null;
+  ntfy_topic?: string | null;
+  ntfy_token_set?: boolean;
+  ntfy_replace_web_push?: boolean;
 };
 
 export type UserStats = {
@@ -465,6 +470,11 @@ export const api = {
     diced_moments_tags?: string | null;
     light_background_color?: string | null;
     dark_background_color?: string | null;
+    ntfy_enabled?: boolean;
+    ntfy_url?: string | null;
+    ntfy_topic?: string | null;
+    ntfy_token?: string | null;
+    ntfy_replace_web_push?: boolean;
   }) =>
     requestJson<{ user: User }>('/api/auth/me', {
       method: 'PATCH',
@@ -1024,6 +1034,7 @@ export const api = {
     markAllRead: () => requestJson<{ success: boolean }>('/api/notifications/mark-all-read', { method: 'POST' }),
     deleteRead: () => requestJson<{ success: boolean }>('/api/notifications/read', { method: 'DELETE' }),
     testPush: () => requestJson<{ success: boolean }>('/api/notifications/test-push', { method: 'POST' }),
+    testNtfy: () => requestJson<{ success: boolean; error?: string }>('/api/notifications/test-ntfy', { method: 'POST' }),
   },
 
   attachments: {
