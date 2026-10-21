@@ -3,7 +3,7 @@ Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.1.0
 Flask-Cors==6.0.5
 python-dotenv==1.2.4
-Pillow==12.3.0
+Pillow==13.0.0
 pillow-heif==1.8.1
 python-dateutil==2.9.0.post0
 pywebpush==2.5.0
