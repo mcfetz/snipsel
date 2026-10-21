@@ -86,7 +86,7 @@ export function renderWithWikiLinks(
 
       const collectionId = refMap.get(unescapedTitle.toLowerCase());
       if (collectionId) {
-        return `<a class="snip-token cursor-pointer" style="background-color:${tokenBg}; color:${tokenFg}" data-collection-id="${collectionId}">[[${title}]]</a>`;
+        return `<a class="snip-token cursor-pointer" style="background-color:${tokenBg}; color:${tokenFg}" data-collection-id="${md.utils.escapeHtml(collectionId)}">[[${title}]]</a>`;
       }
       return `<span class="text-slate-400 text-xs">[[${title}]]</span>`;
     });

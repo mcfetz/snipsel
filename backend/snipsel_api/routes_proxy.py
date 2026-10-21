@@ -5,10 +5,10 @@ import json
 import logging
 import re
 import socket
+from email.message import Message
 from functools import lru_cache
 from html.parser import HTMLParser
 from urllib import parse as urllib_parse
-from urllib import request as urllib_request
 from urllib.error import HTTPError, URLError
 
 import requests
@@ -75,13 +75,60 @@ def _assert_public_url(url: str) -> None:
             raise api_error(400, "invalid_input", "URL host is not allowed")
 
 
+_MAX_REDIRECTS = 5
+
+
+def _safe_request(
+    url: str,
+    *,
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    timeout: int = 10,
+    stream: bool = False,
+) -> requests.Response:
+    """Fetch a URL while re-validating every redirect hop against the SSRF guard.
+
+    Raises urllib-style HTTPError/URLError so callers keep their existing
+    exception handling.
+    """
+    current = url
+    for _ in range(_MAX_REDIRECTS + 1):
+        _assert_public_url(current)
+        try:
+            resp = requests.request(
+                method,
+                current,
+                headers=headers,
+                timeout=timeout,
+                allow_redirects=False,
+                stream=stream,
+            )
+        except requests.exceptions.RequestException as exc:
+            raise URLError(str(exc)) from exc
+        location = resp.headers.get("Location") if resp.is_redirect else None
+        if not location:
+            try:
+                resp.raise_for_status()
+            except requests.exceptions.HTTPError as exc:
+                resp.close()
+                hdrs = Message()
+                for key, value in resp.headers.items():
+                    hdrs[key] = value
+                raise HTTPError(
+                    current, resp.status_code, resp.reason or "", hdrs, None
+                ) from exc
+            return resp
+        resp.close()
+        current = urllib_parse.urljoin(current, location)
+    raise api_error(400, "invalid_input", "Too many redirects")
+
+
 # Cache metadata for 1 hour (using a simple lru_cache for in-process memory)
 # Note: In a multi-worker production environment, Redis or similar would be better.
 @lru_cache(maxsize=1000)
 def _fetch_deezer_metadata(url: str) -> dict:
-    req = urllib_request.Request(url, headers={"User-Agent": "Snipsel/1.0"})
-    with urllib_request.urlopen(req, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
+    with _safe_request(url, headers={"User-Agent": "Snipsel/1.0"}) as response:
+        return json.loads(response.content.decode("utf-8"))
 
 
 DEEZER_SHORT_LINK_BASES = {
@@ -102,23 +149,20 @@ def _resolve_deezer_url(short_url: str) -> str:
     if parsed.query:
         request_url = f"{request_url}?{parsed.query}"
 
-    req = urllib_request.Request(request_url, headers={"User-Agent": "Snipsel/1.0"})
-    with urllib_request.urlopen(req, timeout=10) as response:
-        return response.geturl()
+    with _safe_request(request_url, headers={"User-Agent": "Snipsel/1.0"}) as response:
+        return response.url
 
 
 @lru_cache(maxsize=1000)
 def _fetch_youtube_metadata(oembed_url: str) -> dict:
-    req = urllib_request.Request(oembed_url, headers={"User-Agent": "Snipsel/1.0"})
-    with urllib_request.urlopen(req, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
+    with _safe_request(oembed_url, headers={"User-Agent": "Snipsel/1.0"}) as response:
+        return json.loads(response.content.decode("utf-8"))
 
 
 @lru_cache(maxsize=1000)
 def _fetch_spotify_metadata(oembed_url: str) -> dict:
-    req = urllib_request.Request(oembed_url, headers={"User-Agent": "Snipsel/1.0"})
-    with urllib_request.urlopen(req, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
+    with _safe_request(oembed_url, headers={"User-Agent": "Snipsel/1.0"}) as response:
+        return json.loads(response.content.decode("utf-8"))
 
 
 DEEZER_API_BASE = "https://api.deezer.com"
@@ -147,6 +191,8 @@ def proxy_deezer():
                     media_type = part
                     media_id = parts[i + 1].split("?")[0]  # strip query params
                     break
+        except ApiError:
+            raise
         except Exception as e:
             logger.debug("Failed to resolve Deezer link", exc_info=True)
             raise api_error(
@@ -173,6 +219,8 @@ def proxy_deezer():
     except URLError as e:
         logger.debug("Failed to connect to Deezer", exc_info=True)
         raise api_error(502, "external_error", "Failed to connect to Deezer") from e
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("Deezer proxy error", exc_info=True)
         raise api_error(500, "internal_error", "Internal error") from e
@@ -185,6 +233,8 @@ def proxy_deezer():
 
 def _extract_coords_from_url(url: str) -> dict | None:
     """Extract coordinates from a URL (Google Maps or Apple Maps)."""
+    if len(url) > 2048:
+        return None
     coord = r"(-?\d{1,3}\.\d{1,12})"
 
     # Google Maps @lat,lng format
@@ -201,7 +251,7 @@ def _extract_coords_from_url(url: str) -> dict | None:
         }
 
     # Google Maps ?q=lat,lng or ?q=lat%2Clng
-    q_match = re.search(rf"[?&]q={coord}[,%2C]{coord}", url)
+    q_match = re.search(rf"[?&]q={coord}(?:,|%2C){coord}", url)
     if q_match:
         return {"lat": float(q_match.group(1)), "lng": float(q_match.group(2))}
 
@@ -253,9 +303,9 @@ def _resolve_map_url(url: str) -> dict:
     base: str | None = None
     if _host_matches(host, "maps.app.goo.gl"):
         base = "https://maps.app.goo.gl"
-    elif _host_matches(host, "goo.gl") and "maps" in url:
+    elif _host_matches(host, "goo.gl") and "maps" in parsed.path:
         base = "https://goo.gl"
-    elif _host_matches(host, "maps.apple.com") and "/p/" in url:
+    elif _host_matches(host, "maps.apple.com") and "/p/" in parsed.path:
         base = "https://maps.apple.com"
 
     if base is not None:
@@ -263,9 +313,9 @@ def _resolve_map_url(url: str) -> dict:
             request_url = base + parsed.path
             if parsed.query:
                 request_url = f"{request_url}?{parsed.query}"
-            resp = requests.head(
+            resp = _safe_request(
                 request_url,
-                allow_redirects=True,
+                method="HEAD",
                 timeout=10,
                 headers={
                     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -329,18 +379,17 @@ def _fetch_link_metadata(url: str) -> dict:
     fallback = {"title": domain, "favicon_url": None, "domain": domain}
 
     try:
-        _assert_public_url(url)
-        req = urllib_request.Request(
+        with _safe_request(
             url,
             headers={
                 "User-Agent": "Snipsel/1.0 (Link Preview)",
                 "Accept": "text/html,application/xhtml+xml",
                 "Accept-Language": "en-US,en;q=0.9,de;q=0.8",
             },
-        )
-        with urllib_request.urlopen(req, timeout=10) as response:
+            stream=True,
+        ) as response:
             # Only read first 64KB to avoid downloading huge pages
-            raw = response.read(65536)
+            raw = response.raw.read(65536)
             # Detect encoding from Content-Type header or default to utf-8
             content_type = response.headers.get("Content-Type", "")
             charset_match = re.search(r"charset=([^\s;]+)", content_type, re.IGNORECASE)
@@ -388,11 +437,11 @@ def proxy_link_metadata():
 
     domain = (parsed.hostname or "").lower()
     is_map_url = (
-        (_host_matches(domain, "google.com") and "maps" in url)
+        (_host_matches(domain, "google.com") and "maps" in parsed.path)
         or _host_matches(domain, "maps.google.com")
         or _host_matches(domain, "maps.app.goo.gl")
         or _host_matches(domain, "maps.apple.com")
-        or (_host_matches(domain, "apple.com") and "maps" in url)
+        or (_host_matches(domain, "apple.com") and "maps" in parsed.path)
     )
 
     result = {}
@@ -429,6 +478,8 @@ def proxy_link_metadata():
             f"https://www.google.com/s2/favicons?domain={urllib_parse.quote(domain)}&sz=64"
         )
         result["domain"] = domain
+    except ApiError:
+        raise
     except Exception as e:
         if not result.get("lat"):
             logger.debug("Failed to fetch link metadata", exc_info=True)
@@ -462,6 +513,8 @@ def proxy_youtube():
     except URLError as e:
         logger.debug("Failed to connect to YouTube", exc_info=True)
         raise api_error(502, "external_error", "Failed to connect to YouTube") from e
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("YouTube proxy error", exc_info=True)
         raise api_error(500, "internal_error", "Internal error") from e
@@ -487,6 +540,8 @@ def proxy_spotify():
     except URLError as e:
         logger.debug("Failed to connect to Spotify", exc_info=True)
         raise api_error(502, "external_error", "Failed to connect to Spotify") from e
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("Spotify proxy error", exc_info=True)
         raise api_error(500, "internal_error", "Internal error") from e

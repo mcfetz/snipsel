@@ -35,6 +35,13 @@ logger = logging.getLogger(__name__)
 attachments_bp = Blueprint("attachments", __name__)
 
 
+def _contained_path(base: Path, *parts: str) -> Path:
+    candidate = base.joinpath(*parts)
+    if not candidate.resolve().is_relative_to(base.resolve()):
+        raise api_error(400, "invalid_input", "invalid file name")
+    return candidate
+
+
 @attachments_bp.post("/snipsels/<snipsel_id>/attachments")
 @require_auth
 def upload_attachment(snipsel_id: str):
@@ -63,7 +70,7 @@ def upload_attachment(snipsel_id: str):
     att_id = str(uuid.uuid4())
     display_name = os.path.basename(file.filename)
     safe_name = secure_filename(display_name) or "file"
-    storage_path = upload_dir / f"{att_id}_{safe_name}"
+    storage_path = _contained_path(upload_dir, f"{att_id}_{safe_name}")
 
     file.save(storage_path)
     size = storage_path.stat().st_size
@@ -137,7 +144,7 @@ def upload_collection_header(collection_id: str):
     att_id = str(uuid.uuid4())
     display_name = os.path.basename(file.filename)
     safe_name = secure_filename(display_name) or "file"
-    storage_path = upload_dir / f"{att_id}_{safe_name}"
+    storage_path = _contained_path(upload_dir, f"{att_id}_{safe_name}")
 
     file.save(storage_path)
     size = storage_path.stat().st_size
@@ -599,6 +606,9 @@ def _write_thumbnail(src: Path, dst: Path, header: bool = False) -> None:
 def _write_video_thumbnail(src: Path, dst: Path) -> bool:
     """Generates a thumbnail for a video file using ffmpeg."""
     import subprocess
+
+    src = src.resolve()
+    dst = dst.resolve()
 
     try:
         # Extract 1 frame from 1 second into the video
