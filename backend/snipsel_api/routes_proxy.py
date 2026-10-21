@@ -126,11 +126,12 @@ def _safe_request(
 # Cache metadata for 1 hour (using a simple lru_cache for in-process memory)
 # Note: In a multi-worker production environment, Redis or similar would be better.
 @lru_cache(maxsize=1000)
-def _fetch_deezer_metadata(url: str) -> dict:
-    parsed = urllib_parse.urlparse(url)
-    host = (parsed.hostname or "").lower()
-    if host not in {"api.deezer.com", "www.deezer.com", "deezer.com"}:
-        raise api_error(400, "invalid_input", "Unsupported Deezer host")
+def _fetch_deezer_metadata(media_type: str, media_id: str) -> dict:
+    if media_type not in {"track", "album", "artist"}:
+        raise api_error(400, "invalid_input", "invalid media type")
+    if not media_id or "/" in media_id or "?" in media_id or "#" in media_id:
+        raise api_error(400, "invalid_input", "invalid media id")
+    url = f"{DEEZER_API_BASE}/{media_type}/{media_id}"
     with _safe_request(url, headers={"User-Agent": "Snipsel/1.0"}) as response:
         return json.loads(response.content.decode("utf-8"))
 
@@ -211,10 +212,8 @@ def proxy_deezer():
     if media_type not in ["track", "album", "artist"]:
         raise api_error(400, "invalid_input", "invalid media type")
 
-    url = f"{DEEZER_API_BASE}/{media_type}/{media_id}"
-
     try:
-        data = _fetch_deezer_metadata(url)
+        data = _fetch_deezer_metadata(media_type, media_id)
         if "error" in data:
             return json_response(data, status=400)
         return json_response(data)
