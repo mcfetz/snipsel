@@ -127,6 +127,10 @@ def _safe_request(
 # Note: In a multi-worker production environment, Redis or similar would be better.
 @lru_cache(maxsize=1000)
 def _fetch_deezer_metadata(url: str) -> dict:
+    parsed = urllib_parse.urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if host not in {"api.deezer.com", "www.deezer.com", "deezer.com"}:
+        raise api_error(400, "invalid_input", "Unsupported Deezer host")
     with _safe_request(url, headers={"User-Agent": "Snipsel/1.0"}) as response:
         return json.loads(response.content.decode("utf-8"))
 
