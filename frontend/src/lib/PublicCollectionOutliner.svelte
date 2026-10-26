@@ -32,7 +32,7 @@
     computeTaskProgress,
   } from './tree';
 
-  let { token, collection, items, canWrite = false, onReload } = $props<{
+  let { token, collection, items, canWrite = false, onReload }: {
     token: string;
     collection: {
       id: string;
@@ -48,7 +48,7 @@
     items: CollectionItem[];
     canWrite?: boolean;
     onReload?: () => void;
-  }>();
+  } = $props();
 
   $effect(() => {
     // Process mermaid diagrams when data changes
