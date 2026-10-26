@@ -676,6 +676,13 @@ def update_me():
                 user.ntfy_token = stripped_token
 
     if "email" in data or "password" in data:
+        if "password" in data and Settings.from_env().password_locked(user.username):
+            raise api_error(
+                403,
+                "password_locked",
+                "The password for this account is locked and cannot be changed.",
+            )
+
         current_password = data.get("current_password") or ""
         if not current_password or not check_password_hash(
             user.password_hash, current_password
@@ -777,6 +784,13 @@ def password_reset_confirm():
     user = db.session.get(User, prt.user_id)
     if not user or user.deleted_at is not None or not user.is_active:
         raise api_error(400, "invalid_token", "Token is invalid")
+
+    if Settings.from_env().password_locked(user.username):
+        raise api_error(
+            403,
+            "password_locked",
+            "The password for this account is locked and cannot be changed.",
+        )
 
     user.password_hash = generate_password_hash(new_password, method="pbkdf2:sha256")
     user.modified_at = utcnow()
