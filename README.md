@@ -181,6 +181,7 @@ The frontend proxies `/api/*` to the backend in dev mode.
 | `SNIPSEL_DOMAIN` | `localhost` | Domain for Passkey auth |
 | `SNIPSEL_FRONTEND_URL` | `http://localhost:5173` | Frontend URL for CORS & Passkeys |
 | `SNIPSEL_REGISTRATION_ENABLED` | `1` | Set to `0` to disable new user registration |
+| `SNIPSEL_PASSWORD_LOCKED_USERS` | *(empty)* | Comma-separated usernames whose password cannot be changed (e.g. `demo`) |
 
 **Optional SMTP (password reset):**
 

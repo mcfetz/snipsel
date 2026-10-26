@@ -35,6 +35,11 @@ class Settings:
     oidc_disable_password_login: bool
     unsplash_access_key: str | None
     unsplash_secret_key: str | None
+    password_locked_users: frozenset[str]
+
+    def password_locked(self, username: str) -> bool:
+        """Return True when the account's password must not be changed."""
+        return (username or "").strip().lower() in self.password_locked_users
 
     @staticmethod
     def from_env() -> Settings:
@@ -83,6 +88,13 @@ class Settings:
         unsplash_access_key = os.environ.get("SNIPSEL_UNSPLASH_ACCESS_KEY")
         unsplash_secret_key = os.environ.get("SNIPSEL_UNSPLASH_SECRET_KEY")
 
+        password_locked_raw = os.environ.get("SNIPSEL_PASSWORD_LOCKED_USERS", "")
+        password_locked_users = frozenset(
+            name.strip().lower()
+            for name in password_locked_raw.split(",")
+            if name.strip()
+        )
+
         return Settings(
             secret_key=secret_key,
             database_url=database_url,
@@ -113,4 +125,5 @@ class Settings:
             oidc_disable_password_login=oidc_disable_password_login,
             unsplash_access_key=unsplash_access_key,
             unsplash_secret_key=unsplash_secret_key,
+            password_locked_users=password_locked_users,
         )

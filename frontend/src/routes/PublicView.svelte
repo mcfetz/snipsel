@@ -3,7 +3,7 @@
   import { api, type CollectionItem } from '../lib/api';
   import PublicCollectionOutliner from '../lib/PublicCollectionOutliner.svelte';
 
-  let { token } = $props<{ token: string }>();
+  let { token }: { token: string } = $props();
 
   let collection = $state<any>(null);
   let items = $state<CollectionItem[]>([]);
