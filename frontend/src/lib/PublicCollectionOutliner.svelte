@@ -244,7 +244,9 @@
       
       <div 
         class="group relative py-1 pr-8 transition-colors hover:bg-slate-50/50 dark:hover:bg-white/[0.02] rounded-lg"
-        style="padding-left: calc(3.25rem + {item.indent * 1.25}rem)"
+        style="padding-left: calc({item.snipsel.type === 'task' && isCollapsible
+          ? '4.5rem'
+          : '3.25rem'} + {item.indent * 1.25}rem)"
       >
         {#if item.snipsel_id === editingSnipselId}
           <div
@@ -268,8 +270,14 @@
           {#if isCollapsible}
             <button
               type="button"
-              class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {isExpanded ? '' : '-rotate-90'}"
-              style="left: calc(1.625rem + {item.indent * 1.25}rem)"
+              class="al-icon-wrapper absolute z-20 grid place-items-center rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-transform {isExpanded
+                ? ''
+                : '-rotate-90'} {item.snipsel.type === 'task'
+                ? 'top-1/2 h-5 w-5 -translate-y-1/2'
+                : 'top-1/2 h-6 w-6 -translate-y-1/2'}"
+              style="left: calc({item.snipsel.type === 'task'
+                ? '3.25rem'
+                : '1.625rem'} + {item.indent * 1.25}rem)"
               onclick={() => toggleExpand(item.snipsel_id)}
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
               title={isExpanded ? 'Collapse' : 'Expand'}

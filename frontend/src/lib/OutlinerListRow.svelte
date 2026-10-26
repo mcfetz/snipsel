@@ -142,18 +142,23 @@
   ></div>
 </button>
 
-{#if item.snipsel.type !== 'task' && hasChildren}
+{#if hasChildren}
   <button
     type="button"
-    class="al-icon-wrapper absolute top-1/2 z-20 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full transition-transform hover:bg-slate-100 dark:hover:bg-white/10 {isExpanded
+    class="al-icon-wrapper absolute z-20 grid place-items-center rounded-full transition-transform hover:bg-slate-100 dark:hover:bg-white/10 {isExpanded
       ? ''
-      : '-rotate-90'}"
-    style="left: calc(0.25rem + {item.indent * 1.25}rem)"
+      : '-rotate-90'} {item.snipsel.type === 'task'
+      ? 'top-3.5 h-5 w-5'
+      : 'top-1/2 h-6 w-6 -translate-y-1/2'}"
+    style="left: calc({item.snipsel.type === 'task'
+      ? '1.75rem'
+      : '0.25rem'} + {item.indent * 1.25}rem)"
     onclick={(e) => {
       e.stopPropagation();
       onToggleExpand(item.snipsel_id);
     }}
     aria-label={isExpanded ? 'Collapse' : 'Expand'}
+    title={isExpanded ? 'Collapse' : 'Expand'}
   >
     <ChevronDown label="" size={14} className="text-slate-400" strokeWidth={2} />
   </button>
