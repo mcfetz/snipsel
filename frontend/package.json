@@ -17,7 +17,7 @@
     "@types/node": "^26.6.6",
     "svelte": "^5.57.3",
     "svelte-check": "^4.7.8",
-    "tailwindcss": "^4.2.4",
+    "tailwindcss": "^4.3.5",
     "typescript": "~6.0.3",
     "vite": "^8.3.6",
     "vite-plugin-pwa": "^2.0.0"
