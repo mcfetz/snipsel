@@ -1,0 +1,50 @@
+name: Docker Publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: git.familie-heise.de
+  IMAGE_NAME: ${{ github.repository }}
+  # Das Dockerfile schreibt das Entrypoint-Skript per Heredoc (COPY <<'EOF') — das
+  # versteht nur BuildKit, der klassische Builder bricht dort ab.
+  DOCKER_BUILDKIT: "1"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Registry-Login
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" \
+            | docker login "${{ env.REGISTRY }}" -u "${{ github.actor }}" --password-stdin
+
+      - name: Build und Push
+        run: |
+          set -euo pipefail
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          docker build \
+            --build-arg "VITE_COMMIT_HASH=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            -t "${IMAGE}:latest" \
+            -t "${IMAGE}:sha-${SHA}" \
+            .
+          docker push "${IMAGE}:sha-${SHA}"
+          docker push "${IMAGE}:latest"
+          echo "Image: ${IMAGE}:latest (sha-${SHA})"
+
+      - name: Deploy nach Portainer
+        if: github.ref == 'refs/heads/main'
+        env:
+          PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
+          PORTAINER_API_KEY: ${{ secrets.PORTAINER_API_KEY }}
+        run: python3 deploy/deploy.py
+
+      - name: Registry-Logout
+        if: always()
+        run: docker logout "${{ env.REGISTRY }}" || true

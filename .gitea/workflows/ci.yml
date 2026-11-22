@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Kein actions/setup-python: dessen CPython bricht auf aelteren CPUs mit
+      # "CPU ISA level is lower than required" ab. Das Job-Image bringt python3 mit.
+      - name: Lint und Typpruefung
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv || {
+            apt-get update -qq && apt-get install -y -qq python3-venv
+            python3 -m venv .venv
+          }
+          .venv/bin/pip install -q ruff==0.16.10 ty==0.0.84
+          .venv/bin/ruff check .
+          .venv/bin/ruff format --check .
+          .venv/bin/ty check .
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          cd frontend
+          npm ci
+          npm run build

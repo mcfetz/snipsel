@@ -1,0 +1,93 @@
+# Portainer-Stack fuer snipsel im Swarm.
+#
+# Zwei Instanzen aus einem Image: die eigene (my.snipsel.dev) und die oeffentliche Testinstanz
+# (try.snipsel.dev). Vorher waren das zwei von Hand angelegte Swarm-Services, die per
+# Portainer-Service-Webhook aus GitHub aktualisiert wurden.
+#
+# Image: git.familie-heise.de/daniel/snipsel:latest, gebaut von der Gitea-Pipeline bei jedem Push
+# auf main. Kein Build im Stack — deployt wird ausschliesslich ueber die Pipeline und
+# deploy/deploy.py.
+#
+# Die Werte hinter ${...} liegen als Umgebungsvariablen im Portainer-Stack. Namen mit TRY_-
+# Praefix gehoeren nur zur Testinstanz, der Rest gilt fuer beide.
+#
+# Beide Dienste brauchen node.labels.app.snipsel==1 (docker12): dort haengen der
+# Diskstation-Mount fuer die Uploads und das Datenverzeichnis auf dem GlusterFS-Share.
+version: "3.9"
+
+services:
+  snipsel:
+    image: git.familie-heise.de/daniel/snipsel:latest
+    environment:
+      SNIPSEL_DOMAIN: ${SNIPSEL_DOMAIN}
+      SNIPSEL_FRONTEND_URL: ${SNIPSEL_FRONTEND_URL}
+      SNIPSEL_MAX_UPLOAD_BYTES: ${SNIPSEL_MAX_UPLOAD_BYTES}
+      SNIPSEL_REGISTRATION_ENABLED: ${SNIPSEL_REGISTRATION_ENABLED}
+      SNIPSEL_OIDC_ENABLED: ${SNIPSEL_OIDC_ENABLED}
+      SNIPSEL_OIDC_DISCOVERY_URL: ${SNIPSEL_OIDC_DISCOVERY_URL}
+      SNIPSEL_OIDC_CLIENT_ID: ${SNIPSEL_OIDC_CLIENT_ID}
+      SNIPSEL_OIDC_CLIENT_SECRET: ${SNIPSEL_OIDC_CLIENT_SECRET}
+      SNIPSEL_OIDC_PROVIDER_NAME: ${SNIPSEL_OIDC_PROVIDER_NAME}
+      SNIPSEL_OIDC_DISABLE_PASSWORD_LOGIN: ${SNIPSEL_OIDC_DISABLE_PASSWORD_LOGIN}
+      SNIPSEL_UNSPLASH_ACCESS_KEY: ${SNIPSEL_UNSPLASH_ACCESS_KEY}
+      SNIPSEL_UNSPLASH_SECRET_KEY: ${SNIPSEL_UNSPLASH_SECRET_KEY}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+    volumes:
+      - /mnt/diskstation_snipsel/snipsel_uploads:/app/uploads
+      - /mnt/glusterfs_docker_share/volumes/snipsel_data:/app/data
+    ports:
+      - target: 5000
+        published: 5000
+        protocol: tcp
+        mode: ingress
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:5000/', timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 60s
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.app.snipsel == 1
+      restart_policy:
+        condition: any
+
+  try-snipsel:
+    image: git.familie-heise.de/daniel/snipsel:latest
+    environment:
+      SNIPSEL_DOMAIN: ${TRY_SNIPSEL_DOMAIN}
+      SNIPSEL_FRONTEND_URL: ${TRY_SNIPSEL_FRONTEND_URL}
+      SNIPSEL_MAX_UPLOAD_BYTES: ${TRY_SNIPSEL_MAX_UPLOAD_BYTES}
+      SNIPSEL_REGISTRATION_ENABLED: ${TRY_SNIPSEL_REGISTRATION_ENABLED}
+      SNIPSEL_SECRET_KEY: ${TRY_SNIPSEL_SECRET_KEY}
+      SNIPSEL_PASSWORD_LOCKED_USERS: ${TRY_SNIPSEL_PASSWORD_LOCKED_USERS}
+      SNIPSEL_UNSPLASH_ACCESS_KEY: ${SNIPSEL_UNSPLASH_ACCESS_KEY}
+      SNIPSEL_UNSPLASH_SECRET_KEY: ${SNIPSEL_UNSPLASH_SECRET_KEY}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+    volumes:
+      - /mnt/glusterfs_docker_share/volumes/try.snipsel_data:/app/data
+      - /mnt/glusterfs_docker_share/volumes/try.snipsel_uploads:/app/uploads
+    ports:
+      - target: 5000
+        published: 5005
+        protocol: tcp
+        mode: ingress
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:5000/', timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 60s
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.app.snipsel == 1
+      restart_policy:
+        condition: any
