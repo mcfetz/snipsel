@@ -7,24 +7,39 @@ on:
   workflow_dispatch:
 
 jobs:
-  backend:
+  ruff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Kein actions/setup-python: dessen CPython bricht auf aelteren CPUs mit
-      # "CPU ISA level is lower than required" ab. Das Job-Image bringt python3 mit.
-      - name: Lint und Typpruefung
-        run: |
-          set -euo pipefail
-          python3 -m venv .venv || {
-            apt-get update -qq && apt-get install -y -qq python3-venv
-            python3 -m venv .venv
-          }
-          .venv/bin/pip install -q ruff==0.16.10 ty==0.0.84
-          .venv/bin/ruff check .
-          .venv/bin/ruff format --check .
-          .venv/bin/ty check .
+      - name: uv bereitstellen
+        uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Ruff check
+        run: uvx --from ruff==0.16.10 ruff check .
+
+      - name: Ruff format
+        run: uvx --from ruff==0.16.10 ruff format --check .
+
+  ty:
+    runs-on: ubuntu-latest
+    # ty loest die Typen nur mit installierten Abhaengigkeiten auf — ohne `uv sync`
+    # meldet es Hunderte Phantomfehler (162 gemessen). Deshalb wie in der alten
+    # GitHub-CI im backend/ arbeiten und vorher synchronisieren.
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: uv bereitstellen
+        uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Abhaengigkeiten
+        run: uv sync --frozen
+
+      - name: ty check
+        run: uvx --from ty==0.0.84 ty check .
 
   frontend:
     runs-on: ubuntu-latest
