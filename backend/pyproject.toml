@@ -18,7 +18,7 @@ dependencies = [
   "joserfc>=1.8.0",
   "cryptography>=50.0.2",
   "pywebpush>=2.5.0",
-  "pyotp>=2.10.0",
+  "pyotp>=2.12.1",
   "qrcode>=8.2",
   "webauthn>=3.0.1",
 ]
