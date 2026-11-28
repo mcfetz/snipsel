@@ -6,6 +6,7 @@ from datetime import date, timedelta
 
 from flask import Blueprint, request
 from sqlalchemy import extract
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
 
 logger = logging.getLogger(__name__)
@@ -1429,13 +1430,23 @@ def get_collection(collection_id: str):
             .scalars()
             .first()
         )
-    # Record visit
+    # Record visit. Two concurrent requests opening the same collection can both
+    # miss the row and race on the composite primary key; the losing INSERT falls
+    # back to an update instead of failing with a 500.
     visit = db.session.get(CollectionVisit, (user.id, c.id))
-    if visit:
-        visit.visited_at = utcnow()
-    else:
+    if visit is None:
         db.session.add(CollectionVisit(user_id=user.id, collection_id=c.id))
-    db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            # Another request inserted the same row first — refresh and update it.
+            db.session.rollback()
+            visit = db.session.get(CollectionVisit, (user.id, c.id))
+            if visit is None:
+                raise
+    if visit is not None:
+        visit.visited_at = utcnow()
+        db.session.commit()
 
     return json_response({"collection": j})
 
